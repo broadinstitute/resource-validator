@@ -1,12 +1,24 @@
 package com.broadinstitute.dsp.resourcevalidator
 
-import cats.effect.Concurrent
+import java.nio.charset.Charset
+import java.time.Instant
+import java.util.concurrent.TimeUnit
+
+import cats.effect.{Concurrent, Timer}
 import cats.implicits._
-import com.google.api.core.{ApiFutureCallback, ApiFutures}
-import com.google.cloud.compute.v1.{InstanceClient, ProjectZoneInstanceName}
-import com.google.cloud.dataproc.v1.{ClusterControllerClient, ClusterOperationMetadata}
-import com.google.common.util.concurrent.MoreExecutors
+import cats.mtl.ApplicativeAsk
+import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
+import org.broadinstitute.dsde.workbench.google2.{
+  DataprocClusterName,
+  GcsBlobName,
+  GoogleComputeService,
+  GoogleDataprocService,
+  GoogleStorageService,
+  InstanceName
+}
+import org.broadinstitute.dsde.workbench.model.TraceId
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 // Algebra
 trait DeletedRuntimeChecker[F[_]] {
@@ -17,17 +29,36 @@ trait DeletedRuntimeChecker[F[_]] {
 object DeletedRuntimeChecker {
   implicit def apply[F[_]](implicit ev: DeletedRuntimeChecker[F]): DeletedRuntimeChecker[F] = ev
 
-  def iml[F[_]](dependencies: DeletedRuntimeCheckerDeps[F])(implicit F: Concurrent[F],
-                                                            logger: Logger[F]): DeletedRuntimeChecker[F] =
+  def iml[F[_]: Timer](
+    dependencies: DeletedRuntimeCheckerDeps[F]
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): DeletedRuntimeChecker[F] =
     new DeletedRuntimeChecker[F] {
       override def run(isDryRun: Boolean): F[Unit] =
-        dependencies.dbReader.getDeletedRuntimes
-          .parEvalMapUnordered(50)(rt => checkRuntimeStatus(rt, isDryRun))
-          //          .take(1000)
-          .compile
-          .drain //TODO: remove this take
+        for {
+          now <- Timer[F].clock.realTime(TimeUnit.MILLISECONDS)
 
-      def checkRuntimeStatus(runtime: Runtime, isDryRun: Boolean): F[Unit] =
+          blobName = if (isDryRun) GcsBlobName(s"runtimes-should-have-been-deleted-${Instant.ofEpochMilli(now)}")
+          else GcsBlobName(s"runtimes-have-been-deleted-${Instant.ofEpochMilli(now)}")
+
+          _ <- (dependencies.dbReader.getDeletedRuntimes
+            .parEvalMapUnordered(50)(rt => checkRuntimeStatus(rt, isDryRun))
+            .unNone
+            .map(_.toString)
+            .intersperse("\n")
+            .map(_.getBytes(Charset.forName("UTF-8")))
+            .flatMap(arrayOfBytes => Stream.emits(arrayOfBytes))
+            .through(
+              dependencies.storageService.streamUploadBlob(
+                dependencies.reportDestinationBucket,
+                blobName
+              )
+            ))
+            .compile
+            .drain
+        } yield ()
+
+      def checkRuntimeStatus(runtime: Runtime,
+                             isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
         runtime.cloudService match {
           case "DATAPROC" =>
             checkClusterStatus(runtime, isDryRun)
@@ -35,14 +66,12 @@ object DeletedRuntimeChecker {
             checkGceRuntimeStatus(runtime, isDryRun)
         }
 
-      def checkClusterStatus(runtime: Runtime, isDryRun: Boolean): F[Unit] =
+      def checkClusterStatus(runtime: Runtime,
+                             isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
         for {
-          clusterOpt <- F
-            .delay(dependencies.dataprocClient.getCluster(runtime.googleProject, regionName, runtime.runtimeName))
-            .map(x => Option(x))
+          clusterOpt <- dependencies.dataprocService
+            .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
             .handleErrorWith {
-              case _: com.google.api.gax.rpc.NotFoundException =>
-                logger.debug(s"${runtime}: Doesn't exist in Google").as(None)
               case e: com.google.api.gax.rpc.PermissionDeniedException => // this could happen if the project no longer exists or managed by terra
                 logger.debug(s"${runtime}: Fail to check status due to ${e}").as(None)
               case e =>
@@ -52,60 +81,48 @@ object DeletedRuntimeChecker {
             if (isDryRun)
               logger.warn(s"${runtime} still exists in Google. It needs to be deleted")
             else
-              logger.warn(s"${runtime} still exists in Google. Going to delete") >> F
-                .async[ClusterOperationMetadata] { cb =>
-                  ApiFutures.addCallback(
-                    dependencies.dataprocClient
-                      .deleteClusterAsync(runtime.googleProject, regionName, runtime.runtimeName)
-                      .getMetadata,
-                    new ApiFutureCallback[ClusterOperationMetadata] {
-                      @Override def onFailure(t: Throwable): Unit = cb(Left(t))
-
-                      @Override def onSuccess(result: ClusterOperationMetadata): Unit =
-                        cb(Right(result))
-                    },
-                    MoreExecutors.directExecutor()
-                  )
-                }
+              logger.warn(s"${runtime} still exists in Google. Going to delete") >> dependencies.dataprocService
+                .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
                 .void
                 .handleErrorWith {
                   case e =>
                     logger.error(s"Fail to delete ${runtime} due to ${e}")
                 }
           }
-        } yield ()
+        } yield clusterOpt.fold(none[Runtime])(_ => Some(runtime))
 
-      def checkGceRuntimeStatus(runtime: Runtime, isDryRun: Boolean): F[Unit] = {
-        val instance = ProjectZoneInstanceName.of(runtime.runtimeName, runtime.googleProject, zoneName)
+      def checkGceRuntimeStatus(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
         for {
-          runtimeOpt <- F.delay(dependencies.instanceClient.getInstance(instance)).map(x => Option(x)).handleErrorWith {
-            case _: com.google.api.gax.rpc.NotFoundException =>
-              logger.debug(s"${runtime}: Doesn't exist in Google").as(None)
-            case e: com.google.api.gax.rpc.PermissionDeniedException => // this could happen if the project no longer exists or managed by terra
-              logger.debug(s"${runtime}: Fail to check status due to ${e}").as(None)
-            case e: com.google.api.gax.rpc.UnknownException => // this could happen if the project no longer exists or managed by terra
-              logger.debug(s"${runtime}: Fail to check status due to ${e}").as(None)
-            case e =>
-              logger.error(s"${runtime}: Fail to check status due to ${e}").as(None)
-          }
+          runtimeOpt <- dependencies.computeService
+            .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
+            .handleErrorWith {
+              case e: com.google.api.gax.rpc.PermissionDeniedException => // this could happen if the project no longer exists or managed by terra
+                logger.debug(s"${runtime}: Fail to check status due to ${e}").as(None)
+              case e: com.google.api.gax.rpc.UnknownException => // this could happen if the project no longer exists or managed by terra
+                logger.debug(s"${runtime}: Fail to check status due to ${e}").as(None)
+              case e =>
+                logger.error(s"${runtime}: Fail to check status due to ${e}").as(None)
+            }
           _ <- runtimeOpt.traverse_ { _ =>
             if (isDryRun)
               logger.warn(s"${runtime} still exists in Google. It needs to be deleted")
             else
-              logger.warn(s"${runtime} still exists in Google. Going to delete") >> F
-                .delay(
-                  dependencies.instanceClient.deleteInstance(instance)
-                )
-                .void
-                .handleErrorWith(t => logger.info(s"Fail to delete ${runtime} due to ${t}"))
+              logger.warn(s"${runtime} still exists in Google. Going to delete") >>
+                dependencies.computeService
+                  .deleteInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
+                  .void
+                  .handleErrorWith(t => logger.info(s"Fail to delete ${runtime} due to ${t}"))
           }
-        } yield ()
-      }
+        } yield runtimeOpt.fold(none[Runtime])(_ => Some(runtime))
 
     }
 }
 
-final case class Runtime(googleProject: String, runtimeName: String, cloudService: String)
-final case class DeletedRuntimeCheckerDeps[F[_]](dataprocClient: ClusterControllerClient,
-                                                 instanceClient: InstanceClient,
+final case class Runtime(googleProject: GoogleProject, runtimeName: String, cloudService: String) {
+  override def toString: String = s"${googleProject.value},${runtimeName},${cloudService}"
+}
+final case class DeletedRuntimeCheckerDeps[F[_]](reportDestinationBucket: GcsBucketName,
+                                                 computeService: GoogleComputeService[F],
+                                                 storageService: GoogleStorageService[F],
+                                                 dataprocService: GoogleDataprocService[F],
                                                  dbReader: DbReader[F])

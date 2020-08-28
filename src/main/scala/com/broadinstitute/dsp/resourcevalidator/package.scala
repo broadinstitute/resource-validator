@@ -1,6 +1,8 @@
 package com.broadinstitute.dsp
 
+import org.broadinstitute.dsde.workbench.google2.{RegionName, ZoneName}
+
 package object resourcevalidator {
-  val zoneName = "us-central1-a"
-  val regionName = "us-central1"
+  val zoneName = ZoneName("us-central1-a")
+  val regionName = RegionName("us-central1")
 }

@@ -4,3 +4,4 @@
 ## TODO
 - Write readme
 - Set up github action for running tests and building the container image
+- Fix logback

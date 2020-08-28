@@ -1,5 +1,5 @@
 val LogbackVersion = "1.2.3"
-val workbenchUtil2 = "0.1-92fcd96"
+val workbenchGoogle2 = "0.11-a87efd3a-SNAP"
 val doobieVersion = "0.9.0"
 
 lazy val artifactory = "https://artifactory.broadinstitute.org/artifactory/"
@@ -27,7 +27,7 @@ lazy val root = (project in file("."))
       "com.google.cloud" % "google-cloud-dataproc" % "0.122.1",
       "com.google.cloud" % "google-cloud-compute" % "0.118.0-alpha",
       "co.fs2" %% "fs2-io" % "2.4.2",
-      "org.broadinstitute.dsde.workbench" %% "workbench-util2" % workbenchUtil2,
+      "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2,
       "com.github.pureconfig" %% "pureconfig" % "0.13.0",
       "com.monovore" %% "decline" % "1.0.0",
       "mysql" % "mysql-connector-java" % "8.0.18",
