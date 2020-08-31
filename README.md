@@ -5,3 +5,8 @@
 - Write readme
 - Set up github action for running tests and building the container image
 - Fix logback
+
+# Running Locally
+export LEONARDO_DB_USER=???
+export LEONARDO_DB_PASSWORD=???
+export LEONARDO_PATH_TO_CREDENTIAL=??
