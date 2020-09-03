@@ -22,7 +22,6 @@ lazy val root = (project in file("."))
     resolvers ++= commonResolvers,
     libraryDependencies ++= Seq(
       "net.logstash.logback" % "logstash-logback-encoder" % "6.2",
-      "org.slf4j" % "slf4j-simple" % "1.7.30",
       "ch.qos.logback" % "logback-classic" % "1.2.3",
       "ch.qos.logback" % "logback-core" % "1.2.3",
       "org.tpolecat" %% "doobie-core" % doobieVersion,

@@ -55,6 +55,12 @@ object DeletedRuntimeChecker {
             ))
             .compile
             .drain
+          blob <- dependencies.storageService.getBlob(dependencies.reportDestinationBucket, blobName).compile.last
+          _ <- blob.traverse { b =>
+            if (b.getSize == 0L)
+              dependencies.storageService.removeObject(dependencies.reportDestinationBucket, blobName).compile.last
+            else F.unit
+          }
         } yield ()
 
       def checkRuntimeStatus(runtime: Runtime,

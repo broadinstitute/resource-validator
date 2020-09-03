@@ -15,7 +15,7 @@ object Settings {
       Some("us.gcr.io"),
       None,
       "broad-dsp-gcr-public/resource-validator",
-      Some("0.0.1") //TODO: make this git hash
+      Some("0.0.1-rc3") //TODO: make this git hash
     )
   )
 }
