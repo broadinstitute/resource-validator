@@ -58,8 +58,14 @@ object DeletedRuntimeChecker {
           blob <- dependencies.storageService.getBlob(dependencies.reportDestinationBucket, blobName).compile.last
           _ <- blob.traverse { b =>
             if (b.getSize == 0L)
-              dependencies.storageService.removeObject(dependencies.reportDestinationBucket, blobName).compile.last
-            else F.unit
+              logger.warn("No anomaly detected") >> dependencies.storageService
+                .removeObject(dependencies.reportDestinationBucket, blobName)
+                .compile
+                .drain
+            else
+              logger.warn(
+                s"Anomaly detected. Check out gs://${dependencies.reportDestinationBucket.value}/${blobName.value} for more details"
+              )
           }
         } yield ()
 
