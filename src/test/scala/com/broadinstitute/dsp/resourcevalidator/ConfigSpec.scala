@@ -2,6 +2,7 @@ package com.broadinstitute.dsp.resourcevalidator
 
 import java.nio.file.Paths
 
+import org.broadinstitute.dsde.workbench.model.google.GcsBucketName
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -14,7 +15,8 @@ class ConfigSpec extends AnyFlatSpec with Matchers {
         "username",
         "password"
       ),
-      Paths.get("path-to-credential")
+      Paths.get("path-to-credential"),
+      GcsBucketName("qi-test")
     )
 
     config shouldBe Right(expectedConfig)

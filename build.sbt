@@ -21,7 +21,10 @@ lazy val root = (project in file("."))
     Settings.dockerSettings,
     resolvers ++= commonResolvers,
     libraryDependencies ++= Seq(
-      "ch.qos.logback" % "logback-classic" % LogbackVersion,
+      "net.logstash.logback" % "logstash-logback-encoder" % "6.2",
+      "org.slf4j" % "slf4j-simple" % "1.7.30",
+      "ch.qos.logback" % "logback-classic" % "1.2.3",
+      "ch.qos.logback" % "logback-core" % "1.2.3",
       "org.tpolecat" %% "doobie-core" % doobieVersion,
       "org.tpolecat" %% "doobie-hikari" % doobieVersion,
       "com.google.cloud" % "google-cloud-dataproc" % "0.122.1",
