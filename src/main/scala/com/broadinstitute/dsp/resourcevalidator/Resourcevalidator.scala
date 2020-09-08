@@ -2,7 +2,7 @@ package com.broadinstitute.dsp.resourcevalidator
 
 import java.util.UUID
 
-import cats.{Applicative, Parallel}
+import cats.Parallel
 import cats.effect.concurrent.Semaphore
 import cats.effect.{Async, Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.ApplicativeAsk
@@ -19,7 +19,10 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 import scala.jdk.CollectionConverters._
 
 object Resourcevalidator {
-  def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean, ifRunAll: Boolean, ifRunCheckDeletedRuntimes: Boolean)(
+  def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
+                                            ifRunAll: Boolean,
+                                            ifRunCheckDeletedRuntimes: Boolean,
+                                            ifRunCheckErroredRuntimes: Boolean)(
     implicit T: Timer[F],
     C: ContextShift[F]
   ): Stream[F, Nothing] = {
@@ -29,12 +32,16 @@ object Resourcevalidator {
     for {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
-      deletedRuntimeChecker = DeletedRuntimeChecker.iml(deps.deletedRuntimeCheckerDeps)
+      deletedRuntimeChecker = DeletedRuntimeChecker.iml(deps.runtimeCheckerDeps)
       deleteRuntimeCheckerProcess = if (ifRunAll || ifRunCheckDeletedRuntimes)
         Stream.eval(deletedRuntimeChecker.run(isDryRun))
       else Stream.empty
-      processes = Stream(deleteRuntimeCheckerProcess).covary[F] //TODO: add more check
-      _ <- processes.parJoin(1)
+      errorRuntimeCheckerProcess = if (ifRunAll || ifRunCheckErroredRuntimes)
+        Stream.eval(ErroredRuntimeChecker.iml(deps.runtimeCheckerDeps).run(isDryRun))
+      else Stream.empty
+      processes = Stream(deleteRuntimeCheckerProcess, errorRuntimeCheckerProcess).covary[F] //TODO: add more check
+
+      _ <- processes.parJoin(2)
     } yield ExitCode.Success
   }.drain
 
@@ -73,16 +80,12 @@ object Resourcevalidator {
     } yield {
       val dbReader = DbReader.iml(xa)
       val deletedRuntimeCheckerDeps =
-        DeletedRuntimeCheckerDeps(appConfig.reportDestinationBucket,
-                                  computeService,
-                                  storageService,
-                                  dataprocService,
-                                  dbReader)
+        RuntimeCheckerDeps(appConfig.reportDestinationBucket, computeService, storageService, dataprocService, dbReader)
       ResourcevalidatorServerDeps(deletedRuntimeCheckerDeps, blocker)
     }
 }
 
 final case class ResourcevalidatorServerDeps[F[_]](
-  deletedRuntimeCheckerDeps: DeletedRuntimeCheckerDeps[F],
+  runtimeCheckerDeps: RuntimeCheckerDeps[F],
   blocker: Blocker
 )
