@@ -1,4 +1,5 @@
 import com.typesafe.sbt.SbtNativePackager.autoImport._
+import com.typesafe.sbt.SbtGit.git.gitHeadCommit
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 import sbt.Keys._
 import sbt._
@@ -15,7 +16,7 @@ object Settings {
       Some("us.gcr.io"),
       None,
       "broad-dsp-gcr-public/resource-validator",
-      Some("0.0.1-rc4")
+      gitHeadCommit.value.map(_.substring(0, 7))
     )
   )
 }
