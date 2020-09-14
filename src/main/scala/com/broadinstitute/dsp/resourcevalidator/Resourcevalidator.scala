@@ -78,7 +78,7 @@ object Resourcevalidator {
         Blocker.liftExecutionContext(cachedThreadPool)
       )
     } yield {
-      val dbReader = DbReader.iml(xa)
+      val dbReader = DbReader.impl(xa)
       val deletedRuntimeCheckerDeps =
         RuntimeCheckerDeps(appConfig.reportDestinationBucket, computeService, storageService, dataprocService, dbReader)
       ResourcevalidatorServerDeps(deletedRuntimeCheckerDeps, blocker)

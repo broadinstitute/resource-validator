@@ -1,5 +1,5 @@
 val LogbackVersion = "1.2.3"
-val workbenchGoogle2 = "0.11-a87efd3a-SNAP"
+val workbenchGoogle2 = "0.12-65bba14"
 val doobieVersion = "0.9.0"
 
 lazy val artifactory = "https://artifactory.broadinstitute.org/artifactory/"

@@ -20,23 +20,23 @@ object ErroredRuntimeChecker {
         implicit ev: ApplicativeAsk[F, TraceId]
       ): F[Option[Runtime]] = runtime.cloudService match {
         case CloudService.Dataproc =>
-          checkClusterStatus(runtime, isDryRun)
+          checkDataprocCluster(runtime, isDryRun)
         case CloudService.Gce =>
-          checkGceRuntimeStatus(runtime, isDryRun)
+          checkGceRuntime(runtime, isDryRun)
       }
 
-      def checkClusterStatus(runtime: Runtime,
-                             isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
+      def checkDataprocCluster(runtime: Runtime,
+                               isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
         for {
           clusterOpt <- dependencies.dataprocService
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
           _ <- clusterOpt.traverse_ { cluster =>
             if (cluster.getStatus.getState.name() == "Error")
-              logger.warn(s"${runtime} still exists in Google in Error state. User might want to delete the runtime")
+              logger.warn(s"${runtime} still exists in Google in Error state. User might want to delete the runtime.")
             else {
               if (isDryRun)
                 logger.warn(
-                  s"${runtime} still exists in ${cluster.getStatus.getState.name()} status. It needs to be deleted"
+                  s"${runtime} still exists in ${cluster.getStatus.getState.name()} status. It needs to be deleted."
                 )
               else
                 logger.warn(s"${runtime} still exists in ${cluster.getStatus.getState.name()} status. Going to delete") >> dependencies.dataprocService
@@ -46,13 +46,13 @@ object ErroredRuntimeChecker {
           }
         } yield clusterOpt.fold(none[Runtime])(_ => Some(runtime))
 
-      def checkGceRuntimeStatus(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
+      def checkGceRuntime(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
         for {
           runtimeOpt <- dependencies.computeService
             .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
           _ <- runtimeOpt.traverse_ { rt =>
             if (isDryRun)
-              logger.warn(s"${runtime} still exists in ${rt.getStatus} status. It needs to be deleted")
+              logger.warn(s"${runtime} still exists in ${rt.getStatus} status. It needs to be deleted.")
             else
               logger.warn(s"${runtime} still exists in ${rt.getStatus} status. Going to delete") >>
                 dependencies.computeService

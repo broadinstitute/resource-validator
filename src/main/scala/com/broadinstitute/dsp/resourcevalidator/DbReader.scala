@@ -22,21 +22,25 @@ object DbReader {
     }
   )
 
-  def iml[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
+  def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
+
+    /**
+     * AOU reuses runtime names, hence exclude any aou runtimes that have the same names that're still "alive"
+     */
     override def getDeletedRuntimes: Stream[F, Runtime] =
-      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS C 
-             INNER join RUNTIME_CONFIG AS rt ON C.`runtimeConfigId`=rt.id WHERE C.status="Deleted" 
-             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = C.googleProject 
-             and c2.clusterName=C.clusterName and (c2.status="Stopped" or c2.status="Running"));"""
+      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1 
+             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Deleted" 
+             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject 
+             and c2.clusterName=c1.clusterName and (c2.status="Stopped" or c2.status="Running"));"""
         .query[Runtime]
         .stream
         .transact(xa)
 
     override def getErroredRuntimes: Stream[F, Runtime] =
-      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS C 
-             INNER join RUNTIME_CONFIG AS rt ON C.`runtimeConfigId`=rt.id WHERE C.status="Error" 
-             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = C.googleProject 
-             and c2.clusterName=C.clusterName and (c2.status="Stopped" or c2.status="Running"));"""
+      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1 
+             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Error" 
+             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject 
+             and c2.clusterName=c1.clusterName and (c2.status="Stopped" or c2.status="Running"));"""
         .query[Runtime]
         .stream
         .transact(xa)
