@@ -2,6 +2,6 @@ steps:
   - name: 'gcr.io/$PROJECT_ID/scala-sbt'
     args: ['docker:publishLocal']
 images: [
-    'gcr.io/broad-dsp-gcr-public/resource-validator:$SHORT_SHA',
-    'gcr.io/broad-dsp-gcr-public/resource-validator:latest'
+    'us.gcr.io/broad-dsp-gcr-public/resource-validator:$SHORT_SHA',
+    'us.gcr.io/broad-dsp-gcr-public/resource-validator:latest'
 ]
