@@ -1,3 +1,3 @@
 steps:
-  - name: 'hseeberger/scala-sbt:graalvm-ce-20.0.0-java8_1.3.13_2.13.3'
-    args: ['sbt', 'docker:publish']
+  - name: 'gcr.io/$PROJECT_ID/scala-sbt'
+    args: ['docker:publish']
