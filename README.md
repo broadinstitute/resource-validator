@@ -8,5 +8,7 @@
 
 # Running Locally
 export LEONARDO_DB_USER=???
+
 export LEONARDO_DB_PASSWORD=???
+
 export LEONARDO_PATH_TO_CREDENTIAL=??
