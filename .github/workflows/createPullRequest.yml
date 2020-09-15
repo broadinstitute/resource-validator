@@ -58,7 +58,7 @@ jobs:
           commit-message: Update report
           committer: broadbot <broadbot@broadinstitute.org>
           author: broadbot <broadbot@broadinstitute.org>
-          branch: patch
+          branch: resource-validator-version-bump
           delete-branch: true
           title: 'Bump resource validator version'
           body: |
