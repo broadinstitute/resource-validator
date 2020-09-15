@@ -1,0 +1,13 @@
+<configuration debug="true">
+  <appender class="ch.qos.logback.core.ConsoleAppender" name="CONSOLE">
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+      <fieldNames>
+        <level>severity</level>
+      </fieldNames>
+    </encoder>
+  </appender>
+
+  <root level="WARN">
+    <appender-ref ref="CONSOLE" />
+  </root>
+</configuration>
