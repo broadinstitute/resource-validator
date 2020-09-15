@@ -16,6 +16,8 @@ jobs:
           repository: broadinstitute/terra-helm
       - name: Make changes to pull request
         run: |
+          git config user.email "broadbot@broadinstitute.org"
+          git config user.name "broadbot"
           git_hash=$(git rev-parse --short "$GITHUB_SHA")
           sed -i "s/resourceValidatorImageTag: .*/resourceValidatorImageTag: $git_hash/g" charts/leonardo/values.yaml
           sed  "s/version: .*/version: $(date +"%m-%d-%y")/g" charts/leonardo/Chart.yaml
