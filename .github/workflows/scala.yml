@@ -12,8 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        - with:
-            repository: 'https://github.com/broadinstitute/terra-helm'
+        with:
+          repository: 'https://github.com/broadinstitute/terra-helm'
       - name: Make changes to pull request
         run: |
           git config user.name 'leonardo'
