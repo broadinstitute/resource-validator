@@ -14,8 +14,12 @@ jobs:
       - uses: actions/checkout@v2
       - name: Make changes to pull request
         run: |
+          git config user.name 'leonardo'
+          git config user.email 'workbench-interactive-analysis@broadinstitute.org'
+          git clone https://github.com/broadinstitute/terra-helm
           git_hash=$(git rev-parse --short "$GITHUB_SHA")
           sed -i "s/imageTag: .*/imageTag: $git_hash/g" charts/leonardo/values.yaml
+          git add -am "bump version"
       - name: Create Pull Request
         id: cpr
         uses: peter-evans/create-pull-request@v3
@@ -24,8 +28,7 @@ jobs:
           commit-message: Update report
           committer: GitHub <noreply@github.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-          signoff: false
-          branch: example-patches
+          branch: patch
           delete-branch: true
           title: 'Bump resource validator version'
           draft: false
