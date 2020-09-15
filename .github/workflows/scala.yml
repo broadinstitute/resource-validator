@@ -12,12 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        - with:
+            repository: 'https://github.com/broadinstitute/terra-helm'
       - name: Make changes to pull request
         run: |
-          git clone https://github.com/broadinstitute/terra-helm
           git config user.name 'leonardo'
           git config user.email 'workbench-interactive-analysis@broadinstitute.org'
-          cd terra-helm
           git_hash=$(git rev-parse --short "$GITHUB_SHA")
           sed -i "s/imageTag: .*/imageTag: $git_hash/g" charts/leonardo/values.yaml
           git commit -am "bump version"
