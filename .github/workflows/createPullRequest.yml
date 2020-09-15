@@ -61,7 +61,10 @@ jobs:
           branch: patch
           delete-branch: true
           title: 'Bump resource validator version'
+          body: |
+            Update resource validator version.
 
+            *This PR was opened by the [${{ github.workflow }} GitHub Actions workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).*
       - name: Check output
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
