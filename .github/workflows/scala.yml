@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          repository: 'https://github.com/broadinstitute/terra-helm'
+          repository: broadinstitute/terra-helm
       - name: Make changes to pull request
         run: |
           git config user.name 'leonardo'
