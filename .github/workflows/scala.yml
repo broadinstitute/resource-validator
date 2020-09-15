@@ -25,14 +25,12 @@ jobs:
         id: cpr
         uses: peter-evans/create-pull-request@v3
         with:
-          token: ${{ secrets.PAT }}
           commit-message: Update report
-          committer: GitHub <noreply@github.com>
-          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+          committer: broadbot <broadbot@broadinstitute.org>
+          author: broadbot <broadbot@broadinstitute.org>
           branch: patch
           delete-branch: true
           title: 'Bump resource validator version'
-          draft: false
 
       - name: Check output
         run: |
