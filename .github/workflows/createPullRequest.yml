@@ -46,7 +46,7 @@ jobs:
           }
 
           oldVersion=$(cat charts/leonardo/Chart.yaml|grep version|cut -d' ' -f 2)
-          bumpVersion($oldVersion)
+          bumpVersion $oldVersion
           sed -i "s/version: .*/version: $NEW_VERSION/g" charts/leonardo/Chart.yaml
           sed -i "s/resourceValidatorImageTag: .*/resourceValidatorImageTag: $git_hash/g" charts/leonardo/values.yaml
           git commit -am "bump version"
