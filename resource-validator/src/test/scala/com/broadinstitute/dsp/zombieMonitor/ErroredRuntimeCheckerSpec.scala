@@ -25,6 +25,7 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.scalatest.flatspec.AnyFlatSpec
 import Generators._
+import com.broadinstitute.dsp.resourceValidator.ErroredRuntimeChecker
 import com.google.cloud.dataproc.v1.ClusterStatus.State
 
 class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {

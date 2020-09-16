@@ -1,11 +1,12 @@
 package com.broadinstitute.dsp
-package zombieMonitor
+package resourceValidator
 
 import java.util.UUID
 
 import cats.Parallel
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.ApplicativeAsk
+import com.broadinstitute.dsp.{AppConfig, Config, RuntimeChecker, RuntimeCheckerDeps}
 import doobie.ExecutionContexts
 import doobie.hikari.HikariTransactor
 import fs2.Stream

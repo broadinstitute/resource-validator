@@ -1,12 +1,12 @@
 package com.broadinstitute.dsp
-package zombieMonitor
+package resourceValidator
 
-import DbReaderImplicits._
 import cats.effect.{Async, _}
 import cats.implicits._
 import doobie._
 import doobie.implicits._
 import fs2.Stream
+import DbReaderImplicits._
 
 trait DbReader[F[_]] {
   def getDeletedRuntimes: Stream[F, Runtime]

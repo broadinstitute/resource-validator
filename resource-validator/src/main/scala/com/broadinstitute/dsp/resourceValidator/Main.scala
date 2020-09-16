@@ -1,4 +1,5 @@
-package com.broadinstitute.dsp.zombieMonitor
+package com.broadinstitute.dsp
+package resourceValidator
 
 import cats.effect.IO
 import cats.implicits._

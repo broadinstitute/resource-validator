@@ -1,6 +1,3 @@
-enablePlugins(JavaAppPackaging)
-enablePlugins(DockerPlugin)
-
 lazy val root = project
   .in(file("."))
   .settings(
@@ -15,11 +12,11 @@ lazy val core = (project in file("core"))
   )
 
 lazy val resourceValidator = (project in file("resource-validator"))
-  .settings(
-    Settings.resourceValidatorSettings
-  )
+  .settings(Settings.resourceValidatorSettings)
+  .enablePlugins(JavaAppPackaging, DockerPlugin)
   .dependsOn(core % "test->test;compile->compile")
 
 lazy val zombieMonitor = (project in file("zombie-monitor"))
   .settings(Settings.zombieMonitorSettings)
+  .enablePlugins(JavaAppPackaging, DockerPlugin)
   .dependsOn(core % "test->test;compile->compile")
