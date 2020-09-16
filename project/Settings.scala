@@ -6,8 +6,6 @@ import sbt.Keys._
 import sbt._
 import sbtassembly.AssemblyKeys._
 import sbtassembly.AssemblyPlugin.autoImport.assembly
-//import sbtassembly.AssemblyKeys
-//import sbtdocker.DockerPlugin.autoImport._
 
 object Settings {
   lazy val artifactory = "https://artifactory.broadinstitute.org/artifactory/"
