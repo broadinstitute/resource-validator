@@ -4,9 +4,7 @@ package resourceValidator
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import cats.mtl.ApplicativeAsk
-import com.broadinstitute.dsp
 import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
-import com.broadinstitute.dsp.{RuntimeChecker, RuntimeCheckerDeps}
 import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName}
 import org.broadinstitute.dsde.workbench.model.TraceId
@@ -18,28 +16,28 @@ object ErroredRuntimeChecker {
     deps: RuntimeCheckerDeps[F]
   )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): RuntimeChecker[F] =
     new RuntimeChecker[F] {
-      override def checkType = "error-ed-runtime"
+      override def checkType = "resource-validator-error-ed-runtime"
       override def dependencies: RuntimeCheckerDeps[F] = deps
 
-      override def checkRuntimeStatus(runtime: dsp.Runtime, isDryRun: Boolean)(
+      override def checkRuntimeStatus(runtime: Runtime, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
-      ): F[Option[dsp.Runtime]] = runtime.cloudService match {
+      ): F[Option[Runtime]] = runtime.cloudService match {
         case Dataproc =>
           checkDataprocCluster(runtime, isDryRun)
         case Gce =>
           checkGceRuntime(runtime, isDryRun)
       }
 
-      def checkDataprocCluster(runtime: dsp.Runtime,
-                               isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[dsp.Runtime]] =
+      def checkDataprocCluster(runtime: Runtime,
+                               isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
         for {
           clusterOpt <- dependencies.dataprocService
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
-          r <- clusterOpt.flatTraverse[F, dsp.Runtime] { cluster =>
+          r <- clusterOpt.flatTraverse[F, Runtime] { cluster =>
             if (cluster.getStatus.getState.name() == "ERROR")
               logger
                 .warn(s"${runtime} still exists in Google in Error state. User might want to delete the runtime.")
-                .as(none[dsp.Runtime])
+                .as(none[Runtime])
             else {
               if (isDryRun)
                 logger
@@ -56,7 +54,7 @@ object ErroredRuntimeChecker {
           }
         } yield r
 
-      def checkGceRuntime(runtime: dsp.Runtime, isDryRun: Boolean): F[Option[dsp.Runtime]] =
+      def checkGceRuntime(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
         for {
           runtimeOpt <- dependencies.computeService
             .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
@@ -69,8 +67,8 @@ object ErroredRuntimeChecker {
                   .deleteInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
                   .void
           }
-        } yield runtimeOpt.fold(none[dsp.Runtime])(_ => Some(runtime))
+        } yield runtimeOpt.fold(none[Runtime])(_ => Some(runtime))
 
-      override def runtimesToScan: fs2.Stream[F, dsp.Runtime] = dbReader.getErroredRuntimes
+      override def runtimesToScan: fs2.Stream[F, Runtime] = dbReader.getErroredRuntimes
     }
 }

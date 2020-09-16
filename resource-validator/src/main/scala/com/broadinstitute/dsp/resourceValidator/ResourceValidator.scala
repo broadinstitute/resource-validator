@@ -14,7 +14,7 @@ import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import org.broadinstitute.dsde.workbench.model.TraceId
 
-object Resourcevalidator {
+object ResourceValidator {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
                                             ifRunAll: Boolean,
                                             ifRunCheckDeletedRuntimes: Boolean,
