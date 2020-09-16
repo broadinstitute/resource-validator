@@ -20,7 +20,7 @@ object DeletedRuntimeChecker {
     deps: RuntimeCheckerDeps[F]
   )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): RuntimeChecker[F] =
     new RuntimeChecker[F] {
-      override def checkType = "deleted-runtime"
+      override def checkType = "resource-validator-deleted-runtime"
 
       override def dependencies: RuntimeCheckerDeps[F] = deps
 

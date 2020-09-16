@@ -22,7 +22,7 @@ object Main
 
         (enableDryRun, ifRunAll, ifRunCheckDeletedRuntimes, ifRunCheckErroredRuntimes).mapN {
           (dryRun, runAll, runCheckDeletedRuntimes, runCheckErroredRuntimes) =>
-            Resourcevalidator
+            ResourceValidator
               .run[IO](dryRun, runAll, runCheckDeletedRuntimes, runCheckErroredRuntimes)
               .compile
               .drain
