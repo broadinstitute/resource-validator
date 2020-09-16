@@ -1,7 +1,13 @@
+import com.typesafe.sbt.SbtNativePackager.Universal
 import com.typesafe.sbt.SbtNativePackager.autoImport._
+import com.typesafe.sbt.packager.Keys.scriptClasspath
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 import sbt.Keys._
 import sbt._
+import sbtassembly.AssemblyKeys._
+import sbtassembly.AssemblyPlugin.autoImport.assembly
+//import sbtassembly.AssemblyKeys
+//import sbtdocker.DockerPlugin.autoImport._
 
 object Settings {
   lazy val artifactory = "https://artifactory.broadinstitute.org/artifactory/"
@@ -57,18 +63,51 @@ object Settings {
     maintainer := "workbench-interactive-analysis@broadinstitute.org",
     dockerBaseImage := "oracle/graalvm-ce:20.2.0-java8",
     dockerRepository := Some("us.gcr.io"),
-    scalacOptions ++= commonCompilerSettings
+    scalacOptions ++= commonCompilerSettings,
+    // assembly merge
+    assemblyMergeStrategy in assembly := Merging.customMergeStrategy((assemblyMergeStrategy in assembly).value),
+    test in assembly := {}
   )
 
-  val coreSettings = commonSettings ++ List(
+  lazy val coreSettings = commonSettings ++ List(
     libraryDependencies ++= Dependencies.core
   )
 
-  val resourceValidatorSettings = commonSettings ++ resourceValidatorDockerSettings ++ List(
-    libraryDependencies ++= Dependencies.resourceValidator
+  lazy val resourceValidatorSettings = commonSettings ++ resourceValidatorDockerSettings ++ List(
+    libraryDependencies ++= Dependencies.resourceValidator,
+    assemblyJarName in assembly := "resource-validator-assembly.jar",
+    // removes all jar mappings in universal and appends the fat jar
+    // This is needed to include `core` module in classpath
+    mappings in Universal := {
+      // universalMappings: Seq[(File,String)]
+      val universalMappings = (mappings in Universal).value
+      val fatJar = (assembly in Compile).value
+      // removing means filtering
+      val filtered = universalMappings filter {
+        case (_, name) => !name.endsWith(".jar")
+      }
+      // add the fat jar
+      filtered :+ (fatJar -> ("lib/" + fatJar.getName))
+    },
+    scriptClasspath := Seq((assemblyJarName in assembly).value)
   )
 
-  val zombieMonitorSettings = commonSettings ++ zombieMonitorDockerSettings ++ List(
-    libraryDependencies ++= Dependencies.zombieMonitor
+  lazy val zombieMonitorSettings = commonSettings ++ zombieMonitorDockerSettings ++ List(
+    libraryDependencies ++= Dependencies.zombieMonitor,
+    assemblyJarName in assembly := "zombie-monitor-assembly.jar",
+    // removes all jar mappings in universal and appends the fat jar
+    // This is needed to include `core` module in classpath
+    mappings in Universal := {
+      // universalMappings: Seq[(File,String)]
+      val universalMappings = (mappings in Universal).value
+      val fatJar = (assembly in Compile).value
+      // removing means filtering
+      val filtered = universalMappings filter {
+        case (_, name) => !name.endsWith(".jar")
+      }
+      // add the fat jar
+      filtered :+ (fatJar -> ("lib/" + fatJar.getName))
+    },
+    scriptClasspath := Seq((assemblyJarName in assembly).value)
   )
 }
