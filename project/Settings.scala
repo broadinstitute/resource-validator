@@ -13,7 +13,7 @@ object Settings {
 
   lazy val resourceValidatorDockerSettings = List(
     dockerUpdateLatest := true,
-    mainClass in Compile := Some("com.broadinstitute.dsp.resourcevalidator.Main"),
+    mainClass in Compile := Some("com.broadinstitute.dsp.resourceValidator.Main"),
     packageName in Docker := "broad-dsp-gcr-public/resource-validator",
     dockerAlias := DockerAlias(
       Some("us.gcr.io"),
@@ -25,12 +25,12 @@ object Settings {
 
   lazy val zombieMonitorDockerSettings = List(
     dockerUpdateLatest := true,
-    mainClass in Compile := Some("com.broadinstitute.dsp.resourcevalidator.Main"),
+    mainClass in Compile := Some("com.broadinstitute.dsp.zombieMonitor.Main"),
     packageName in Docker := "broad-dsp-gcr-public/zombie-monitor",
     dockerAlias := DockerAlias(
       Some("us.gcr.io"),
       None,
-      "broad-dsp-gcr-public/resource-validator",
+      "broad-dsp-gcr-public/zombie-monitor",
       None
     )
   )

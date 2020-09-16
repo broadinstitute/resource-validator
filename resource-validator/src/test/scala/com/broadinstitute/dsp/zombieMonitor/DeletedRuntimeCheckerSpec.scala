@@ -21,6 +21,7 @@ import org.broadinstitute.dsde.workbench.google2.mock.{
 import org.scalatest.flatspec.AnyFlatSpec
 import fs2.Stream
 import com.broadinstitute.dsp.Generators._
+import com.broadinstitute.dsp.resourceValidator.DeletedRuntimeChecker
 import com.google.cloud.compute.v1.{Instance, Operation}
 import com.google.cloud.dataproc.v1.{Cluster, ClusterOperationMetadata}
 import org.broadinstitute.dsde.workbench.model.TraceId
