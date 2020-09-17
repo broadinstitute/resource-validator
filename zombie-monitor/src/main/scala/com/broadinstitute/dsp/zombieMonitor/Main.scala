@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext.global
 object Main
     extends CommandApp(
       name = "zombie-monitor",
-      header = "Update Leonardo DB to Reflect Google Resource Status",
+      header = "Update Leonardo database to reflect google resource status",
       version = "0.0.1",
       main = {
         implicit val cs = IO.contextShift(global)

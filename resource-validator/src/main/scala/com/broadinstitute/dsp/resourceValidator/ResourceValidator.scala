@@ -6,7 +6,7 @@ import java.util.UUID
 import cats.Parallel
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.ApplicativeAsk
-import com.broadinstitute.dsp.{AnomalyChecker, AppConfig, Config, RuntimeCheckerDeps}
+import com.broadinstitute.dsp.{AnomalyChecker, AnomalyCheckerDeps, AppConfig, Config}
 import doobie.ExecutionContexts
 import doobie.hikari.HikariTransactor
 import fs2.Stream
@@ -46,7 +46,7 @@ object ResourceValidator {
   ): Resource[F, ResourcevalidatorServerDeps[F]] =
     for {
       blocker <- Blocker[F]
-      runtimeCheckerDeps <- AnomalyChecker.initRuntimeCheckerDeps(appConfig, blocker)
+      runtimeCheckerDeps <- AnomalyChecker.initAnomalyCheckerDeps(appConfig, blocker)
       fixedThreadPool <- ExecutionContexts.fixedThreadPool(100)
       cachedThreadPool <- ExecutionContexts.cachedThreadPool
       xa <- HikariTransactor.newHikariTransactor[F](
@@ -64,7 +64,7 @@ object ResourceValidator {
 }
 
 final case class ResourcevalidatorServerDeps[F[_]](
-  runtimeCheckerDeps: RuntimeCheckerDeps[F],
+  runtimeCheckerDeps: AnomalyCheckerDeps[F],
   dbReader: DbReader[F],
   blocker: Blocker
 )
