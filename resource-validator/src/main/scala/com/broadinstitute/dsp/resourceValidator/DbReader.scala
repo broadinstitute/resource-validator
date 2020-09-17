@@ -65,4 +65,6 @@ object DbReader {
   }
 }
 
-final case class BucketToRemove(googleProject: GoogleProject, bucket: Option[GcsBucketName])
+final case class BucketToRemove(googleProject: GoogleProject, bucket: Option[GcsBucketName]) {
+  override def toString: String = s"${googleProject.value},${bucket.getOrElse("null")}"
+}
