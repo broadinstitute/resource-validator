@@ -6,12 +6,12 @@ import doobie._
 import doobie.implicits._
 import fs2.Stream
 import DbReaderImplicits._
-import org.broadinstitute.dsde.workbench.model.google.GcsBucketName
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 trait DbReader[F[_]] {
   def getDeletedRuntimes: Stream[F, Runtime]
   def getErroredRuntimes: Stream[F, Runtime]
-  def getBucketsToDelete: Stream[F, GcsBucketName]
+  def getBucketsToDelete: Stream[F, BucketToRemove]
 }
 
 object DbReader {
@@ -40,11 +40,12 @@ object DbReader {
         .stream
         .transact(xa)
 
-    override def getBucketsToDelete: Stream[F, GcsBucketName] =
-      sql"""select stagingBucket from CLUSTER WHERE status="Deleted" and destroyedDate < now() - interval 15 DAY;"""
-        .query[Option[GcsBucketName]]
+    override def getBucketsToDelete: Stream[F, BucketToRemove] =
+      sql"""select googleProject, stagingBucket from CLUSTER WHERE status="Deleted" and destroyedDate < now() - interval 15 DAY;"""
+        .query[BucketToRemove]
         .stream
         .transact(xa)
-        .unNone
   }
 }
+
+final case class BucketToRemove(googleProject: GoogleProject, bucket: Option[GcsBucketName])

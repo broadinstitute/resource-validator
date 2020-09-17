@@ -16,7 +16,7 @@ class ConfigSpec extends AnyFlatSpec with Matchers {
         "password"
       ),
       Paths.get("path-to-credential"),
-      GcsBucketName("qi-test")
+      GcsBucketName("fake-bucket")
     )
 
     config shouldBe Right(expectedConfig)

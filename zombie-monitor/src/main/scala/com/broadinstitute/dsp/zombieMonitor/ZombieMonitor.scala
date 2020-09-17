@@ -39,7 +39,7 @@ object ZombieMonitor {
   ): Resource[F, ZombieMonitorDeps[F]] =
     for {
       blocker <- Blocker[F]
-      runtimeChecker <- AnomalyChecker.initRuntimeCheckerDeps(appConfig, blocker)
+      runtimeChecker <- AnomalyChecker.initAnomalyCheckerDeps(appConfig, blocker)
       fixedThreadPool <- ExecutionContexts.fixedThreadPool(100)
       cachedThreadPool <- ExecutionContexts.cachedThreadPool
       xa <- HikariTransactor.newHikariTransactor[F](
@@ -57,7 +57,7 @@ object ZombieMonitor {
 }
 
 final case class ZombieMonitorDeps[F[_]](
-  runtimeCheckerDeps: RuntimeCheckerDeps[F],
+  runtimeCheckerDeps: AnomalyCheckerDeps[F],
   dbReader: DbReader[F],
   blocker: Blocker
 )

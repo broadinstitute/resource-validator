@@ -11,21 +11,18 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 
 // Interpreter
 object DeletedRuntimeChecker {
-  implicit def apply[F[_]](implicit ev: AnomalyChecker[F]): AnomalyChecker[F] = ev
-
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
-    deps: RuntimeCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): AnomalyChecker[F] =
-    new AnomalyChecker[F] {
-      override def runtimesToScan: Stream[F, Runtime] = ???
+    deps: AnomalyCheckerDeps[F]
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
+    new CheckRunner[F, Runtime] {
+      override def aToScan: Stream[F, Runtime] = ???
 
-      override def checkType = "deleted-runtime"
+      override def configs = CheckRunnerConfigs("deleted-runtime", true)
 
-      override def dependencies: RuntimeCheckerDeps[F] = deps
+      override def dependencies: CheckRunnerDeps[F] = CheckRunnerDeps(deps.reportDestinationBucket, deps.storageService)
 
-      def checkRuntimeStatus(runtime: Runtime,
-                             isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
+      def checkA(runtime: Runtime, isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
         runtime.cloudService match {
           case CloudService.Dataproc =>
             checkClusterStatus(runtime, isDryRun)
@@ -36,13 +33,13 @@ object DeletedRuntimeChecker {
       def checkClusterStatus(runtime: Runtime,
                              isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
         for {
-          clusterOpt <- dependencies.dataprocService
+          clusterOpt <- deps.dataprocService
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
           _ <- clusterOpt.traverse_ { _ =>
             if (isDryRun)
               logger.warn(s"${runtime} still exists in Google. It needs to be deleted")
             else
-              logger.warn(s"${runtime} still exists in Google. Going to delete") >> dependencies.dataprocService
+              logger.warn(s"${runtime} still exists in Google. Going to delete") >> deps.dataprocService
                 .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
                 .void
           }
@@ -50,14 +47,14 @@ object DeletedRuntimeChecker {
 
       def checkGceRuntimeStatus(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
         for {
-          runtimeOpt <- dependencies.computeService
+          runtimeOpt <- deps.computeService
             .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
           _ <- runtimeOpt.traverse_ { _ =>
             if (isDryRun)
               logger.warn(s"${runtime} still exists in Google. It needs to be deleted")
             else
               logger.warn(s"${runtime} still exists in Google. Going to delete") >>
-                dependencies.computeService
+                deps.computeService
                   .deleteInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
                   .void
           }

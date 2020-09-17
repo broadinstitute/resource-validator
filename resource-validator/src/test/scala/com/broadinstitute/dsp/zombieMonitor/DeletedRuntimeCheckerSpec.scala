@@ -21,7 +21,6 @@ import org.broadinstitute.dsde.workbench.google2.mock.{
 import org.scalatest.flatspec.AnyFlatSpec
 import fs2.Stream
 import com.broadinstitute.dsp.Generators._
-import com.broadinstitute.dsp.resourceValidator.DeletedRuntimeChecker
 import com.google.cloud.compute.v1.{Instance, Operation}
 import com.google.cloud.dataproc.v1.{Cluster, ClusterOperationMetadata}
 import org.broadinstitute.dsde.workbench.model.TraceId
@@ -50,7 +49,7 @@ class DeletedAnomalyCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
         override def getDeletedRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
       val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
-      val res = deletedRuntimeChecker.checkRuntimeStatus(runtime, dryRun)
+      val res = deletedRuntimeChecker.checkA(runtime, dryRun)
       res.unsafeRunSync() shouldBe None
     }
   }
@@ -90,7 +89,7 @@ class DeletedAnomalyCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
         initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
 
       val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
-      val res = deletedRuntimeChecker.checkRuntimeStatus(runtime, dryRun)
+      val res = deletedRuntimeChecker.checkA(runtime, dryRun)
       res.unsafeRunSync() shouldBe Some(runtime)
     }
   }
@@ -98,7 +97,7 @@ class DeletedAnomalyCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   def initRuntimeCheckerDeps(googleComputeService: GoogleComputeService[IO] = FakeGoogleComputeService,
                              googleStorageService: GoogleStorageService[IO] = FakeGoogleStorageInterpreter,
                              googleDataprocService: GoogleDataprocService[IO] = FakeGoogleDataprocService) =
-    RuntimeCheckerDeps(
+    AnomalyCheckerDeps(
       config.reportDestinationBucket,
       googleComputeService,
       googleStorageService,

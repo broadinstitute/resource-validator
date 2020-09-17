@@ -9,17 +9,18 @@ import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
-// Interpreter
+// Implements CheckRunner[F[_], A]
 object ErroredRuntimeChecker {
   def iml[F[_]: Timer](
     dbReader: DbReader[F],
-    deps: RuntimeCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): AnomalyChecker[F] =
-    new AnomalyChecker[F] {
-      override def checkType = "resource-validator-error-ed-runtime"
-      override def dependencies: RuntimeCheckerDeps[F] = deps
+    deps: AnomalyCheckerDeps[F]
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
+    new CheckRunner[F, Runtime] {
+      override def configs = CheckRunnerConfigs("resource-validator-errored-runtime", true)
+      override def dependencies: CheckRunnerDeps[F] = CheckRunnerDeps(deps.reportDestinationBucket, deps.storageService)
+      override def aToScan: fs2.Stream[F, Runtime] = dbReader.getErroredRuntimes
 
-      override def checkRuntimeStatus(runtime: Runtime, isDryRun: Boolean)(
+      override def checkA(runtime: Runtime, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
       ): F[Option[Runtime]] = runtime.cloudService match {
         case Dataproc =>
@@ -31,7 +32,7 @@ object ErroredRuntimeChecker {
       def checkDataprocCluster(runtime: Runtime,
                                isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
         for {
-          clusterOpt <- dependencies.dataprocService
+          clusterOpt <- deps.dataprocService
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
           r <- clusterOpt.flatTraverse[F, Runtime] { cluster =>
             if (cluster.getStatus.getState.name() == "ERROR")
@@ -46,7 +47,7 @@ object ErroredRuntimeChecker {
                   )
                   .as(Some(runtime))
               else
-                logger.warn(s"${runtime} still exists in ${cluster.getStatus.getState.name()} status. Going to delete") >> dependencies.dataprocService
+                logger.warn(s"${runtime} still exists in ${cluster.getStatus.getState.name()} status. Going to delete") >> deps.dataprocService
                   .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
                   .void
                   .as(Some(runtime))
@@ -56,19 +57,18 @@ object ErroredRuntimeChecker {
 
       def checkGceRuntime(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
         for {
-          runtimeOpt <- dependencies.computeService
+          runtimeOpt <- deps.computeService
             .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
           _ <- runtimeOpt.traverse_ { rt =>
             if (isDryRun)
               logger.warn(s"${runtime} still exists in ${rt.getStatus} status. It needs to be deleted.")
             else
               logger.warn(s"${runtime} still exists in ${rt.getStatus} status. Going to delete") >>
-                dependencies.computeService
+                deps.computeService
                   .deleteInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
                   .void
           }
         } yield runtimeOpt.fold(none[Runtime])(_ => Some(runtime))
 
-      override def runtimesToScan: fs2.Stream[F, Runtime] = dbReader.getErroredRuntimes
     }
 }

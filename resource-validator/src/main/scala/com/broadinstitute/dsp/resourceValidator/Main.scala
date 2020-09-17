@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.global
 object Main
     extends CommandApp(
       name = "resource-validator",
-      header = "Update Google Resources to Reflect Leonardo Database",
+      header = "Update Google resources to reflect Leonardo database",
       version = "0.0.1",
       main = {
         implicit val cs = IO.contextShift(global)
