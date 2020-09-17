@@ -4,20 +4,14 @@ package zombieMonitor
 import java.util.UUID
 
 import cats.Parallel
-import cats.effect.concurrent.Semaphore
-import cats.effect.{Async, Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
+import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.ApplicativeAsk
-import com.google.auth.oauth2.ServiceAccountCredentials
 import doobie.ExecutionContexts
 import doobie.hikari.HikariTransactor
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
-import org.broadinstitute.dsde.workbench.google2.util.RetryPredicates
-import org.broadinstitute.dsde.workbench.google2.{GoogleComputeService, GoogleDataprocService, GoogleStorageService}
 import org.broadinstitute.dsde.workbench.model.TraceId
-
-import scala.jdk.CollectionConverters._
 
 object ZombieMonitor {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean, ifRunAll: Boolean, ifRunCheckDeletedRuntimes: Boolean)(
@@ -30,7 +24,7 @@ object ZombieMonitor {
     for {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
-      deletedRuntimeChecker = DeletedRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps)
+      deletedRuntimeChecker = DeletedRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps)
       deleteRuntimeCheckerProcess = if (ifRunAll || ifRunCheckDeletedRuntimes)
         Stream.eval(deletedRuntimeChecker.run(isDryRun))
       else Stream.empty
@@ -45,7 +39,7 @@ object ZombieMonitor {
   ): Resource[F, ZombieMonitorDeps[F]] =
     for {
       blocker <- Blocker[F]
-      runtimeChecker <- RuntimeChecker.initRuntimeCheckerDeps(appConfig, blocker)
+      runtimeChecker <- AnomalyChecker.initRuntimeCheckerDeps(appConfig, blocker)
       fixedThreadPool <- ExecutionContexts.fixedThreadPool(100)
       cachedThreadPool <- ExecutionContexts.cachedThreadPool
       xa <- HikariTransactor.newHikariTransactor[F](

@@ -2,9 +2,7 @@ package com.broadinstitute.dsp
 package zombieMonitor
 
 import cats.effect.{Async, _}
-import cats.implicits._
 import doobie._
-import doobie.implicits._
 import fs2.Stream
 
 trait DbReader[F[_]] {

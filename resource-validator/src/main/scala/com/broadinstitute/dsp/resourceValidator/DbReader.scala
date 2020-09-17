@@ -2,15 +2,16 @@ package com.broadinstitute.dsp
 package resourceValidator
 
 import cats.effect.{Async, _}
-import cats.implicits._
 import doobie._
 import doobie.implicits._
 import fs2.Stream
 import DbReaderImplicits._
+import org.broadinstitute.dsde.workbench.model.google.GcsBucketName
 
 trait DbReader[F[_]] {
   def getDeletedRuntimes: Stream[F, Runtime]
   def getErroredRuntimes: Stream[F, Runtime]
+  def getBucketsToDelete: Stream[F, GcsBucketName]
 }
 
 object DbReader {
@@ -38,5 +39,12 @@ object DbReader {
         .query[Runtime]
         .stream
         .transact(xa)
+
+    override def getBucketsToDelete: Stream[F, GcsBucketName] =
+      sql"""select stagingBucket from CLUSTER WHERE status="Deleted" and destroyedDate < now() - interval 15 DAY;"""
+        .query[Option[GcsBucketName]]
+        .stream
+        .transact(xa)
+        .unNone
   }
 }

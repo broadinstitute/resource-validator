@@ -13,7 +13,6 @@ lazy val core = (project in file("core"))
 
 lazy val resourceValidator = (project in file("resource-validator"))
   .settings(Settings.resourceValidatorSettings)
-  //  .settings(resourceValidatorDockerSettings)
   .enablePlugins(JavaAppPackaging)
   .dependsOn(core % "test->test;compile->compile")
 

@@ -6,20 +6,19 @@ import cats.implicits._
 import cats.mtl.ApplicativeAsk
 import com.broadinstitute.dsp
 import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
-import com.broadinstitute.dsp.{RuntimeChecker, RuntimeCheckerDeps}
 import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 // Interpreter
 object DeletedRuntimeChecker {
-  implicit def apply[F[_]](implicit ev: RuntimeChecker[F]): RuntimeChecker[F] = ev
+  implicit def apply[F[_]](implicit ev: AnomalyChecker[F]): AnomalyChecker[F] = ev
 
-  def iml[F[_]: Timer](
+  def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: RuntimeCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): RuntimeChecker[F] =
-    new RuntimeChecker[F] {
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): AnomalyChecker[F] =
+    new AnomalyChecker[F] {
       override def checkType = "resource-validator-deleted-runtime"
 
       override def dependencies: RuntimeCheckerDeps[F] = deps

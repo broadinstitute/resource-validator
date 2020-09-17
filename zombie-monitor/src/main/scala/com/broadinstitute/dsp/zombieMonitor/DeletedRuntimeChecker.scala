@@ -11,13 +11,13 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 
 // Interpreter
 object DeletedRuntimeChecker {
-  implicit def apply[F[_]](implicit ev: RuntimeChecker[F]): RuntimeChecker[F] = ev
+  implicit def apply[F[_]](implicit ev: AnomalyChecker[F]): AnomalyChecker[F] = ev
 
-  def iml[F[_]: Timer](
+  def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: RuntimeCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): RuntimeChecker[F] =
-    new RuntimeChecker[F] {
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): AnomalyChecker[F] =
+    new AnomalyChecker[F] {
       override def runtimesToScan: Stream[F, Runtime] = ???
 
       override def checkType = "deleted-runtime"

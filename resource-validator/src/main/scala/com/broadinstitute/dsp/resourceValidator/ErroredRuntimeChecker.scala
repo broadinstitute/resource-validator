@@ -14,8 +14,8 @@ object ErroredRuntimeChecker {
   def iml[F[_]: Timer](
     dbReader: DbReader[F],
     deps: RuntimeCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): RuntimeChecker[F] =
-    new RuntimeChecker[F] {
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): AnomalyChecker[F] =
+    new AnomalyChecker[F] {
       override def checkType = "resource-validator-error-ed-runtime"
       override def dependencies: RuntimeCheckerDeps[F] = deps
 

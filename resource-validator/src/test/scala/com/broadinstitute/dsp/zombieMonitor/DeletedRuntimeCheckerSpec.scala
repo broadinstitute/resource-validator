@@ -1,5 +1,5 @@
 package com.broadinstitute.dsp
-package zombieMonitor
+package resourceValidator
 
 import cats.effect.IO
 import cats.mtl.ApplicativeAsk
@@ -27,7 +27,7 @@ import com.google.cloud.dataproc.v1.{Cluster, ClusterOperationMetadata}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 
-class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
+class DeletedAnomalyCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   val config = Config.appConfig.toOption.get
 
   it should "return None if runtime no longer exists in Google" in {
@@ -49,7 +49,7 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       val dbReader = new FakeDbReader {
         override def getDeletedRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
-      val deletedRuntimeChecker = DeletedRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
+      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
       val res = deletedRuntimeChecker.checkRuntimeStatus(runtime, dryRun)
       res.unsafeRunSync() shouldBe None
     }
@@ -89,7 +89,7 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       val runtimeCheckerDeps =
         initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
 
-      val deletedRuntimeChecker = DeletedRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
+      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
       val res = deletedRuntimeChecker.checkRuntimeStatus(runtime, dryRun)
       res.unsafeRunSync() shouldBe Some(runtime)
     }
