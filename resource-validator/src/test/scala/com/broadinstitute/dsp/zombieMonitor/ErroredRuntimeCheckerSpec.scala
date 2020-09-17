@@ -1,5 +1,5 @@
 package com.broadinstitute.dsp
-package zombieMonitor
+package resourceValidator
 
 import cats.effect.IO
 import cats.mtl.ApplicativeAsk

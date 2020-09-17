@@ -6,7 +6,7 @@ import java.util.UUID
 import cats.Parallel
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.ApplicativeAsk
-import com.broadinstitute.dsp.{AppConfig, Config, RuntimeChecker, RuntimeCheckerDeps}
+import com.broadinstitute.dsp.{AnomalyChecker, AppConfig, Config, RuntimeCheckerDeps}
 import doobie.ExecutionContexts
 import doobie.hikari.HikariTransactor
 import fs2.Stream
@@ -28,7 +28,7 @@ object ResourceValidator {
     for {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
-      deletedRuntimeChecker = DeletedRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps)
+      deletedRuntimeChecker = DeletedRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps)
       deleteRuntimeCheckerProcess = if (ifRunAll || ifRunCheckDeletedRuntimes)
         Stream.eval(deletedRuntimeChecker.run(isDryRun))
       else Stream.empty
@@ -46,7 +46,7 @@ object ResourceValidator {
   ): Resource[F, ResourcevalidatorServerDeps[F]] =
     for {
       blocker <- Blocker[F]
-      runtimeCheckerDeps <- RuntimeChecker.initRuntimeCheckerDeps(appConfig, blocker)
+      runtimeCheckerDeps <- AnomalyChecker.initRuntimeCheckerDeps(appConfig, blocker)
       fixedThreadPool <- ExecutionContexts.fixedThreadPool(100)
       cachedThreadPool <- ExecutionContexts.cachedThreadPool
       xa <- HikariTransactor.newHikariTransactor[F](

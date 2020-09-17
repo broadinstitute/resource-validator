@@ -46,7 +46,8 @@ object Settings {
     "-language:higherKinds",
     "-language:postfixOps",
     "-feature",
-    "-Xfatal-warnings"
+    "-Xfatal-warnings",
+    "-Ywarn-unused:imports"
   )
 
   lazy val commonSettings = List(

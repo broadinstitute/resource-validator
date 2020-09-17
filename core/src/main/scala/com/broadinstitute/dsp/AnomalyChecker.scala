@@ -4,11 +4,15 @@ import java.nio.charset.Charset
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 
-import cats.effect.{Concurrent, Timer}
+import cats.Parallel
+import cats.effect.concurrent.Semaphore
+import cats.effect.{Async, Blocker, Concurrent, ContextShift, Resource, Timer}
 import cats.implicits._
 import cats.mtl.ApplicativeAsk
+import com.google.auth.oauth2.ServiceAccountCredentials
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
+import io.chrisdavenport.log4cats.{Logger, StructuredLogger}
+import org.broadinstitute.dsde.workbench.google2.util.RetryPredicates
 import org.broadinstitute.dsde.workbench.google2.{
   GcsBlobName,
   GoogleComputeService,
@@ -17,21 +21,11 @@ import org.broadinstitute.dsde.workbench.google2.{
 }
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
-import java.nio.file.Path
-
-import cats.Parallel
-import cats.effect.concurrent.Semaphore
-import cats.effect.{Async, Blocker, Concurrent, ContextShift, Resource, Timer}
-import com.google.auth.oauth2.ServiceAccountCredentials
-import doobie.ExecutionContexts
-import doobie.hikari.HikariTransactor
-import io.chrisdavenport.log4cats.StructuredLogger
-import org.broadinstitute.dsde.workbench.google2.util.RetryPredicates
 
 import scala.jdk.CollectionConverters._
 
 // Algebra
-trait RuntimeChecker[F[_]] {
+trait AnomalyChecker[F[_]] {
   def checkType: String
 
   def dependencies: RuntimeCheckerDeps[F]
@@ -48,8 +42,8 @@ trait RuntimeChecker[F[_]] {
     for {
       now <- timer.clock.realTime(TimeUnit.MILLISECONDS)
       blobName = if (isDryRun)
-        GcsBlobName(s"$checkType-dry-run-${Instant.ofEpochMilli(now)}")
-      else GcsBlobName(s"$checkType-${Instant.ofEpochMilli(now)}")
+        GcsBlobName(s"$checkType/dry-run-${Instant.ofEpochMilli(now)}")
+      else GcsBlobName(s"$checkType/action-${Instant.ofEpochMilli(now)}")
       _ <- (runtimesToScan
         .parEvalMapUnordered(50)(rt => checkRuntimeStatus(rt, isDryRun).handleErrorWith(_ => F.pure(None)))
         .unNone
@@ -80,7 +74,7 @@ trait RuntimeChecker[F[_]] {
     } yield ()
 }
 
-object RuntimeChecker {
+object AnomalyChecker {
   def initRuntimeCheckerDeps[F[_]: Concurrent: ContextShift: StructuredLogger: Parallel: Timer](
     appConfig: AppConfig,
     blocker: Blocker
