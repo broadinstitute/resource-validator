@@ -57,7 +57,7 @@ object DbReader {
                 FROM KUBERNETES_CLUSTER kc 
                 LEFT JOIN NODEPOOL as np on np.clusterId=kc.id
               WHERE np.status != "DELETED"
-            )
+            );
            """
         .query[KubernetesClusterId]
         .stream
