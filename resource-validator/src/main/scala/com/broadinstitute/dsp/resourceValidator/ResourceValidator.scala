@@ -28,14 +28,25 @@ object ResourceValidator {
     for {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
-      deletedRuntimeChecker = DeletedRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps)
       deleteRuntimeCheckerProcess = if (ifRunAll || ifRunCheckDeletedRuntimes)
-        Stream.eval(deletedRuntimeChecker.run(isDryRun))
+        Stream.eval(DeletedRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
       errorRuntimeCheckerProcess = if (ifRunAll || ifRunCheckErroredRuntimes)
         Stream.eval(ErroredRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
-      processes = Stream(deleteRuntimeCheckerProcess, errorRuntimeCheckerProcess).covary[F] //TODO: add more check
+
+      checkRunnerDep = CheckRunnerDeps(deps.runtimeCheckerDeps.reportDestinationBucket,
+                                       deps.runtimeCheckerDeps.storageService)
+      removeStagingBucketProcess = if (ifRunAll)
+        Stream.eval(BucketRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
+      else Stream.empty
+      removeKubernetesClusters = if (ifRunAll)
+        Stream.eval(KubernetesClusterRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
+      else Stream.empty
+      processes = Stream(deleteRuntimeCheckerProcess,
+                         errorRuntimeCheckerProcess,
+                         removeStagingBucketProcess,
+                         removeKubernetesClusters).covary[F] //TODO: add more check
 
       _ <- processes.parJoin(2)
     } yield ExitCode.Success

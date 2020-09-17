@@ -6,12 +6,14 @@ import doobie._
 import doobie.implicits._
 import fs2.Stream
 import DbReaderImplicits._
+import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 trait DbReader[F[_]] {
   def getDeletedRuntimes: Stream[F, Runtime]
   def getErroredRuntimes: Stream[F, Runtime]
   def getBucketsToDelete: Stream[F, BucketToRemove]
+  def getK8sClustersToDelete: Stream[F, KubernetesClusterId]
 }
 
 object DbReader {
@@ -43,6 +45,21 @@ object DbReader {
     override def getBucketsToDelete: Stream[F, BucketToRemove] =
       sql"""select googleProject, stagingBucket from CLUSTER WHERE status="Deleted" and destroyedDate < now() - interval 15 DAY;"""
         .query[BucketToRemove]
+        .stream
+        .transact(xa)
+
+    // Return all clusters that has no non "deleted" nodepool
+    override def getK8sClustersToDelete: Stream[F, KubernetesClusterId] =
+      sql"""SELECT kc.id, kc.location, kc.clusterName
+            FROM KUBERNETES_CLUSTER kc 
+            WHERE NOT EXISTS (
+              SELECT *
+                FROM KUBERNETES_CLUSTER kc 
+                LEFT JOIN NODEPOOL as np on np.clusterId=kc.id
+              WHERE np.status != "DELETED"
+            )
+           """
+        .query[KubernetesClusterId]
         .stream
         .transact(xa)
   }
