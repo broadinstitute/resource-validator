@@ -11,6 +11,7 @@ import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProj
 
 trait DbReader[F[_]] {
   def getDeletedRuntimes: Stream[F, Runtime]
+  def getDeletedDisks: Stream[F, Disk]
   def getErroredRuntimes: Stream[F, Runtime]
   def getBucketsToDelete: Stream[F, BucketToRemove]
   def getK8sClustersToDelete: Stream[F, KubernetesClusterId]
@@ -56,12 +57,16 @@ object DbReader {
               SELECT *
                 FROM KUBERNETES_CLUSTER kc 
                 LEFT JOIN NODEPOOL as np on np.clusterId=kc.id
-              WHERE np.status != "DELETED"
+              WHERE np.status != "DELETED" and np.status !="ERROR"
             );
            """
         .query[KubernetesClusterId]
         .stream
         .transact(xa)
+
+    override def getDeletedDisks: Stream[F, Disk] =
+      sql"""select googleProject, name from PERSISTENT_DISK where status="Deleted";
+        """.query[Disk].stream.transact(xa)
   }
 }
 

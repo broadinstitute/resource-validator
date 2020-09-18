@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   val LogbackVersion = "1.2.3"
-  val workbenchGoogle2 = "0.12-65bba14"
+  val workbenchGoogle2 = "0.13-e1c0c5b0-SNAP"
   val doobieVersion = "0.9.0"
 
   val core = Seq(
