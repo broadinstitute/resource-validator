@@ -3,30 +3,17 @@ package resourceValidator
 
 import cats.effect.IO
 import cats.mtl.ApplicativeAsk
-import org.broadinstitute.dsde.workbench.google2.{
-  DataprocClusterName,
-  GoogleComputeService,
-  GoogleDataprocService,
-  GoogleStorageService,
-  InstanceName,
-  RegionName,
-  ZoneName
-}
-import org.broadinstitute.dsde.workbench.google2.mock.{
-  BaseFakeGoogleDataprocService,
-  FakeGoogleComputeService,
-  FakeGoogleDataprocService,
-  FakeGoogleStorageInterpreter
-}
-import org.scalatest.flatspec.AnyFlatSpec
-import fs2.Stream
 import com.broadinstitute.dsp.Generators._
 import com.google.cloud.compute.v1.{Instance, Operation}
 import com.google.cloud.dataproc.v1.{Cluster, ClusterOperationMetadata}
+import fs2.Stream
+import org.broadinstitute.dsde.workbench.google2.mock.{BaseFakeGoogleDataprocService, FakeGoogleComputeService}
+import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName, RegionName, ZoneName}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
+import org.scalatest.flatspec.AnyFlatSpec
 
-class DeletedAnomalyCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
+class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   val config = Config.appConfig.toOption.get
 
   it should "return None if runtime no longer exists in Google" in {
@@ -93,14 +80,4 @@ class DeletedAnomalyCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       res.unsafeRunSync() shouldBe Some(runtime)
     }
   }
-
-  def initRuntimeCheckerDeps(googleComputeService: GoogleComputeService[IO] = FakeGoogleComputeService,
-                             googleStorageService: GoogleStorageService[IO] = FakeGoogleStorageInterpreter,
-                             googleDataprocService: GoogleDataprocService[IO] = FakeGoogleDataprocService) =
-    AnomalyCheckerDeps(
-      config.reportDestinationBucket,
-      googleComputeService,
-      googleStorageService,
-      googleDataprocService
-    )
 }

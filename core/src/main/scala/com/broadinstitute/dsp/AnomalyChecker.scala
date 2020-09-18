@@ -6,7 +6,12 @@ import cats.effect.{Async, Blocker, Concurrent, ContextShift, Resource, Timer}
 import com.google.auth.oauth2.ServiceAccountCredentials
 import io.chrisdavenport.log4cats.StructuredLogger
 import org.broadinstitute.dsde.workbench.google2.util.RetryPredicates
-import org.broadinstitute.dsde.workbench.google2.{GoogleComputeService, GoogleDataprocService, GoogleStorageService}
+import org.broadinstitute.dsde.workbench.google2.{
+  DiskName,
+  GoogleComputeService,
+  GoogleDataprocService,
+  GoogleStorageService
+}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 import scala.jdk.CollectionConverters._
@@ -41,6 +46,9 @@ object AnomalyChecker {
 
 final case class Runtime(googleProject: GoogleProject, runtimeName: String, cloudService: CloudService) {
   override def toString: String = s"${googleProject.value},${runtimeName},${cloudService}"
+}
+final case class Disk(googleProject: GoogleProject, diskName: DiskName) {
+  override def toString: String = s"${googleProject.value},${diskName.value}"
 }
 final case class AnomalyCheckerDeps[F[_]](reportDestinationBucket: GcsBucketName,
                                           computeService: GoogleComputeService[F],
