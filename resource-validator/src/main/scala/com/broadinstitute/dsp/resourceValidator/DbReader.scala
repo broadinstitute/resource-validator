@@ -49,7 +49,7 @@ object DbReader {
         .stream
         .transact(xa)
 
-    // Return all clusters that has no non "DELETED" | `ERROR` nodepool
+    // Return all clusters that has no non "DELETED" | `ERROR` non-default nodepool
     override def getK8sClustersToDelete: Stream[F, KubernetesClusterId] =
       sql"""SELECT kc.id, kc.location, kc.clusterName
             FROM KUBERNETES_CLUSTER kc 
@@ -57,7 +57,7 @@ object DbReader {
               SELECT *
                 FROM KUBERNETES_CLUSTER kc 
                 LEFT JOIN NODEPOOL as np on np.clusterId=kc.id
-              WHERE np.status != "DELETED" and np.status !="ERROR"
+              WHERE np.status != "DELETED" and np.status !="ERROR" and np.isDefault = "FALSE"
             );
            """
         .query[KubernetesClusterId]
