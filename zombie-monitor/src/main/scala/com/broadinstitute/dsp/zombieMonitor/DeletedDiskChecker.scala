@@ -30,7 +30,7 @@ object DeletedDiskChecker {
           _ <- if (isDryRun) F.unit
           else
             diskOpt match {
-              case None    => F.unit //TODO: update disk status to Deleted
+              case None    => dbReader.updateDiskStatus(disk.id)
               case Some(_) => F.unit
             }
         } yield diskOpt.fold[Option[Disk]](Some(disk))(_ => none[Disk])

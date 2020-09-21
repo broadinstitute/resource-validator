@@ -7,7 +7,6 @@ import DbReaderImplicits._
 import doobie._
 import doobie.implicits._
 import cats.implicits._
-import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 
 trait DbReader[F[_]] {
   def getDisksToDeleteCandidate: Stream[F, Disk]
@@ -20,7 +19,7 @@ object DbReader {
   implicit def apply[F[_]](implicit ev: DbReader[F]): DbReader[F] = ev
 
   val activeDisksQuery =
-    sql"""select googleProject, name from PERSISTENT_DISK where status != "Deleted";
+    sql"""select id, googleProject, name from PERSISTENT_DISK where status != "Deleted";
         """.query[Disk]
 
   val activeK8sClustersQuery =
@@ -34,7 +33,7 @@ object DbReader {
 
   def updateK8sClusterStatusQuery(id: Int) =
     sql"""
-           update KUBERNETES_CLUSTER set status = "Deleted" where id = $id
+           update KUBERNETES_CLUSTER set status = "DELETED" where id = $id
            """.update
 
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
@@ -52,5 +51,3 @@ object DbReader {
       updateK8sClusterStatusQuery(id.toInt).run.transact(xa).void
   }
 }
-
-final case class K8sClusterToScan(id: Long, kubernetesClusterId: KubernetesClusterId)

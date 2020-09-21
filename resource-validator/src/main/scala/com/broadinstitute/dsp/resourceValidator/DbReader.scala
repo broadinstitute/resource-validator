@@ -72,7 +72,7 @@ object DbReader {
            (
              SELECT *
              FROM PERSISTENT_DISK pd2 
-             WHERE pd1.googleProject = pd2.googleProject and pd1.name = pd2.name and pd2.status != "DELETED"
+             WHERE pd1.googleProject = pd2.googleProject and pd1.name = pd2.name and pd2.status != "Deleted"
           )
         """.query[Disk].stream.transact(xa)
   }
