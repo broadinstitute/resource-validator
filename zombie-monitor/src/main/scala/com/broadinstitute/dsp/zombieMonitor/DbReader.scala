@@ -3,10 +3,12 @@ package zombieMonitor
 
 import cats.effect.{Async, _}
 import doobie._
+import doobie.implicits._
 import fs2.Stream
+import DbReaderImplicits._
 
 trait DbReader[F[_]] {
-  def getDeletedRuntimes: Stream[F, Runtime]
+  def getDisksToDeleteCandidate: Stream[F, Disk]
 }
 
 object DbReader {
@@ -14,10 +16,8 @@ object DbReader {
 
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
 
-    /**
-     * AOU reuses runtime names, hence exclude any aou runtimes that have the same names that're still "alive"
-     */
-    //TODO: fill out the SQL. Function name should be udpated as well
-    override def getDeletedRuntimes: Stream[F, Runtime] = ???
+    override def getDisksToDeleteCandidate: Stream[F, Disk] =
+      sql"""select googleProject, name from PERSISTENT_DISK where status="Deleted";
+        """.query[Disk].stream.transact(xa)
   }
 }

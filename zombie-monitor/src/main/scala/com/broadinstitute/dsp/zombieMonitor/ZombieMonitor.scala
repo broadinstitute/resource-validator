@@ -4,6 +4,7 @@ package zombieMonitor
 import java.util.UUID
 
 import cats.Parallel
+import cats.effect.concurrent.Semaphore
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.ApplicativeAsk
 import doobie.ExecutionContexts
@@ -24,7 +25,7 @@ object ZombieMonitor {
     for {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
-      deletedRuntimeChecker = DeletedRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps)
+      deletedRuntimeChecker = DeletedDiskChecker.impl(deps.dbReader, deps.runtimeCheckerDeps)
       deleteRuntimeCheckerProcess = if (ifRunAll || ifRunCheckDeletedRuntimes)
         Stream.eval(deletedRuntimeChecker.run(isDryRun))
       else Stream.empty
@@ -39,7 +40,8 @@ object ZombieMonitor {
   ): Resource[F, ZombieMonitorDeps[F]] =
     for {
       blocker <- Blocker[F]
-      runtimeChecker <- AnomalyChecker.initAnomalyCheckerDeps(appConfig, blocker)
+      blockerBound <- Resource.liftF(Semaphore[F](250))
+      runtimeChecker <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
       fixedThreadPool <- ExecutionContexts.fixedThreadPool(100)
       cachedThreadPool <- ExecutionContexts.cachedThreadPool
       xa <- HikariTransactor.newHikariTransactor[F](
@@ -57,7 +59,7 @@ object ZombieMonitor {
 }
 
 final case class ZombieMonitorDeps[F[_]](
-  runtimeCheckerDeps: AnomalyCheckerDeps[F],
+  runtimeCheckerDeps: RuntimeCheckerDeps[F],
   dbReader: DbReader[F],
   blocker: Blocker
 )

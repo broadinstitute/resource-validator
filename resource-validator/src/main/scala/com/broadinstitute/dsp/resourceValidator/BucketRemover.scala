@@ -22,10 +22,10 @@ object BucketRemover {
     new CheckRunner[F, BucketToRemove] {
       override def configs = CheckRunnerConfigs("remove-staging-buckets", false)
       override def dependencies: CheckRunnerDeps[F] = deps
-      override def aToScan: fs2.Stream[F, BucketToRemove] = dbReader.getBucketsToDelete
+      override def resourceToScan: fs2.Stream[F, BucketToRemove] = dbReader.getBucketsToDelete
 
       // We're ignoring isDryRun flag here since we do want to delete these staging buckets
-      override def checkA(a: BucketToRemove, isDryRun: Boolean)(
+      override def checkResource(a: BucketToRemove, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
       ): F[Option[BucketToRemove]] =
         a.bucket

@@ -4,21 +4,24 @@ package resourceValidator
 import java.util.UUID
 
 import cats.Parallel
+import cats.effect.concurrent.Semaphore
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.ApplicativeAsk
-import com.broadinstitute.dsp.{AnomalyChecker, AnomalyCheckerDeps, AppConfig, Config}
+import com.broadinstitute.dsp.{AppConfig, Config, RuntimeCheckerDeps}
 import doobie.ExecutionContexts
 import doobie.hikari.HikariTransactor
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.broadinstitute.dsde.workbench.google2.GoogleDiskService
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 object ResourceValidator {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
                                             ifRunAll: Boolean,
                                             ifRunCheckDeletedRuntimes: Boolean,
-                                            ifRunCheckErroredRuntimes: Boolean)(
+                                            ifRunCheckErroredRuntimes: Boolean,
+                                            ifRunCheckDeletedDisks: Boolean)(
     implicit T: Timer[F],
     C: ContextShift[F]
   ): Stream[F, Nothing] = {
@@ -30,6 +33,9 @@ object ResourceValidator {
       deps <- Stream.resource(initDependencies(config))
       deleteRuntimeCheckerProcess = if (ifRunAll || ifRunCheckDeletedRuntimes)
         Stream.eval(DeletedRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+      else Stream.empty
+      deleteDiskCheckerProcess = if (ifRunAll || ifRunCheckDeletedDisks)
+        Stream.eval(DeletedDiskChecker.impl[F](deps.dbReader, deps.deletedDiskCheckerDeps).run(isDryRun))
       else Stream.empty
       errorRuntimeCheckerProcess = if (ifRunAll || ifRunCheckErroredRuntimes)
         Stream.eval(ErroredRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
@@ -46,9 +52,10 @@ object ResourceValidator {
       processes = Stream(deleteRuntimeCheckerProcess,
                          errorRuntimeCheckerProcess,
                          removeStagingBucketProcess,
-                         removeKubernetesClusters).covary[F] //TODO: add more check
+                         removeKubernetesClusters,
+                         deleteDiskCheckerProcess).covary[F] //TODO: add more check
 
-      _ <- processes.parJoin(2)
+      _ <- processes.parJoin(5) //Update this number as we add more streams
     } yield ExitCode.Success
   }.drain
 
@@ -57,7 +64,9 @@ object ResourceValidator {
   ): Resource[F, ResourcevalidatorServerDeps[F]] =
     for {
       blocker <- Blocker[F]
-      runtimeCheckerDeps <- AnomalyChecker.initAnomalyCheckerDeps(appConfig, blocker)
+      blockerBound <- Resource.liftF(Semaphore[F](250))
+      checkerDeps <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
+      diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
       fixedThreadPool <- ExecutionContexts.fixedThreadPool(100)
       cachedThreadPool <- ExecutionContexts.cachedThreadPool
       xa <- HikariTransactor.newHikariTransactor[F](
@@ -69,13 +78,16 @@ object ResourceValidator {
         Blocker.liftExecutionContext(cachedThreadPool)
       )
     } yield {
+      val checkRunnerDeps = CheckRunnerDeps[F](appConfig.reportDestinationBucket, checkerDeps.storageService)
+      val deletedDiskCheckerDeps = DeletedDiskCheckerDeps(checkRunnerDeps, diskService)
       val dbReader = DbReader.impl(xa)
-      ResourcevalidatorServerDeps(runtimeCheckerDeps, dbReader, blocker)
+      ResourcevalidatorServerDeps(checkerDeps, deletedDiskCheckerDeps, dbReader, blocker)
     }
 }
 
 final case class ResourcevalidatorServerDeps[F[_]](
-  runtimeCheckerDeps: AnomalyCheckerDeps[F],
+  runtimeCheckerDeps: RuntimeCheckerDeps[F],
+  deletedDiskCheckerDeps: DeletedDiskCheckerDeps[F],
   dbReader: DbReader[F],
   blocker: Blocker
 )

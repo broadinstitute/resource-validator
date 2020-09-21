@@ -22,11 +22,11 @@ object KubernetesClusterRemover {
     new CheckRunner[F, KubernetesClusterId] {
       override def configs = CheckRunnerConfigs("remove-staging-buckets", true)
       override def dependencies: CheckRunnerDeps[F] = deps
-      override def aToScan: fs2.Stream[F, KubernetesClusterId] = dbReader.getK8sClustersToDelete
+      override def resourceToScan: fs2.Stream[F, KubernetesClusterId] = dbReader.getK8sClustersToDelete
 
       // TODO: pending decision in https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes
       // For now, we'll just get alerted when a cluster needs to be deleted
-      override def checkA(a: KubernetesClusterId, isDryRun: Boolean)(
+      override def checkResource(a: KubernetesClusterId, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
       ): F[Option[KubernetesClusterId]] = F.pure(Some(a))
     }
@@ -34,6 +34,4 @@ object KubernetesClusterRemover {
 }
 
 final case class KubernetesClusterRemover[F[_]](reportDestinationBucket: GcsBucketName,
-                                                storageService: GoogleStorageService[F]
-//                                                , gkeService: GKEService[F]
-)
+                                                storageService: GoogleStorageService[F])

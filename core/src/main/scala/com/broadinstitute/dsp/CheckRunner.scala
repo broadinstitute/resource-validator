@@ -18,11 +18,11 @@ trait CheckRunner[F[_], A] {
 
   def dependencies: CheckRunnerDeps[F]
 
-  def checkA(a: A, isDryRun: Boolean)(
+  def checkResource(a: A, isDryRun: Boolean)(
     implicit ev: ApplicativeAsk[F, TraceId]
   ): F[Option[A]]
 
-  def aToScan: Stream[F, A]
+  def resourceToScan: Stream[F, A]
 
   def run(
     isDryRun: Boolean
@@ -32,8 +32,8 @@ trait CheckRunner[F[_], A] {
       blobName = if (isDryRun)
         GcsBlobName(s"${configs.checkType}/dry-run-${Instant.ofEpochMilli(now)}")
       else GcsBlobName(s"${configs.checkType}/action-${Instant.ofEpochMilli(now)}")
-      _ <- (aToScan
-        .parEvalMapUnordered(50)(rt => checkA(rt, isDryRun).handleErrorWith(_ => F.pure(None)))
+      _ <- (resourceToScan
+        .parEvalMapUnordered(50)(rt => checkResource(rt, isDryRun).handleErrorWith(_ => F.pure(None)))
         .unNone
         .map(_.toString)
         .intersperse("\n")

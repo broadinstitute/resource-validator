@@ -18,12 +18,13 @@ object Main
         val enableDryRun = Opts.flag("dryRun", "Default to true").map(_ => true).withDefault(true)
         val ifRunAll = Opts.flag("all", "run all checks").orFalse
         val ifRunCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
-        val ifRunCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all error-ed runtimes").orFalse
+        val ifRunCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
+        val ifRunCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse
 
-        (enableDryRun, ifRunAll, ifRunCheckDeletedRuntimes, ifRunCheckErroredRuntimes).mapN {
-          (dryRun, runAll, runCheckDeletedRuntimes, runCheckErroredRuntimes) =>
+        (enableDryRun, ifRunAll, ifRunCheckDeletedRuntimes, ifRunCheckErroredRuntimes, ifRunCheckDeletedDisks).mapN {
+          (dryRun, runAll, runCheckDeletedRuntimes, runCheckErroredRuntimes, ifRunCheckDeletedDisks) =>
             ResourceValidator
-              .run[IO](dryRun, runAll, runCheckDeletedRuntimes, runCheckErroredRuntimes)
+              .run[IO](dryRun, runAll, runCheckDeletedRuntimes, runCheckErroredRuntimes, ifRunCheckDeletedDisks)
               .compile
               .drain
               .unsafeRunSync()
