@@ -11,6 +11,7 @@ object Dependencies {
     "ch.qos.logback" % "logback-core" % "1.2.3",
     "org.tpolecat" %% "doobie-core" % doobieVersion,
     "org.tpolecat" %% "doobie-hikari" % doobieVersion,
+    "org.tpolecat" %% "doobie-scalatest" % doobieVersion % Test,
     "com.github.pureconfig" %% "pureconfig" % "0.13.0",
     "mysql" % "mysql-connector-java" % "8.0.18",
     "org.scalatest" %% "scalatest" % "3.2.0" % "test",
@@ -20,7 +21,7 @@ object Dependencies {
     "com.google.cloud" % "google-cloud-compute" % "0.118.0-alpha",
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2,
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2 % "test" classifier "tests",
-    "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test"
+    "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % Test
   )
 
   val resourceValidator = core

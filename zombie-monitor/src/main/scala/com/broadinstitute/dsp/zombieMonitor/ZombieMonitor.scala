@@ -7,16 +7,17 @@ import cats.Parallel
 import cats.effect.concurrent.Semaphore
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.ApplicativeAsk
-import doobie.ExecutionContexts
-import doobie.hikari.HikariTransactor
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
-import org.broadinstitute.dsde.workbench.google2.{GoogleDiskService, GoogleStorageService}
+import org.broadinstitute.dsde.workbench.google2.{GKEService, GoogleDiskService, GoogleStorageService}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 object ZombieMonitor {
-  def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean, ifRunAll: Boolean, ifRunCheckDeletedRuntimes: Boolean)(
+  def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
+                                            ifRunAll: Boolean,
+                                            ifRunCheckDeletedRuntimes: Boolean,
+                                            ifRunCheckDeletedK8sClusters: Boolean)(
     implicit T: Timer[F],
     C: ContextShift[F]
   ): Stream[F, Nothing] = {
@@ -26,13 +27,18 @@ object ZombieMonitor {
     for {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
-      deletedRuntimeChecker = DeletedDiskChecker.impl(deps.dbReader, deps.diskCheckerDeps)
-      deleteRuntimeCheckerProcess = if (ifRunAll || ifRunCheckDeletedRuntimes)
-        Stream.eval(deletedRuntimeChecker.run(isDryRun))
-      else Stream.empty
-      processes = Stream(deleteRuntimeCheckerProcess).covary[F] //TODO: add more check
 
-      _ <- processes.parJoin(1)
+      deleteRuntimeCheckerProcess = if (ifRunAll || ifRunCheckDeletedRuntimes)
+        Stream.eval(DeletedDiskChecker.impl(deps.dbReader, deps.diskCheckerDeps).run(isDryRun))
+      else Stream.empty
+      deletek8sClusterCheckerProcess = if (ifRunAll || ifRunCheckDeletedK8sClusters)
+        Stream.eval(
+          DeletedKubernetesClusterChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
+        )
+      else Stream.empty
+
+      processes = Stream(deleteRuntimeCheckerProcess, deletek8sClusterCheckerProcess).covary[F]
+      _ <- processes.parJoin(2)
     } yield ExitCode.Success
   }.drain
 
@@ -42,31 +48,24 @@ object ZombieMonitor {
     for {
       blocker <- Blocker[F]
       blockerBound <- Resource.liftF(Semaphore[F](250))
-      runtimeChecker <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
       storageService <- GoogleStorageService.resource(appConfig.pathToCredential.toString,
                                                       blocker,
                                                       Some(blockerBound),
                                                       None)
-      fixedThreadPool <- ExecutionContexts.fixedThreadPool(100)
-      cachedThreadPool <- ExecutionContexts.cachedThreadPool
-      xa <- HikariTransactor.newHikariTransactor[F](
-        "com.mysql.cj.jdbc.Driver", // driver classname
-        appConfig.database.url,
-        appConfig.database.user,
-        appConfig.database.password,
-        fixedThreadPool, // await connection here
-        Blocker.liftExecutionContext(cachedThreadPool)
-      )
+      gkeService <- GKEService.resource(appConfig.pathToCredential, blocker, blockerBound)
+      xa <- DbTransactor.init(appConfig.database)
     } yield {
       val dbReader = DbReader.impl(xa)
       val checkRunnerDeps = CheckRunnerDeps(appConfig.reportDestinationBucket, storageService)
-      ZombieMonitorDeps(DiskCheckerDeps(checkRunnerDeps, diskService), dbReader, blocker)
+      val k8sCheckerDeps = KubernetesClusterCheckerDeps(checkRunnerDeps, gkeService)
+      ZombieMonitorDeps(DiskCheckerDeps(checkRunnerDeps, diskService), k8sCheckerDeps, dbReader, blocker)
     }
 }
 
 final case class ZombieMonitorDeps[F[_]](
   diskCheckerDeps: DiskCheckerDeps[F],
+  kubernetesClusterCheckerDeps: KubernetesClusterCheckerDeps[F],
   dbReader: DbReader[F],
   blocker: Blocker
 )

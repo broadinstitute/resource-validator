@@ -64,8 +64,16 @@ object DbReader {
         .stream
         .transact(xa)
 
+    // Same disk names might be re-used
     override def getDeletedDisks: Stream[F, Disk] =
-      sql"""select googleProject, name from PERSISTENT_DISK where status="Deleted";
+      sql"""
+           select pd1.googleProject, pd1.name from PERSISTENT_DISK as pd1 where pd1.status="Deleted" and
+           NOT EXISTS 
+           (
+             SELECT *
+             FROM PERSISTENT_DISK pd2 
+             WHERE pd1.googleProject = pd2.googleProject and pd1.name = pd2.name and pd2.status != "DELETED"
+          )
         """.query[Disk].stream.transact(xa)
   }
 }

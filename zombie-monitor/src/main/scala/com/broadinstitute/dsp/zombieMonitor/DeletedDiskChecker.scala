@@ -20,7 +20,7 @@ object DeletedDiskChecker {
     new CheckRunner[F, Disk] {
       override def resourceToScan: Stream[F, Disk] = dbReader.getDisksToDeleteCandidate
 
-      override def configs = CheckRunnerConfigs("zombie-monitor/deleted-runtime", true)
+      override def configs = CheckRunnerConfigs("zombie-monitor/deleted-disk", true)
 
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
