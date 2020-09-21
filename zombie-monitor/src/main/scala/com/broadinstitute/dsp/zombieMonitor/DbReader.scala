@@ -17,7 +17,7 @@ object DbReader {
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
 
     override def getDisksToDeleteCandidate: Stream[F, Disk] =
-      sql"""select googleProject, name from PERSISTENT_DISK where status="Deleted";
+      sql"""select googleProject, name from PERSISTENT_DISK where status="Ready" OR status="Creating";
         """.query[Disk].stream.transact(xa)
   }
 }

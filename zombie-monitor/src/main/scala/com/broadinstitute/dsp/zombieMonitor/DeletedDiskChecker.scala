@@ -6,7 +6,6 @@ import cats.implicits._
 import cats.mtl.ApplicativeAsk
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
-import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 /**
@@ -17,9 +16,9 @@ object DeletedDiskChecker {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: DiskCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Disk] =
     new CheckRunner[F, Disk] {
-      override def resourceToScan: Stream[F, Disk] = dbReader.
+      override def resourceToScan: Stream[F, Disk] = dbReader.getDisksToDeleteCandidate
 
       override def configs = CheckRunnerConfigs("zombie-monitor/deleted-runtime", true)
 
@@ -28,9 +27,12 @@ object DeletedDiskChecker {
       def checkResource(disk: Disk, isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Disk]] =
         for {
           diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, zoneName, disk.diskName)
-          _ <- if (!isDryRun) {
-            diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, disk.diskName))
-          } else F.pure(None)
-        } yield diskOpt.map(_ => disk)
+          _ <- if (isDryRun) F.unit
+          else
+            diskOpt match {
+              case None    => F.unit //TODO: update disk status to Deleted
+              case Some(_) => F.unit
+            }
+        } yield diskOpt.fold[Option[Disk]](Some(disk))(_ => none[Disk])
     }
 }

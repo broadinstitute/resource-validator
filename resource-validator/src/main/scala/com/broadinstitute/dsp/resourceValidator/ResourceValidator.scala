@@ -79,15 +79,15 @@ object ResourceValidator {
       )
     } yield {
       val checkRunnerDeps = CheckRunnerDeps[F](appConfig.reportDestinationBucket, checkerDeps.storageService)
-      val deletedDiskCheckerDeps = DeletedDiskCheckerDeps(checkRunnerDeps, diskService)
+      val diskCheckerDeps = DiskCheckerDeps(checkRunnerDeps, diskService)
       val dbReader = DbReader.impl(xa)
-      ResourcevalidatorServerDeps(checkerDeps, deletedDiskCheckerDeps, dbReader, blocker)
+      ResourcevalidatorServerDeps(checkerDeps, diskCheckerDeps, dbReader, blocker)
     }
 }
 
 final case class ResourcevalidatorServerDeps[F[_]](
   runtimeCheckerDeps: RuntimeCheckerDeps[F],
-  deletedDiskCheckerDeps: DeletedDiskCheckerDeps[F],
+  deletedDiskCheckerDeps: DiskCheckerDeps[F],
   dbReader: DbReader[F],
   blocker: Blocker
 )
