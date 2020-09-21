@@ -11,9 +11,9 @@ class ConfigSpec extends AnyFlatSpec with Matchers {
     val config = Config.appConfig
     val expectedConfig = AppConfig(
       DatabaseConfig(
-        "jdbc:mysql://127.0.0.1:3306/leonardo?rewriteBatchedStatements=true&nullNamePatternMatchesAll=true",
-        "username",
-        "password"
+        "jdbc:mysql://localhost:3311/leonardo?rewriteBatchedStatements=true&nullNamePatternMatchesAll=true",
+        "leonardo-test",
+        "leonardo-test"
       ),
       Paths.get("path-to-credential"),
       GcsBucketName("fake-bucket")
