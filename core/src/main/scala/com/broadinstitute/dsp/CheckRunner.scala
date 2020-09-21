@@ -50,7 +50,7 @@ trait CheckRunner[F[_], A] {
       blob <- dependencies.storageService.getBlob(dependencies.reportDestinationBucket, blobName).compile.last
       _ <- blob.traverse { b =>
         if (b.getSize == 0L)
-          logger.warn(s"${configs.checkType} | No action needed.") >> dependencies.storageService
+          logger.warn(s"${configs.checkType} | Finished check. No action needed.") >> dependencies.storageService
             .removeObject(dependencies.reportDestinationBucket, blobName)
             .compile
             .drain
@@ -58,11 +58,11 @@ trait CheckRunner[F[_], A] {
           // There's log based alert set up in production for "Anomaly detected"
           if (configs.shouldAlert)
             logger.error(
-              s"${configs.checkType} | Anomaly detected. Check out gs://${dependencies.reportDestinationBucket.value}/${blobName.value} for more details"
+              s"${configs.checkType} | Finished check. Anomaly detected. Check out gs://${dependencies.reportDestinationBucket.value}/${blobName.value} for more details"
             )
           else
             logger.warn(
-              s"${configs.checkType} | Check out gs://${dependencies.reportDestinationBucket.value}/${blobName.value} for more details"
+              s"${configs.checkType} | Finished check. Check out gs://${dependencies.reportDestinationBucket.value}/${blobName.value} for more details"
             )
         }
       }

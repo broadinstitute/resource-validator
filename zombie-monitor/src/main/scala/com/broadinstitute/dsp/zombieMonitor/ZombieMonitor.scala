@@ -12,6 +12,7 @@ import doobie.hikari.HikariTransactor
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.broadinstitute.dsde.workbench.google2.{GoogleDiskService, GoogleStorageService}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 object ZombieMonitor {
@@ -25,7 +26,7 @@ object ZombieMonitor {
     for {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
-      deletedRuntimeChecker = DeletedDiskChecker.impl(deps.dbReader, deps.runtimeCheckerDeps)
+      deletedRuntimeChecker = DeletedDiskChecker.impl(deps.dbReader, deps.diskCheckerDeps)
       deleteRuntimeCheckerProcess = if (ifRunAll || ifRunCheckDeletedRuntimes)
         Stream.eval(deletedRuntimeChecker.run(isDryRun))
       else Stream.empty
@@ -42,6 +43,11 @@ object ZombieMonitor {
       blocker <- Blocker[F]
       blockerBound <- Resource.liftF(Semaphore[F](250))
       runtimeChecker <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
+      diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
+      storageService <- GoogleStorageService.resource(appConfig.pathToCredential.toString,
+                                                      blocker,
+                                                      Some(blockerBound),
+                                                      None)
       fixedThreadPool <- ExecutionContexts.fixedThreadPool(100)
       cachedThreadPool <- ExecutionContexts.cachedThreadPool
       xa <- HikariTransactor.newHikariTransactor[F](
@@ -54,12 +60,13 @@ object ZombieMonitor {
       )
     } yield {
       val dbReader = DbReader.impl(xa)
-      ZombieMonitorDeps(runtimeChecker, dbReader, blocker)
+      val checkRunnerDeps = CheckRunnerDeps(appConfig.reportDestinationBucket, storageService)
+      ZombieMonitorDeps(DiskCheckerDeps(checkRunnerDeps, diskService), dbReader, blocker)
     }
 }
 
 final case class ZombieMonitorDeps[F[_]](
-  runtimeCheckerDeps: RuntimeCheckerDeps[F],
+  diskCheckerDeps: DiskCheckerDeps[F],
   dbReader: DbReader[F],
   blocker: Blocker
 )
