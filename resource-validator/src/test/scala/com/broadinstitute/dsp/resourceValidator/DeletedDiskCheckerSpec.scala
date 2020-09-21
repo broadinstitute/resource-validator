@@ -28,7 +28,7 @@ class DeletedDiskCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
         override def getDeletedDisks: Stream[IO, Disk] = Stream.emit(disk)
       }
       val checker = DeletedDiskChecker.impl(dbReader, checkerDeps)
-      val res = checker.checkA(disk, dryRun)
+      val res = checker.checkResource(disk, dryRun)
       res.unsafeRunSync() shouldBe None
     }
   }
@@ -51,7 +51,7 @@ class DeletedDiskCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
         initDeletedDiskCheckerDeps(diskService)
 
       val checker = DeletedDiskChecker.impl(dbReader, checkerDeps)
-      val res = checker.checkA(disk, dryRun)
+      val res = checker.checkResource(disk, dryRun)
       res.unsafeRunSync() shouldBe Some(disk)
     }
   }

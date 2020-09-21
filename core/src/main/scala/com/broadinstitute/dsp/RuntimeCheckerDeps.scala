@@ -16,16 +16,16 @@ import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProj
 
 import scala.jdk.CollectionConverters._
 
-object AnomalyChecker {
-  def initAnomalyCheckerDeps[F[_]: Concurrent: ContextShift: StructuredLogger: Parallel: Timer](
+object RuntimeCheckerDeps {
+  def init[F[_]: Concurrent: ContextShift: StructuredLogger: Parallel: Timer](
     appConfig: AppConfig,
-    blocker: Blocker
-  ): Resource[F, AnomalyCheckerDeps[F]] =
+    blocker: Blocker,
+    blockerBound: Semaphore[F]
+  ): Resource[F, RuntimeCheckerDeps[F]] =
     for {
       credentialFile <- org.broadinstitute.dsde.workbench.util2.readFile[F](appConfig.pathToCredential.toString)
       credential <- Resource.liftF(Async[F].delay(ServiceAccountCredentials.fromStream(credentialFile)))
       scopedCredential = credential.createScoped(Seq("https://www.googleapis.com/auth/cloud-platform").asJava)
-      blockerBound <- Resource.liftF(Semaphore[F](10))
       computeService <- GoogleComputeService.fromCredential(scopedCredential,
                                                             blocker,
                                                             blockerBound,
@@ -40,7 +40,7 @@ object AnomalyChecker {
                                                               blockerBound,
                                                               RetryPredicates.standardRetryConfig)
     } yield {
-      AnomalyCheckerDeps(appConfig.reportDestinationBucket, computeService, storageService, dataprocService)
+      RuntimeCheckerDeps(appConfig.reportDestinationBucket, computeService, storageService, dataprocService)
     }
 }
 
@@ -50,7 +50,7 @@ final case class Runtime(googleProject: GoogleProject, runtimeName: String, clou
 final case class Disk(googleProject: GoogleProject, diskName: DiskName) {
   override def toString: String = s"${googleProject.value},${diskName.value}"
 }
-final case class AnomalyCheckerDeps[F[_]](reportDestinationBucket: GcsBucketName,
+final case class RuntimeCheckerDeps[F[_]](reportDestinationBucket: GcsBucketName,
                                           computeService: GoogleComputeService[F],
                                           storageService: GoogleStorageService[F],
                                           dataprocService: GoogleDataprocService[F])

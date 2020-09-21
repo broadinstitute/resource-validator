@@ -14,7 +14,7 @@ package object resourceValidator {
   def initRuntimeCheckerDeps(googleComputeService: GoogleComputeService[IO] = FakeGoogleComputeService,
                              googleStorageService: GoogleStorageService[IO] = FakeGoogleStorageInterpreter,
                              googleDataprocService: GoogleDataprocService[IO] = FakeGoogleDataprocService) =
-    AnomalyCheckerDeps(
+    RuntimeCheckerDeps(
       config.reportDestinationBucket,
       googleComputeService,
       googleStorageService,

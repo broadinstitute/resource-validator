@@ -13,14 +13,14 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 object ErroredRuntimeChecker {
   def iml[F[_]: Timer](
     dbReader: DbReader[F],
-    deps: AnomalyCheckerDeps[F]
+    deps: RuntimeCheckerDeps[F]
   )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
     new CheckRunner[F, Runtime] {
       override def configs = CheckRunnerConfigs("resource-validator-errored-runtime", true)
       override def dependencies: CheckRunnerDeps[F] = CheckRunnerDeps(deps.reportDestinationBucket, deps.storageService)
-      override def aToScan: fs2.Stream[F, Runtime] = dbReader.getErroredRuntimes
+      override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getErroredRuntimes
 
-      override def checkA(runtime: Runtime, isDryRun: Boolean)(
+      override def checkResource(runtime: Runtime, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
       ): F[Option[Runtime]] = runtime.cloudService match {
         case Dataproc =>

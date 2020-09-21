@@ -36,7 +36,7 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
         override def getDeletedRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
       val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
-      val res = deletedRuntimeChecker.checkA(runtime, dryRun)
+      val res = deletedRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe None
     }
   }
@@ -76,7 +76,7 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
         initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
 
       val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
-      val res = deletedRuntimeChecker.checkA(runtime, dryRun)
+      val res = deletedRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe Some(runtime)
     }
   }
