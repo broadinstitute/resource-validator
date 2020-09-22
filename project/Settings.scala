@@ -52,7 +52,6 @@ object Settings {
 
   lazy val commonSettings = List(
     organization := "com.broadinstitute.dsp",
-    name := "resource-validator",
     version := "0.0.1-SNAPSHOT",
     scalaVersion := "2.13.3",
     resolvers ++= commonResolvers,
@@ -73,6 +72,7 @@ object Settings {
   )
 
   lazy val resourceValidatorSettings = commonSettings ++ resourceValidatorDockerSettings ++ List(
+    name := "resource-validator",
     libraryDependencies ++= Dependencies.resourceValidator,
     assemblyJarName in assembly := "resource-validator-assembly.jar",
     // removes all jar mappings in universal and appends the fat jar
@@ -92,6 +92,7 @@ object Settings {
   )
 
   lazy val zombieMonitorSettings = commonSettings ++ zombieMonitorDockerSettings ++ List(
+    name := "zombie-monitor",
     libraryDependencies ++= Dependencies.zombieMonitor,
     assemblyJarName in assembly := "zombie-monitor-assembly.jar",
     // removes all jar mappings in universal and appends the fat jar
