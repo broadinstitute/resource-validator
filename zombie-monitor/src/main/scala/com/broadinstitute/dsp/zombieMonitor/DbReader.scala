@@ -23,8 +23,8 @@ object DbReader {
         """.query[Disk]
 
   val activeK8sClustersQuery =
-    sql"""select id, googleProject, location, clusterName from KUBERNETES_CLUSTER where status != "Deleted" or status != "ERROR";
-        """.query[K8sClusterToScan]
+    sql"""select id, googleProject, location, clusterName from KUBERNETES_CLUSTER where status != "DELETED" or status != "ERROR";
+        """.query[K8sClusterToScan]DbReader.scala
 
   def updateDiskStatusQuery(id: Int) =
     sql"""

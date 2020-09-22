@@ -62,7 +62,7 @@ object DbReader {
               SELECT *
                 FROM KUBERNETES_CLUSTER kc 
                 LEFT JOIN NODEPOOL as np on np.clusterId=kc.id
-              WHERE np.status != "DELETED" and np.status !="ERROR" and np.isDefault = "FALSE"
+              WHERE np.status != "DELETED" and np.status !="ERROR" and np.isDefault = 0
             );
            """
         .query[KubernetesClusterId]
