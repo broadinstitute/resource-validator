@@ -2,7 +2,7 @@ steps:
   - name: 'gcr.io/$PROJECT_ID/scala-sbt'
     args:
       - |
-        test; resourceValidator/docker:publishLocal
+        test; zombieMonitor/docker:publishLocal
   - name: 'gcr.io/cloud-builders/docker'
     args: [ 'image', 'tag', 'us.gcr.io/broad-dsp-gcr-public/zombie-monitor:latest', 'us.gcr.io/broad-dsp-gcr-public/zombie-monitor:$SHORT_SHA']
 images: [
