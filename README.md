@@ -14,8 +14,6 @@ This job updates Google resources to match Leonardo database status.
 
 This job updates Leonardo database to match Google resource status.
 
-TODO: Run this in dev
-
 # Running Locally
 export LEONARDO_DB_USER=???
 
