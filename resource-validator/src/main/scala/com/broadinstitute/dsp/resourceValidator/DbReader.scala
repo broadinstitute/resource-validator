@@ -43,13 +43,18 @@ object DbReader {
         .stream
         .transact(xa)
 
+    // When we delete runtimes, we keep their staging buckets for 10 days. Hence we're only deleting staging buckets whose
+    // runtimes have been deleted more than 15 days ago.
+    // Checker will blindly delete all buckets returned by this function. Since we've started running the cron job daily,
+    // We really only need to delete any new buckets; hence we're skipping buckets whose runtimes were deleted more than 20 days ago
     override def getBucketsToDelete: Stream[F, BucketToRemove] =
-      sql"""select googleProject, stagingBucket from CLUSTER WHERE status="Deleted" and destroyedDate < now() - interval 15 DAY;"""
+      sql"""select googleProject, stagingBucket from CLUSTER WHERE status="Deleted" and destroyedDate < now() - interval 15 DAY and destroyedDate > now() - interval 20 DAY;"""
         .query[BucketToRemove]
         .stream
         .transact(xa)
 
-    // Return all clusters that has no non "DELETED" | `ERROR` nodepool
+    // Return all clusters that has no non "DELETED" | `ERROR` non-default nodepool
+    // TODO: Add grace period
     override def getK8sClustersToDelete: Stream[F, KubernetesClusterId] =
       sql"""SELECT kc.id, kc.location, kc.clusterName
             FROM KUBERNETES_CLUSTER kc 
@@ -57,15 +62,23 @@ object DbReader {
               SELECT *
                 FROM KUBERNETES_CLUSTER kc 
                 LEFT JOIN NODEPOOL as np on np.clusterId=kc.id
-              WHERE np.status != "DELETED" and np.status !="ERROR"
+              WHERE np.status != "DELETED" and np.status !="ERROR" and np.isDefault = 0
             );
            """
         .query[KubernetesClusterId]
         .stream
         .transact(xa)
 
+    // Same disk names might be re-used
     override def getDeletedDisks: Stream[F, Disk] =
-      sql"""select googleProject, name from PERSISTENT_DISK where status="Deleted";
+      sql"""
+           select pd1.googleProject, pd1.name from PERSISTENT_DISK as pd1 where pd1.status="Deleted" and
+           NOT EXISTS 
+           (
+             SELECT *
+             FROM PERSISTENT_DISK pd2 
+             WHERE pd1.googleProject = pd2.googleProject and pd1.name = pd2.name and pd2.status != "Deleted"
+          )
         """.query[Disk].stream.transact(xa)
   }
 }

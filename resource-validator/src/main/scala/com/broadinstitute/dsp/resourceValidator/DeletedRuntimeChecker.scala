@@ -17,7 +17,7 @@ object DeletedRuntimeChecker {
     deps: RuntimeCheckerDeps[F]
   )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
     new CheckRunner[F, Runtime] {
-      override def configs = CheckRunnerConfigs("resource-validator-deleted-runtime", true)
+      override def configs = CheckRunnerConfigs("resource-validator/deleted-runtime", true)
 
       override def dependencies: CheckRunnerDeps[F] = CheckRunnerDeps(deps.reportDestinationBucket, deps.storageService)
 

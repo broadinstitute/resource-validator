@@ -20,7 +20,7 @@ object DeletedDiskChecker {
     new CheckRunner[F, Disk] {
       override def resourceToScan: Stream[F, Disk] = dbReader.getDisksToDeleteCandidate
 
-      override def configs = CheckRunnerConfigs("zombie-monitor/deleted-runtime", true)
+      override def configs = CheckRunnerConfigs("zombie-monitor/deleted-disk", false)
 
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
@@ -30,7 +30,7 @@ object DeletedDiskChecker {
           _ <- if (isDryRun) F.unit
           else
             diskOpt match {
-              case None    => F.unit //TODO: update disk status to Deleted
+              case None    => dbReader.updateDiskStatus(disk.id)
               case Some(_) => F.unit
             }
         } yield diskOpt.fold[Option[Disk]](Some(disk))(_ => none[Disk])

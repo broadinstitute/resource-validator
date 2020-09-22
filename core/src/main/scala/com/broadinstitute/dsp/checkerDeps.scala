@@ -6,7 +6,13 @@ import cats.effect.{Async, Blocker, Concurrent, ContextShift, Resource, Timer}
 import com.google.auth.oauth2.ServiceAccountCredentials
 import io.chrisdavenport.log4cats.StructuredLogger
 import org.broadinstitute.dsde.workbench.google2.util.RetryPredicates
-import org.broadinstitute.dsde.workbench.google2.{GoogleComputeService, GoogleDataprocService, GoogleStorageService}
+import org.broadinstitute.dsde.workbench.google2.{
+  GKEService,
+  GoogleComputeService,
+  GoogleDataprocService,
+  GoogleDiskService,
+  GoogleStorageService
+}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 import scala.jdk.CollectionConverters._
@@ -46,3 +52,7 @@ final case class RuntimeCheckerDeps[F[_]](reportDestinationBucket: GcsBucketName
                                           computeService: GoogleComputeService[F],
                                           storageService: GoogleStorageService[F],
                                           dataprocService: GoogleDataprocService[F])
+
+final case class KubernetesClusterCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], gkeService: GKEService[F])
+
+final case class DiskCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], googleDiskService: GoogleDiskService[F])

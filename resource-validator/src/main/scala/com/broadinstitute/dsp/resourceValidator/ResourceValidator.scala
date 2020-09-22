@@ -7,9 +7,7 @@ import cats.Parallel
 import cats.effect.concurrent.Semaphore
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.ApplicativeAsk
-import com.broadinstitute.dsp.{AppConfig, Config, RuntimeCheckerDeps}
 import doobie.ExecutionContexts
-import doobie.hikari.HikariTransactor
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
@@ -69,14 +67,7 @@ object ResourceValidator {
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
       fixedThreadPool <- ExecutionContexts.fixedThreadPool(100)
       cachedThreadPool <- ExecutionContexts.cachedThreadPool
-      xa <- HikariTransactor.newHikariTransactor[F](
-        "com.mysql.cj.jdbc.Driver", // driver classname
-        appConfig.database.url,
-        appConfig.database.user,
-        appConfig.database.password,
-        fixedThreadPool, // await connection here
-        Blocker.liftExecutionContext(cachedThreadPool)
-      )
+      xa <- DbTransactor.init(appConfig.database)
     } yield {
       val checkRunnerDeps = CheckRunnerDeps[F](appConfig.reportDestinationBucket, checkerDeps.storageService)
       val diskCheckerDeps = DiskCheckerDeps(checkRunnerDeps, diskService)
