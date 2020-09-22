@@ -43,8 +43,12 @@ object DbReader {
         .stream
         .transact(xa)
 
+    // When we delete runtimes, we keep their staging buckets for 10 days. Hence we're only deleting staging buckets whose
+    // runtimes have been deleted more than 15 days ago.
+    // Checker will blindly delete all buckets returned by this function. Since we've started running the cron job daily,
+    // We really only need to delete any new buckets; hence we're skipping buckets whose runtimes were deleted more than 20 days ago
     override def getBucketsToDelete: Stream[F, BucketToRemove] =
-      sql"""select googleProject, stagingBucket from CLUSTER WHERE status="Deleted" and destroyedDate < now() - interval 15 DAY;"""
+      sql"""select googleProject, stagingBucket from CLUSTER WHERE status="Deleted" and destroyedDate < now() - interval 15 DAY and destroyedDate > now() - interval 20 DAY;"""
         .query[BucketToRemove]
         .stream
         .transact(xa)
