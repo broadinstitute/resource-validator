@@ -28,12 +28,12 @@ object DbReader {
 
   def updateDiskStatusQuery(id: Int) =
     sql"""
-           update PERSISTENT_DISK set status = "Deleted" where id = $id
+           update PERSISTENT_DISK set status = "Deleted", destroyedDate = now() where id = $id
            """.update
 
   def updateK8sClusterStatusQuery(id: Int) =
     sql"""
-           update KUBERNETES_CLUSTER set status = "DELETED" where id = $id
+           update KUBERNETES_CLUSTER set status = "DELETED", destroyedDate = now() where id = $id
            """.update
 
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {

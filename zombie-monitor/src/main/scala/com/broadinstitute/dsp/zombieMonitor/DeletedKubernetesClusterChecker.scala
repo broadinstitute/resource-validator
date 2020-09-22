@@ -20,7 +20,7 @@ object DeletedKubernetesClusterChecker {
     new CheckRunner[F, K8sClusterToScan] {
       override def resourceToScan: Stream[F, K8sClusterToScan] = dbReader.getk8sClustersToDeleteCandidate
 
-      override def configs = CheckRunnerConfigs("zombie-monitor/deleted-kubernetes", true)
+      override def configs = CheckRunnerConfigs("zombie-monitor/deleted-kubernetes", false)
 
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
