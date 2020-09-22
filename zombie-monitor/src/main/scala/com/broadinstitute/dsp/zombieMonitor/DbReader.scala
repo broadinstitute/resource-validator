@@ -19,11 +19,11 @@ object DbReader {
   implicit def apply[F[_]](implicit ev: DbReader[F]): DbReader[F] = ev
 
   val activeDisksQuery =
-    sql"""select id, googleProject, name from PERSISTENT_DISK where status != "Deleted";
+    sql"""select id, googleProject, name from PERSISTENT_DISK where status != "Deleted" or status != "Error";
         """.query[Disk]
 
   val activeK8sClustersQuery =
-    sql"""select id, googleProject, location, clusterName from KUBERNETES_CLUSTER where status != "Deleted";
+    sql"""select id, googleProject, location, clusterName from KUBERNETES_CLUSTER where status != "Deleted" or status != "ERROR";
         """.query[K8sClusterToScan]
 
   def updateDiskStatusQuery(id: Int) =
