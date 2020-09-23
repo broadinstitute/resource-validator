@@ -14,6 +14,8 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GcsBucketName
 
 trait CheckRunner[F[_], A] {
+  def appName: String
+
   def configs: CheckRunnerConfigs
 
   def dependencies: CheckRunnerDeps[F]
@@ -30,8 +32,8 @@ trait CheckRunner[F[_], A] {
     for {
       now <- timer.clock.realTime(TimeUnit.MILLISECONDS)
       blobName = if (isDryRun)
-        GcsBlobName(s"${configs.checkType}/dry-run-${Instant.ofEpochMilli(now)}")
-      else GcsBlobName(s"${configs.checkType}/action-${Instant.ofEpochMilli(now)}")
+        GcsBlobName(s"${appName}/${configs.checkType}/dry-run-${Instant.ofEpochMilli(now)}")
+      else GcsBlobName(s"${appName}/${configs.checkType}/action-${Instant.ofEpochMilli(now)}")
       _ <- (resourceToScan
         .parEvalMapUnordered(50)(rt => checkResource(rt, isDryRun).handleErrorWith(_ => F.pure(None)))
         .unNone

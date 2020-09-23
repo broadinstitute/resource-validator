@@ -18,9 +18,11 @@ object DeletedKubernetesClusterChecker {
     deps: KubernetesClusterCheckerDeps[F]
   )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, K8sClusterToScan] =
     new CheckRunner[F, K8sClusterToScan] {
+      override def appName: String = zombieMonitor.appName
+
       override def resourceToScan: Stream[F, K8sClusterToScan] = dbReader.getk8sClustersToDeleteCandidate
 
-      override def configs = CheckRunnerConfigs("zombie-monitor/deleted-kubernetes", false)
+      override def configs = CheckRunnerConfigs(s"${appName}/deleted-kubernetes", false)
 
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 

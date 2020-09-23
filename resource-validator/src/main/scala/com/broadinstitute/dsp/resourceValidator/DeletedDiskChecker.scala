@@ -14,7 +14,8 @@ object DeletedDiskChecker {
     deps: DiskCheckerDeps[F]
   )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Disk] =
     new CheckRunner[F, Disk] {
-      override def configs = CheckRunnerConfigs("deleted-disks", true)
+      override def appName: String = resourceValidator.appName
+      override def configs = CheckRunnerConfigs(s"deleted-disks", true)
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
       override def resourceToScan: fs2.Stream[F, Disk] = dbReader.getDeletedDisks
 
