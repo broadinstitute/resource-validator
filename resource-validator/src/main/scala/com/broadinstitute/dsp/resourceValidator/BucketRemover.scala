@@ -32,7 +32,17 @@ object BucketRemover {
         implicit ev: ApplicativeAsk[F, TraceId]
       ): F[Option[BucketToRemove]] =
         a.bucket
-          .traverse(b => deps.storageService.deleteBucket(a.googleProject, b, true).compile.drain.as(a))
+          .flatTraverse { b =>
+            deps.storageService.deleteBucket(a.googleProject, b, true).compile.last.map { resultOpt =>
+              // deleteBucket will return `true` if the bucket is deleted; else return `false`
+              // We only need to report buckets that're actually being deleted
+              resultOpt match {
+                case Some(true)  => Some(a)
+                case Some(false) => None
+                case None        => None
+              }
+            }
+          }
     }
 
 }
