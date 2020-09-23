@@ -20,7 +20,8 @@ object KubernetesClusterRemover {
     logger: Logger[F],
     ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, KubernetesClusterId] =
     new CheckRunner[F, KubernetesClusterId] {
-      override def configs = CheckRunnerConfigs("remove-staging-buckets", true)
+      override def appName: String = resourceValidator.appName
+      override def configs = CheckRunnerConfigs(s"remove-kubernetes-clusters", true)
       override def dependencies: CheckRunnerDeps[F] = deps
       override def resourceToScan: fs2.Stream[F, KubernetesClusterId] = dbReader.getK8sClustersToDelete
 

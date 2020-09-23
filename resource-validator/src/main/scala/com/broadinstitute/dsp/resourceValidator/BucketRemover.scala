@@ -20,7 +20,8 @@ object BucketRemover {
     logger: Logger[F],
     ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, BucketToRemove] =
     new CheckRunner[F, BucketToRemove] {
-      override def configs = CheckRunnerConfigs("resource-validator/remove-staging-buckets", false)
+      override def appName: String = resourceValidator.appName
+      override def configs = CheckRunnerConfigs("remove-staging-buckets", false)
       override def dependencies: CheckRunnerDeps[F] = deps
       override def resourceToScan: fs2.Stream[F, BucketToRemove] = dbReader.getBucketsToDelete
 

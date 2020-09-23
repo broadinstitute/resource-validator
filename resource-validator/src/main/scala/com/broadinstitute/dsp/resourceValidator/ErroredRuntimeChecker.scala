@@ -16,7 +16,8 @@ object ErroredRuntimeChecker {
     deps: RuntimeCheckerDeps[F]
   )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
     new CheckRunner[F, Runtime] {
-      override def configs = CheckRunnerConfigs("resource-validator-errored-runtime", true)
+      override def appName: String = resourceValidator.appName
+      override def configs = CheckRunnerConfigs(s"errored-runtime", true)
       override def dependencies: CheckRunnerDeps[F] = CheckRunnerDeps(deps.reportDestinationBucket, deps.storageService)
       override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getErroredRuntimes
 

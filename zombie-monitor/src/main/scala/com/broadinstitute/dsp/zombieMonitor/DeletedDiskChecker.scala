@@ -20,7 +20,7 @@ object DeletedDiskChecker {
     new CheckRunner[F, Disk] {
       override def resourceToScan: Stream[F, Disk] = dbReader.getDisksToDeleteCandidate
 
-      override def configs = CheckRunnerConfigs("zombie-monitor/deleted-disk", false)
+      override def configs = CheckRunnerConfigs(s"deleted-disk", false)
 
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
@@ -34,5 +34,7 @@ object DeletedDiskChecker {
               case Some(_) => F.unit
             }
         } yield diskOpt.fold[Option[Disk]](Some(disk))(_ => none[Disk])
+
+      override def appName: String = zombieMonitor.appName
     }
 }
