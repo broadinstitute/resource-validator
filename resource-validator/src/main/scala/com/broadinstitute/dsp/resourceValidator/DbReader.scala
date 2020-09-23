@@ -20,6 +20,17 @@ trait DbReader[F[_]] {
 object DbReader {
   implicit def apply[F[_]](implicit ev: DbReader[F]): DbReader[F] = ev
 
+  val deletedDisksQuery =
+    sql"""
+           select pd1.id, pd1.googleProject, pd1.name from PERSISTENT_DISK as pd1 where pd1.status="Deleted" and
+           NOT EXISTS 
+           (
+             SELECT *
+             FROM PERSISTENT_DISK pd2 
+             WHERE pd1.googleProject = pd2.googleProject and pd1.name = pd2.name and pd2.status != "Deleted"
+          )
+        """.query[Disk]
+
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
 
     /**
@@ -71,15 +82,7 @@ object DbReader {
 
     // Same disk names might be re-used
     override def getDeletedDisks: Stream[F, Disk] =
-      sql"""
-           select pd1.googleProject, pd1.name from PERSISTENT_DISK as pd1 where pd1.status="Deleted" and
-           NOT EXISTS 
-           (
-             SELECT *
-             FROM PERSISTENT_DISK pd2 
-             WHERE pd1.googleProject = pd2.googleProject and pd1.name = pd2.name and pd2.status != "Deleted"
-          )
-        """.query[Disk].stream.transact(xa)
+      deletedDisksQuery.stream.transact(xa)
   }
 }
 
