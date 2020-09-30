@@ -64,7 +64,8 @@ object DbReader {
         .stream
         .transact(xa)
 
-    // Return all clusters that has no non "DELETED" | `ERROR` non-default nodepool
+    // Return all clusters with non-default nodepools that are not in 'DELETED' or 'ERROR' status
+    // TODO: Exclude pre-created clusters
     // TODO: Add grace period
     override def getK8sClustersToDelete: Stream[F, KubernetesClusterId] =
       sql"""SELECT kc.id, kc.location, kc.clusterName
