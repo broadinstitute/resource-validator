@@ -13,3 +13,4 @@ final case class Disk(id: Long, googleProject: GoogleProject, diskName: DiskName
   override def toString: String = s"${id}/${googleProject.value},${diskName.value}"
 }
 final case class K8sClusterToScan(id: Long, kubernetesClusterId: KubernetesClusterId)
+final case class NodepoolToScan(id: Long)
