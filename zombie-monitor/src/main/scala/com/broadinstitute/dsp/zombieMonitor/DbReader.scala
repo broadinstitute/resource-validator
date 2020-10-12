@@ -11,10 +11,11 @@ import cats.implicits._
 trait DbReader[F[_]] {
   def getDisksToDeleteCandidate: Stream[F, Disk]
   def getk8sClustersToDeleteCandidate: Stream[F, K8sClusterToScan]
-  def getk8sNodepoolsToDeleteCandidate: Stream[F, K8sClusterToScan]
+  def getk8sNodepoolsToDeleteCandidate: Stream[F, NodepoolToScan]
   def updateDiskStatus(id: Long): F[Unit]
   def updateK8sClusterStatus(id: Long): F[Unit]
-  def updateNodepoolAndAppStatus(id: Long): F[Unit]
+  def markNodepoolAndAppStatusDeleted(id: Long): F[Unit]
+  def markNodepoolError(id: Long): F[Unit]
 }
 
 object DbReader {
@@ -29,8 +30,11 @@ object DbReader {
         """.query[K8sClusterToScan]
 
   val activeNodepoolsQuery =
-    sql"""select id, googleProject, location, clusterName from KUBERNETES_CLUSTER where status != "DELETED" and status != "ERROR";
-        """.query[K8sClusterToScan]
+    sql"""select np.id, cluster.googleProject, cluster.location, cluster.clusterName, np.nodepoolName from 
+         	NODEPOOL AS np INNER JOIN KUBERNETES_CLUSTER AS cluster 
+         	on cluster.id = np.clusterId 
+         	where np.status != "DELETED" and np.status != "ERROR"
+         	""".query[NodepoolToScan]
 
   def updateDiskStatusQuery(id: Int) =
     sql"""
@@ -42,12 +46,12 @@ object DbReader {
            update KUBERNETES_CLUSTER set status = "DELETED", destroyedDate = now() where id = $id
            """.update
 
-  def updateNodepoolStatus(nodepoolId: Long) =
+  def updateNodepoolStatus(id: Long, status: String) =
     sql"""
-           update NODEPOOL set status = "DELETED", destroyedDate = now() where id = $nodepoolId
+           update NODEPOOL set status = $status, destroyedDate = now() where id = $id
            """.update
 
-  def updateAppStatus(nodepoolId: Long) =
+  def updateAppStatusForNodepoolId(nodepoolId: Long) =
     sql"""
            update APP set status = "DELETED", destroyedDate = now() where nodepoolId = $nodepoolId
            """.update
@@ -66,15 +70,17 @@ object DbReader {
     override def updateK8sClusterStatus(id: Long): F[Unit] =
       updateK8sClusterStatusQuery(id.toInt).run.transact(xa).void
 
-    override def getk8sNodepoolsToDeleteCandidate: Stream[F, K8sClusterToScan] =
+    override def getk8sNodepoolsToDeleteCandidate: Stream[F, NodepoolToScan] =
       activeNodepoolsQuery.stream.transact(xa)
 
-    override def updateNodepoolAndAppStatus(nodepoolId: Long): F[Unit] = {
+    override def markNodepoolAndAppStatusDeleted(id: Long): F[Unit] = {
       val res = for {
-        _ <- updateNodepoolStatus(nodepoolId).run
-        _ <- updateAppStatus(nodepoolId).run
+        _ <- updateNodepoolStatus(id, "DELETED").run
+        _ <- updateAppStatusForNodepoolId(id).run
       } yield ()
       res.transact(xa)
     }
+
+    def markNodepoolError(id: Long): F[Unit] = updateNodepoolStatus(id, "ERROR").run.transact(xa).void
   }
 }

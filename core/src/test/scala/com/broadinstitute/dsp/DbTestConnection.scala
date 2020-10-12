@@ -6,6 +6,7 @@ import doobie.implicits._
 import DbReaderImplicits._
 import doobie.util.transactor.Transactor
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
+import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
 
 object DBTestHelper {
   def yoloTransactor(implicit cs: ContextShift[IO]): Transactor[IO] = {
@@ -31,27 +32,65 @@ object DBTestHelper {
          values (${disk.googleProject}, ${zoneName}, ${disk.diskName}, "fakeGoogleId", "fakeSamResourceId", ${status}, "fake@broadinstitute.org", now(), now(), now(), 50, "Standard", "4096", "pet@broadinsitute.org", "GCE")
          """.update
 
-  def insertDisk(xa: HikariTransactor[IO])(disk: Disk, status: String = "Ready"): IO[Long] =
+  def insertDisk(disk: Disk, status: String = "Ready")(implicit xa: HikariTransactor[IO]): IO[Long] =
     insertDiskQuery(disk, status: String).withUniqueGeneratedKeys[Long]("id").transact(xa)
 
-  def insertK8sCluster(xa: HikariTransactor[IO])(clusterId: KubernetesClusterId, status: String = "RUNNING"): IO[Long] =
+  def insertK8sCluster(clusterId: KubernetesClusterId,
+                       status: String = "RUNNING")(implicit xa: HikariTransactor[IO]): IO[Long] =
     sql"""insert into KUBERNETES_CLUSTER
          (googleProject, clusterName, location, status, creator, createdDate, destroyedDate, dateAccessed, loadBalancerIp, networkName, subNetworkName, subNetworkIpRange, region, apiServerIp, ingressChart)
          values (${clusterId.project}, ${clusterId.clusterName}, ${clusterId.location}, ${status}, "fake@broadinstitute.org", now(), now(), now(), "0.0.0.1", "network", "subnetwork", "0.0.0.1/20", ${regionName}, "35.202.56.6", "stable/nginx-ingress-1.41.3")
          """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
 
-  def getDiskStatus(xa: HikariTransactor[IO])(diskId: Long): IO[String] =
+  def insertNodepool(clusterId: Long, nodepoolName: String, isDefault: Boolean, status: String = "RUNNING")(
+    implicit xa: HikariTransactor[IO]
+  ): IO[Long] =
+    sql"""insert into NODEPOOL
+         (clusterId, nodepoolName, status, creator, createdDate, destroyedDate, dateAccessed, machineType, numNodes, autoScalingMin, autoScalingMax, isDefault)
+         values (${clusterId}, ${nodepoolName}, ${status}, "fake@broadinstitute.org", now(), now(), now(), "n1-standard-1", 1, 0, 1, ${isDefault})
+         """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
+
+  def insertNamespace(clusterId: Long, namespaceName: NamespaceName)(
+    implicit xa: HikariTransactor[IO]
+  ): IO[Long] =
+    sql"""insert into NAMESPACE
+         (clusterId, namespaceName)
+         values (${clusterId}, ${namespaceName})
+         """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
+
+  def insertApp(nodepoolId: Long, namespaceId: Long, appName: String, diskId: Long, status: String = "RUNNING")(
+    implicit xa: HikariTransactor[IO]
+  ): IO[Long] =
+    sql"""insert into APP
+         (nodepoolId, appType, appName, status, samResourceId, creator, createdDate, destroyedDate, dateAccessed, namespaceId, diskId, customEnvironmentVariables, googleServiceAccount, kubernetesServiceAccount, chart, `release`)
+         values (${nodepoolId}, "GALAXY", ${appName}, ${status}, "samId", "fake@broadinstitute.org", now(), now(), now(), ${namespaceId}, ${diskId}, "", "gsa", "ksa", "chart1", "release1")
+         """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
+
+  def getDiskStatus(diskId: Long)(implicit xa: HikariTransactor[IO]): IO[String] =
     sql"""
          SELECT status FROM PERSISTENT_DISK where id = ${diskId}
          """.query[String].unique.transact(xa)
 
-  def getK8sClusterStatus(xa: HikariTransactor[IO])(id: Long): IO[String] =
+  def getK8sClusterStatus(id: Long)(implicit xa: HikariTransactor[IO]): IO[String] =
     sql"""
          SELECT status FROM KUBERNETES_CLUSTER where id = ${id}
          """.query[String].unique.transact(xa)
 
+  def getNodepoolStatus(id: Long)(implicit xa: HikariTransactor[IO]): IO[String] =
+    sql"""
+         SELECT status FROM NODEPOOL where id = ${id}
+         """.query[String].unique.transact(xa)
+
+  def getAppStatus(id: Long)(implicit xa: HikariTransactor[IO]): IO[String] =
+    sql"""
+         SELECT status FROM APP where id = ${id}
+         """.query[String].unique.transact(xa)
+
   private def truncateTables(xa: HikariTransactor[IO]): IO[Unit] = {
     val res = for {
+      _ <- sql"Delete from APP".update.run
+      _ <- sql"Delete from NAMESPACE".update.run
+      _ <- sql"Delete from NODEPOOL".update.run
       _ <- sql"Delete from PERSISTENT_DISK".update.run
       _ <- sql"Delete from NODEPOOL".update.run
       _ <- sql"Delete from KUBERNETES_CLUSTER".update.run

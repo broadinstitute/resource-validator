@@ -9,33 +9,42 @@ import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 /**
- * Similar to `DeletedDiskChecker`, but this process all non deleted k8s clusters and check if they still exists in google.
- * If not, we update leonardo DB to reflect that they're deleted
+ * Scans through all active nodepools and check if they still exist in Google.
+ * If they're deleted from Google, we're updating them to `DELETED` in leonardo DB.
+ * We're also updating any kubernetes apps running on these nodepools as `DELETED`.
  */
 object DeletedNodepoolChecker {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: KubernetesClusterCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, K8sClusterToScan] =
-    new CheckRunner[F, K8sClusterToScan] {
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, NodepoolToScan] =
+    new CheckRunner[F, NodepoolToScan] {
       override def appName: String = zombieMonitor.appName
 
-      override def resourceToScan: Stream[F, K8sClusterToScan] = dbReader.getk8sNodepoolsToDeleteCandidate
+      override def resourceToScan: Stream[F, NodepoolToScan] = dbReader.getk8sNodepoolsToDeleteCandidate
 
-      override def configs = CheckRunnerConfigs(s"deleted-nodepools", false)
+      // the report file will container all zombied nodepool, and also error-ed nodepool
+      override def configs = CheckRunnerConfigs(s"deleted-errored-nodepools", false)
 
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
-      def checkResource(cluster: K8sClusterToScan,
-                        isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[K8sClusterToScan]] =
+      def checkResource(nodepoolToScan: NodepoolToScan,
+                        isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[NodepoolToScan]] =
         for {
-          clusterOpt <- deps.gkeService.getCluster(cluster.kubernetesClusterId)
-          _ <- if (isDryRun) F.unit
-          else
-            clusterOpt match {
-              case None    => dbReader.updateNodepoolAndAppStatus(cluster.id)
-              case Some(_) => F.unit
-            }
-        } yield clusterOpt.fold[Option[K8sClusterToScan]](Some(cluster))(_ => none[K8sClusterToScan])
+          nodepoolOpt <- deps.gkeService.getNodepool(nodepoolToScan.nodepoolId)
+          nodepoolToReport <- nodepoolOpt match {
+            case None =>
+              (if (isDryRun) F.unit
+               else
+                 dbReader.markNodepoolAndAppStatusDeleted(nodepoolToScan.id)).as(Some(nodepoolToScan))
+            case Some(nodepool) =>
+              if (nodepool.getStatus == com.google.container.v1.NodePool.Status.ERROR) {
+                (if (isDryRun) F.unit
+                 else
+                   dbReader.markNodepoolError(nodepoolToScan.id)).as(Some(nodepoolToScan))
+              } else
+                F.pure(none[NodepoolToScan])
+          }
+        } yield nodepoolToReport
     }
 }

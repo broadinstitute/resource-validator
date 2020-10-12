@@ -9,6 +9,8 @@ import org.broadinstitute.dsde.workbench.google2.GKEModels.{KubernetesClusterId,
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.scalatest.DoNotDiscover
 import org.scalatest.flatspec.AnyFlatSpec
+import doobie.implicits._
+import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
 
 /**
  * Not running these tests in CI yet since we'll need to set up mysql container and Leonardo tables in CI. Punt for now
@@ -30,6 +32,10 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
     check(DbReader.activeK8sClustersQuery)
   }
 
+  it should "builds activeNodepoolsQuery properly" in {
+    check(DbReader.activeNodepoolsQuery)
+  }
+
   // This test will fail with `Parameter metadata not available for the given statement`
   // This works fine for real, but doesn't work `check` due to limited support for metadata from mysql
   it should "builds updateDiskStatusQuery properly" ignore {
@@ -38,16 +44,16 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
 
   it should "read a disk properly" in {
     forAll { (disk: Disk) =>
-      val res = transactorResource.use { xa =>
+      val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
 
         val creatingDisk = disk.copy(diskName = DiskName("disk2"))
         val readyDisk = disk.copy(diskName = DiskName("disk3"))
 
         for {
-          _ <- insertDisk(xa)(disk, "Deleted")
-          _ <- insertDisk(xa)(creatingDisk, "Creating")
-          _ <- insertDisk(xa)(readyDisk)
+          _ <- insertDisk(disk, "Deleted")
+          _ <- insertDisk(creatingDisk, "Creating")
+          _ <- insertDisk(readyDisk)
           d <- dbReader.getDisksToDeleteCandidate.compile.toList
         } yield {
           d.map(_.copy(id = 0L)) should contain theSameElementsAs List(creatingDisk, readyDisk).map(_.copy(id = 0L))
@@ -59,7 +65,7 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
 
   it should "read a K8sClusterToScan properly" in {
     forAll { (cluster: KubernetesClusterId) =>
-      val res = transactorResource.use { xa =>
+      val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
 
         val precreatingCluster =
@@ -68,9 +74,9 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
           cluster.copy(project = GoogleProject("p2"), clusterName = KubernetesClusterName("cluster3"))
 
         for {
-          _ <- insertK8sCluster(xa)(cluster, "DELETED")
-          _ <- insertK8sCluster(xa)(precreatingCluster, "PRECREATING")
-          _ <- insertK8sCluster(xa)(runningCluster, "RUNNING")
+          _ <- insertK8sCluster(cluster, "DELETED")
+          _ <- insertK8sCluster(precreatingCluster, "PRECREATING")
+          _ <- insertK8sCluster(runningCluster, "RUNNING")
           d <- dbReader.getk8sClustersToDeleteCandidate.compile.toList
         } yield {
           d.map(_.kubernetesClusterId) should contain theSameElementsAs List(precreatingCluster, runningCluster)
@@ -82,12 +88,12 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
 
   it should "update disk properly" in {
     forAll { (disk: Disk) =>
-      val res = transactorResource.use { xa =>
+      val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
         for {
-          id <- insertDisk(xa)(disk)
+          id <- insertDisk(disk)
           _ <- dbReader.updateDiskStatus(id)
-          status <- getDiskStatus(xa)(id)
+          status <- getDiskStatus(id)
         } yield status shouldBe ("Deleted")
       }
       res.unsafeRunSync()
@@ -96,12 +102,43 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
 
   it should "update k8s cluster properly" in {
     forAll { (cluster: KubernetesClusterId) =>
-      val res = transactorResource.use { xa =>
+      val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
         for {
-          id <- insertK8sCluster(xa)(cluster)
+          id <- insertK8sCluster(cluster)
           _ <- dbReader.updateK8sClusterStatus(id)
-          status <- getK8sClusterStatus(xa)(id)
+          status <- getK8sClusterStatus(id)
+        } yield status shouldBe ("DELETED")
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  it should "update nodepool status properly" in {
+    forAll { (cluster: KubernetesClusterId) =>
+      val res = transactorResource.use { implicit xa =>
+        for {
+          clusterId <- insertK8sCluster(cluster)
+          nodepoolId <- insertNodepool(clusterId, "nodepool1", false)
+          _ <- DbReader.updateNodepoolStatus(nodepoolId, "ERROR").run.transact(xa)
+          status <- getNodepoolStatus(nodepoolId)
+        } yield status shouldBe ("ERROR")
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  it should "update App status properly" in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+      val res = transactorResource.use { implicit xa =>
+        for {
+          diskId <- insertDisk(disk)
+          clusterId <- insertK8sCluster(cluster)
+          nodepoolId <- insertNodepool(clusterId, "nodepool1", false)
+          namespaceId <- insertNamespace(clusterId, NamespaceName("ns1"))
+          appId <- insertApp(nodepoolId, namespaceId, "app1", diskId)
+          _ <- DbReader.updateAppStatusForNodepoolId(nodepoolId).run.transact(xa)
+          status <- getAppStatus(appId)
         } yield status shouldBe ("DELETED")
       }
       res.unsafeRunSync()
