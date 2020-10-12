@@ -47,11 +47,12 @@ object ResourceValidator {
       removeKubernetesClusters = if (ifRunAll)
         Stream.eval(KubernetesClusterRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
       else Stream.empty
-      processes = Stream(deleteRuntimeCheckerProcess,
-                         errorRuntimeCheckerProcess,
-                         removeStagingBucketProcess,
-                         removeKubernetesClusters,
-                         deleteDiskCheckerProcess).covary[F] //TODO: add more check
+      processes = Stream(
+//          deleteRuntimeCheckerProcess,
+//                         errorRuntimeCheckerProcess,
+//                         removeStagingBucketProcess,
+//                         deleteDiskCheckerProcess,
+                           removeKubernetesClusters).covary[F] //TODO: add more check
 
       _ <- processes.parJoin(5) //Update this number as we add more streams
     } yield ExitCode.Success
