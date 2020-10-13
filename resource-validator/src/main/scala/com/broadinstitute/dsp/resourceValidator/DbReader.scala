@@ -67,27 +67,17 @@ object DbReader {
     // Return all non-deleted clusters with non-default nodepools that are non-deleted and non-errored
     // We are excluding clusters with only default nodepools running on them so we do not remove batch-pre-created clusters
     override def getK8sClustersToDelete: Stream[F, KubernetesClusterId] =
-      sql"""SELECT kc.id, kc.location, kc.clusterName
-            FROM KUBERNETES_CLUSTER kc
-            WHERE NOT EXISTS (
-              SELECT *
-                FROM KUBERNETES_CLUSTER kc
-                LEFT JOIN NODEPOOL as np on np.clusterId=kc.id
-              WHERE np.status != "DELETED" and np.status !="ERROR" and np.isDefault = 0
-            );
-           """
-
+    // TODO: Add grace period
     //      SELECT kc.id, kc.clusterName, kc.creator, kc.status, np.id, np.clusterId, np.status, np.nodepoolName, bin(np.isDefault)
     //      SELECT kc.googleProject, kc.location, kc.clusterName
-      // TODO: Add grace period
-//      sql"""SELECT kc.id, kc.clusterName, kc.creator, kc.status, np.id, np.clusterId, np.status, np.nodepoolName, bin(np.isDefault)
-//            FROM KUBERNETES_CLUSTER AS kc
-//              LEFT JOIN NODEPOOL AS np
-//              ON np.clusterId = kc.id
-//              WHERE
-//                kc.status != "DELETED" AND
-//                NOT (np.status != "DELETED" OR np.status != "ERROR" OR np.isDefault = 0);
-//         """
+      sql"""SELECT kc.id, kc.location, kc.clusterName
+            FROM KUBERNETES_CLUSTER kc
+            WHERE kc.status != "DELETED" AND NOT EXISTS (
+              SELECT *
+              FROM NODEPOOL AS np
+              WHERE kc.id = np.clusterId AND np.status != "DELETED" AND np.status !="ERROR" AND np.isDefault = 0
+            );
+           """
         .query[KubernetesClusterId]
         .stream
         .transact(xa)
