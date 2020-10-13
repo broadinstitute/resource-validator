@@ -9,11 +9,13 @@ import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 /**
- * Scans through all active nodepools and check if they still exist in Google.
- * If they're deleted from Google, we're updating them to `DELETED` in leonardo DB.
- * We're also updating any kubernetes apps running on these nodepools as `DELETED`.
+ * Scans through all active nodepools, and update DB accordingly when necessary
+ *
+ * - if nodepool doesn't exist in google anymore, mark it as `DELETED`, mark associated APP as `DELETED` and report this nodepool
+ * - If nodepool exist in google in ERROR, mark it as `ERROR`, mark associated APP as `ERROR`  and report this nodepool
+ * - if nodepool exist in non ERROR state, do nothing and don't report the nodepool
  */
-object DeletedNodepoolChecker {
+object DeletedOrErroredNodepoolChecker {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: KubernetesClusterCheckerDeps[F]
@@ -24,7 +26,7 @@ object DeletedNodepoolChecker {
       override def resourceToScan: Stream[F, NodepoolToScan] = dbReader.getk8sNodepoolsToDeleteCandidate
 
       // the report file will container all zombied nodepool, and also error-ed nodepool
-      override def configs = CheckRunnerConfigs(s"deleted-errored-nodepools", false)
+      override def configs = CheckRunnerConfigs(s"deleted-or-errored-nodepools", false)
 
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
@@ -41,7 +43,7 @@ object DeletedNodepoolChecker {
               if (nodepool.getStatus == com.google.container.v1.NodePool.Status.ERROR) {
                 (if (isDryRun) F.unit
                  else
-                   dbReader.markNodepoolError(nodepoolToScan.id)).as(Some(nodepoolToScan))
+                   dbReader.markNodepoolAndAppError(nodepoolToScan.id)).as(Some(nodepoolToScan))
               } else
                 F.pure(none[NodepoolToScan])
           }

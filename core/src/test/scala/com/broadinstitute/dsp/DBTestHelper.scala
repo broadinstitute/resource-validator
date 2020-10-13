@@ -27,9 +27,9 @@ object DBTestHelper {
     } yield xa
 
   def insertDiskQuery(disk: Disk, status: String) =
-    sql"""insert into PERSISTENT_DISK
+    sql"""INSERT INTO PERSISTENT_DISK
          (googleProject, zone, name, googleId, samResourceId, status, creator, createdDate, destroyedDate, dateAccessed, sizeGb, type, blockSizeBytes, serviceAccount, formattedBy)
-         values (${disk.googleProject}, ${zoneName}, ${disk.diskName}, "fakeGoogleId", "fakeSamResourceId", ${status}, "fake@broadinstitute.org", now(), now(), now(), 50, "Standard", "4096", "pet@broadinsitute.org", "GCE")
+         VALUES (${disk.googleProject}, ${zoneName}, ${disk.diskName}, "fakeGoogleId", "fakeSamResourceId", ${status}, "fake@broadinstitute.org", now(), now(), now(), 50, "Standard", "4096", "pet@broadinsitute.org", "GCE")
          """.update
 
   def insertDisk(disk: Disk, status: String = "Ready")(implicit xa: HikariTransactor[IO]): IO[Long] =
@@ -37,33 +37,33 @@ object DBTestHelper {
 
   def insertK8sCluster(clusterId: KubernetesClusterId,
                        status: String = "RUNNING")(implicit xa: HikariTransactor[IO]): IO[Long] =
-    sql"""insert into KUBERNETES_CLUSTER
+    sql"""INSERT INTO KUBERNETES_CLUSTER
          (googleProject, clusterName, location, status, creator, createdDate, destroyedDate, dateAccessed, loadBalancerIp, networkName, subNetworkName, subNetworkIpRange, region, apiServerIp, ingressChart)
-         values (${clusterId.project}, ${clusterId.clusterName}, ${clusterId.location}, ${status}, "fake@broadinstitute.org", now(), now(), now(), "0.0.0.1", "network", "subnetwork", "0.0.0.1/20", ${regionName}, "35.202.56.6", "stable/nginx-ingress-1.41.3")
+         VALUES (${clusterId.project}, ${clusterId.clusterName}, ${clusterId.location}, ${status}, "fake@broadinstitute.org", now(), now(), now(), "0.0.0.1", "network", "subnetwork", "0.0.0.1/20", ${regionName}, "35.202.56.6", "stable/nginx-ingress-1.41.3")
          """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
 
   def insertNodepool(clusterId: Long, nodepoolName: String, isDefault: Boolean, status: String = "RUNNING")(
     implicit xa: HikariTransactor[IO]
   ): IO[Long] =
-    sql"""insert into NODEPOOL
+    sql"""INSERT INTO NODEPOOL
          (clusterId, nodepoolName, status, creator, createdDate, destroyedDate, dateAccessed, machineType, numNodes, autoScalingMin, autoScalingMax, isDefault)
-         values (${clusterId}, ${nodepoolName}, ${status}, "fake@broadinstitute.org", now(), now(), now(), "n1-standard-1", 1, 0, 1, ${isDefault})
+         VALUES (${clusterId}, ${nodepoolName}, ${status}, "fake@broadinstitute.org", now(), now(), now(), "n1-standard-1", 1, 0, 1, ${isDefault})
          """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
 
   def insertNamespace(clusterId: Long, namespaceName: NamespaceName)(
     implicit xa: HikariTransactor[IO]
   ): IO[Long] =
-    sql"""insert into NAMESPACE
+    sql"""INSERT INTO NAMESPACE
          (clusterId, namespaceName)
-         values (${clusterId}, ${namespaceName})
+         VALUES (${clusterId}, ${namespaceName})
          """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
 
   def insertApp(nodepoolId: Long, namespaceId: Long, appName: String, diskId: Long, status: String = "RUNNING")(
     implicit xa: HikariTransactor[IO]
   ): IO[Long] =
-    sql"""insert into APP
+    sql"""INSERT INTO APP
          (nodepoolId, appType, appName, status, samResourceId, creator, createdDate, destroyedDate, dateAccessed, namespaceId, diskId, customEnvironmentVariables, googleServiceAccount, kubernetesServiceAccount, chart, `release`)
-         values (${nodepoolId}, "GALAXY", ${appName}, ${status}, "samId", "fake@broadinstitute.org", now(), now(), now(), ${namespaceId}, ${diskId}, "", "gsa", "ksa", "chart1", "release1")
+         VALUES (${nodepoolId}, "GALAXY", ${appName}, ${status}, "samId", "fake@broadinstitute.org", now(), now(), now(), ${namespaceId}, ${diskId}, "", "gsa", "ksa", "chart1", "release1")
          """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
 
   def getDiskStatus(diskId: Long)(implicit xa: HikariTransactor[IO]): IO[String] =

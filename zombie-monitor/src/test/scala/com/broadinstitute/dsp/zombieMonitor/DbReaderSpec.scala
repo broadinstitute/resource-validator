@@ -24,15 +24,15 @@ import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.Name
 class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   val transactor = yoloTransactor
 
-  it should "builds activeDisksQuery properly" in {
+  it should "build activeDisksQuery properly" in {
     check(DbReader.activeDisksQuery)
   }
 
-  it should "builds activeK8sClustersQuery properly" in {
+  it should "build activeK8sClustersQuery properly" in {
     check(DbReader.activeK8sClustersQuery)
   }
 
-  it should "builds activeNodepoolsQuery properly" in {
+  it should "build activeNodepoolsQuery properly" in {
     check(DbReader.activeNodepoolsQuery)
   }
 
@@ -137,7 +137,7 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
           nodepoolId <- insertNodepool(clusterId, "nodepool1", false)
           namespaceId <- insertNamespace(clusterId, NamespaceName("ns1"))
           appId <- insertApp(nodepoolId, namespaceId, "app1", diskId)
-          _ <- DbReader.updateAppStatusForNodepoolId(nodepoolId).run.transact(xa)
+          _ <- DbReader.updateAppStatusForNodepoolId(nodepoolId, "DELETED").run.transact(xa)
           status <- getAppStatus(appId)
         } yield status shouldBe ("DELETED")
       }

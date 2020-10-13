@@ -11,5 +11,5 @@ class FakeDbReader extends DbReader[IO] {
   def updateDiskStatus(id: Long): IO[Unit] = IO.unit
   def updateK8sClusterStatus(id: Long): IO[Unit] = IO.unit
   def markNodepoolAndAppStatusDeleted(id: Long): IO[Unit] = IO.unit
-  def markNodepoolError(id: Long): IO[Unit] = IO.unit
+  def markNodepoolAndAppError(id: Long): IO[Unit] = IO.unit
 }

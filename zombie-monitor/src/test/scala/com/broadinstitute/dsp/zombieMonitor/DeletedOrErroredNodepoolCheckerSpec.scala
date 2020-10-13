@@ -10,7 +10,7 @@ import org.broadinstitute.dsde.workbench.google2.mock.{FakeGoogleStorageInterpre
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.scalatest.flatspec.AnyFlatSpec
 
-class DeletedNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
+class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   it should "report nodepool if it doesn't exist in google but still active in leonardo DB" in {
     forAll { (nodepoolToScan: NodepoolToScan, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
@@ -25,13 +25,13 @@ class DeletedNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
         ): IO[Option[com.google.container.v1.NodePool]] = IO.pure(None)
       }
       val deps = initDeps(gkeService)
-      val checker = DeletedNodepoolChecker.impl(dbReader, deps)
+      val checker = DeletedOrErroredNodepoolChecker.impl(dbReader, deps)
       val res = checker.checkResource(nodepoolToScan, dryRun)
       res.unsafeRunSync() shouldBe Some(nodepoolToScan)
     }
   }
 
-  it should "don't report nodepool if it still exist in google and active in leonardo DB" in {
+  it should "not report nodepool if it still exist in google and active in leonardo DB" in {
     forAll { (nodepoolToScan: NodepoolToScan, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
         override def getk8sNodepoolsToDeleteCandidate: Stream[IO, NodepoolToScan] =
@@ -44,7 +44,7 @@ class DeletedNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
           IO.pure(Some(com.google.container.v1.NodePool.newBuilder().build()))
       }
       val deps = initDeps(gkeService)
-      val checker = DeletedNodepoolChecker.impl(dbReader, deps)
+      val checker = DeletedOrErroredNodepoolChecker.impl(dbReader, deps)
       val res = checker.checkResource(nodepoolToScan, dryRun)
       res.unsafeRunSync() shouldBe None
     }
@@ -56,7 +56,7 @@ class DeletedNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
         override def getk8sNodepoolsToDeleteCandidate: Stream[IO, NodepoolToScan] =
           Stream.emit(nodepoolToScan)
 
-        override def markNodepoolError(id: Long): IO[Unit] =
+        override def markNodepoolAndAppError(id: Long): IO[Unit] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called in dryRun mode")) else IO.unit
       }
       val gkeService = new MockGKEService {
@@ -73,7 +73,7 @@ class DeletedNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
           )
       }
       val deps = initDeps(gkeService)
-      val checker = DeletedNodepoolChecker.impl(dbReader, deps)
+      val checker = DeletedOrErroredNodepoolChecker.impl(dbReader, deps)
       val res = checker.checkResource(nodepoolToScan, dryRun)
       res.unsafeRunSync() shouldBe Some(nodepoolToScan)
     }
