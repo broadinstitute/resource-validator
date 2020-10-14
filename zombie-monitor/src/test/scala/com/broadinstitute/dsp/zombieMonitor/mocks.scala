@@ -10,6 +10,5 @@ class FakeDbReader extends DbReader[IO] {
   def getk8sNodepoolsToDeleteCandidate: Stream[IO, NodepoolToScan] = Stream.empty
   def updateDiskStatus(id: Long): IO[Unit] = IO.unit
   def updateK8sClusterStatus(id: Long): IO[Unit] = IO.unit
-  def markNodepoolAndAppStatusDeleted(id: Long): IO[Unit] = IO.unit
-  def markNodepoolAndAppError(id: Long): IO[Unit] = IO.unit
+  def updateNodepoolAndAppStatus(id: Long, status: String): IO[Unit] = IO.unit
 }

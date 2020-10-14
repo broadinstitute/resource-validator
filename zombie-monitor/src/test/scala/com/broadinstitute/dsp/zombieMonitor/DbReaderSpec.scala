@@ -144,4 +144,27 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
       res.unsafeRunSync()
     }
   }
+
+  it should "update nodepool and App status properly" in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+
+        for {
+          diskId <- insertDisk(disk)
+          clusterId <- insertK8sCluster(cluster)
+          nodepoolId <- insertNodepool(clusterId, "nodepool1", false)
+          namespaceId <- insertNamespace(clusterId, NamespaceName("ns1"))
+          appId <- insertApp(nodepoolId, namespaceId, "app1", diskId)
+          _ <- dbReader.updateNodepoolAndAppStatus(nodepoolId, "DELETED")
+          appStatus <- getAppStatus(appId)
+          nodepoolStatus <- getNodepoolStatus(nodepoolId)
+        } yield {
+          appStatus shouldBe ("DELETED")
+          nodepoolStatus shouldBe ("DELETED")
+        }
+      }
+      res.unsafeRunSync()
+    }
+  }
 }

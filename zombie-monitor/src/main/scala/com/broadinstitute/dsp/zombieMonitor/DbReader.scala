@@ -14,8 +14,7 @@ trait DbReader[F[_]] {
   def getk8sNodepoolsToDeleteCandidate: Stream[F, NodepoolToScan]
   def updateDiskStatus(id: Long): F[Unit]
   def updateK8sClusterStatus(id: Long): F[Unit]
-  def markNodepoolAndAppStatusDeleted(id: Long): F[Unit]
-  def markNodepoolAndAppError(id: Long): F[Unit]
+  def updateNodepoolAndAppStatus(id: Long, status: String): F[Unit]
 }
 
 object DbReader {
@@ -73,18 +72,10 @@ object DbReader {
     override def getk8sNodepoolsToDeleteCandidate: Stream[F, NodepoolToScan] =
       activeNodepoolsQuery.stream.transact(xa)
 
-    override def markNodepoolAndAppStatusDeleted(nodepoolId: Long): F[Unit] = {
+    override def updateNodepoolAndAppStatus(nodepoolId: Long, status: String): F[Unit] = {
       val res = for {
-        _ <- updateNodepoolStatus(nodepoolId, "DELETED").run
-        _ <- updateAppStatusForNodepoolId(nodepoolId, "DELETED").run
-      } yield ()
-      res.transact(xa)
-    }
-
-    def markNodepoolAndAppError(nodepoolId: Long): F[Unit] = {
-      val res = for {
-        _ <- updateNodepoolStatus(nodepoolId, "ERROR").run
-        _ <- updateNodepoolStatus(nodepoolId, "ERROR").run
+        _ <- updateNodepoolStatus(nodepoolId, status).run
+        _ <- updateAppStatusForNodepoolId(nodepoolId, status).run
       } yield ()
       res.transact(xa)
     }

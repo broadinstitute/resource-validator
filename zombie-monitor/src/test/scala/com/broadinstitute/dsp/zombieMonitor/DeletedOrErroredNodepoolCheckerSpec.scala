@@ -16,7 +16,7 @@ class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestS
       val dbReader = new FakeDbReader {
         override def getk8sNodepoolsToDeleteCandidate: Stream[IO, NodepoolToScan] =
           Stream.emit(nodepoolToScan)
-        override def markNodepoolAndAppStatusDeleted(id: Long): IO[Unit] =
+        override def updateNodepoolAndAppStatus(id: Long, status: String): IO[Unit] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called in dryRun mode")) else IO.unit
       }
       val gkeService = new MockGKEService {
@@ -56,7 +56,7 @@ class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestS
         override def getk8sNodepoolsToDeleteCandidate: Stream[IO, NodepoolToScan] =
           Stream.emit(nodepoolToScan)
 
-        override def markNodepoolAndAppError(id: Long): IO[Unit] =
+        override def updateNodepoolAndAppStatus(id: Long, status: String): IO[Unit] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called in dryRun mode")) else IO.unit
       }
       val gkeService = new MockGKEService {

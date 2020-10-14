@@ -38,12 +38,12 @@ object DeletedOrErroredNodepoolChecker {
             case None =>
               (if (isDryRun) F.unit
                else
-                 dbReader.markNodepoolAndAppStatusDeleted(nodepoolToScan.id)).as(Some(nodepoolToScan))
+                 dbReader.updateNodepoolAndAppStatus(nodepoolToScan.id, "DELETED")).as(Some(nodepoolToScan))
             case Some(nodepool) =>
               if (nodepool.getStatus == com.google.container.v1.NodePool.Status.ERROR) {
                 (if (isDryRun) F.unit
                  else
-                   dbReader.markNodepoolAndAppError(nodepoolToScan.id)).as(Some(nodepoolToScan))
+                   dbReader.updateNodepoolAndAppStatus(nodepoolToScan.id, "ERROR")).as(Some(nodepoolToScan))
               } else
                 F.pure(none[NodepoolToScan])
           }
