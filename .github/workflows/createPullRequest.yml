@@ -27,11 +27,11 @@ jobs:
           repository: broadinstitute/terra-helm
       - name: update resource-validator hash
         if: steps.resource-validator.outputs.changed == 'true'
-        run: ./.github/scripts/createCommit.sh resourceValidatorImageTag
+        run: .github/scripts/createCommit.sh resourceValidatorImageTag
         shell: bash
       - name: update zombie-monitor hash
         if: steps.zombie-monitor.outputs.changed == 'true'
-        run: ./.github/scripts/createCommit.sh zombieMonitorImageTag
+        run: .github/scripts/createCommit.sh zombieMonitorImageTag
         shell: bash
       - name: Create Pull Request
         id: cpr
