@@ -1,4 +1,4 @@
-name: Create terra-helm Pull Request
+name: Run unit tests
 
 on:
   push:
