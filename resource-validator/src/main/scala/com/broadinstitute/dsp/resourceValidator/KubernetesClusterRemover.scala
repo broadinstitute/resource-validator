@@ -29,7 +29,9 @@ object KubernetesClusterRemover {
       // For now, we'll just get alerted when a cluster needs to be deleted
       override def checkResource(a: KubernetesClusterId, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
-      ): F[Option[KubernetesClusterId]] = F.pure(Some(a))
+      ): F[Option[KubernetesClusterId]] = {
+        ???
+      }
     }
 
 }

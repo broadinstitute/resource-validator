@@ -10,7 +10,7 @@ import cats.mtl.ApplicativeAsk
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
-import org.broadinstitute.dsde.workbench.google2.GoogleDiskService
+import org.broadinstitute.dsde.workbench.google2.{GoogleDiskService, GooglePublisher}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 object ResourceValidator {
@@ -66,6 +66,7 @@ object ResourceValidator {
       blockerBound <- Resource.liftF(Semaphore[F](250))
       checkerDeps <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
+      googlePublisher <- GooglePublisher.resource[F](publisherConfig)
       xa <- DbTransactor.init(appConfig.database)
     } yield {
       val checkRunnerDeps = CheckRunnerDeps[F](appConfig.reportDestinationBucket, checkerDeps.storageService)
