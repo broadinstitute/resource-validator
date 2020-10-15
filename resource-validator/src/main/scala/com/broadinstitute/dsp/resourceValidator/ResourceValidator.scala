@@ -7,10 +7,11 @@ import cats.Parallel
 import cats.effect.concurrent.Semaphore
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.ApplicativeAsk
+import com.google.pubsub.v1.ProjectTopicName
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
-import org.broadinstitute.dsde.workbench.google2.{GoogleDiskService, GooglePublisher}
+import org.broadinstitute.dsde.workbench.google2.{GoogleDiskService, GooglePublisher, GoogleTopicAdminInterpreter, PublisherConfig}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 object ResourceValidator {
@@ -66,6 +67,11 @@ object ResourceValidator {
       blockerBound <- Resource.liftF(Semaphore[F](250))
       checkerDeps <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
+      publisherConfig = PublisherConfig(
+        appConfig.pathToCredential.toString,
+        ProjectTopicName.of(appConfig.leonardoPubsub.googleProject.value, appConfig.leonardoPubsub.topicName),
+        GoogleTopicAdminInterpreter.defaultRetryConfig
+      )
       googlePublisher <- GooglePublisher.resource[F](publisherConfig)
       xa <- DbTransactor.init(appConfig.database)
     } yield {
