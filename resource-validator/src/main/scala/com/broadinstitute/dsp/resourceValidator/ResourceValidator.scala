@@ -7,7 +7,6 @@ import cats.Parallel
 import cats.effect.concurrent.Semaphore
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.ApplicativeAsk
-import doobie.ExecutionContexts
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
@@ -66,8 +65,6 @@ object ResourceValidator {
       blockerBound <- Resource.liftF(Semaphore[F](250))
       checkerDeps <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
-      fixedThreadPool <- ExecutionContexts.fixedThreadPool(100)
-      cachedThreadPool <- ExecutionContexts.cachedThreadPool
       xa <- DbTransactor.init(appConfig.database)
     } yield {
       val checkRunnerDeps = CheckRunnerDeps[F](appConfig.reportDestinationBucket, checkerDeps.storageService)

@@ -15,8 +15,31 @@ This job updates Google resources to match Leonardo database status.
 This job updates Leonardo database to match Google resource status.
 
 # Running Locally
+
+## Setting environment variables
+
 export LEONARDO_DB_USER=???
 
 export LEONARDO_DB_PASSWORD=???
 
-export LEONARDO_PATH_TO_CREDENTIAL=??
+export LEONARDO_PATH_TO_CREDENTIAL=???
+
+export REPORT_DESTINATION_BUCKET=<your test google bucket>
+
+Note: You can get this info from `leonardo/config` directory. To setup `leonardo/config` directory, follow [this](https://github.com/broadinstitute/firecloud-develop#quick-start---how-do-i-set-up-my-configs)
+
+## Run cloud-sql container (if you're connecting to dev leonardo DB instance)
+```
+docker run \
+  -v <your local path to leonardo repo>/leonardo/config/sqlproxy-service-account.json:/config \
+  -p 127.0.0.1:3306:3306 \
+  gcr.io/cloudsql-docker/gce-proxy:1.16 /cloud_sql_proxy \
+  -instances=<mysql instance you'd like to connect> -credential_file=/config
+```
+
+## Run a job
+```
+sbt <project>/run --help
+```
+
+e.g. `sbt resourceValidator/run --dryRun --all`
