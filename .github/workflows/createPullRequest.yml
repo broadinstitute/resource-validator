@@ -3,9 +3,9 @@ name: Create terra-helm Pull Request
 on:
   push:
     branches: [ master ]
-#  pull_request:
-#    branches:
-#      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   build:
@@ -25,13 +25,27 @@ jobs:
       - uses: actions/checkout@v2
         with:
           repository: broadinstitute/terra-helm
+          ref: ci
+      - name: Set commit short hash
+        id: setHash
+        run: |
+          git_short_sha=$(git rev-parse --short "$GITHUB_SHA")
+          echo "::set-output name=git_short_sha::${git_short_sha}"
       - name: update resource-validator hash
+        uses: ./.github/actions/yq
         if: steps.resource-validator.outputs.changed == 'true'
-        run: .github/scripts/createCommit.sh resourceValidatorImageTag
-        shell: bash
+        with:
+          command: |
+            yq w -i  charts/leonardo/values.yaml cronjob.imageTag ${{ steps.setHash.outputs.git_short_sha }}
       - name: update zombie-monitor hash
+        uses: ./.github/actions/yq
         if: steps.zombie-monitor.outputs.changed == 'true'
-        run: .github/scripts/createCommit.sh zombieMonitorImageTag
+        with:
+          command: |
+            yq w -i  charts/leonardo/values.yaml zombieMonitorCron.imageTag ${{ steps.setHash.outputs.git_short_sha }}
+      - name: bump leonardo chart version
+        if: ${{ steps.resource-validator.outputs.changed == 'true' || steps.zombie-monitor.outputs.changed == 'true' }}
+        run: ./.github/scripts/bumpLeonardoChartVersion.sh
         shell: bash
       - name: Create Pull Request
         id: cpr

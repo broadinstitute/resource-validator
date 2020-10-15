@@ -11,7 +11,7 @@ object DbReaderImplicits {
     s match {
       case "DATAPROC" => CloudService.Dataproc.asRight[String]
       case "GCE"      => CloudService.Gce.asRight[String]
-      case x          => s"invalid cloudService value ${x}".asLeft[CloudService]
+      case x          => s"invalid cloudService value $x".asLeft[CloudService]
     }
   )
 
