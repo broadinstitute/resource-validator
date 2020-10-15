@@ -145,7 +145,7 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
     }
   }
 
-  it should "update nodepool and App status properly" in {
+  it should "update nodepool and app status properly" in {
     forAll { (cluster: KubernetesClusterId, disk: Disk) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
