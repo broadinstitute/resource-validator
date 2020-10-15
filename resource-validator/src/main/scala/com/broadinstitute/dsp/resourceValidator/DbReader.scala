@@ -64,13 +64,14 @@ object DbReader {
         .stream
         .transact(xa)
 
-    // Return all non-deleted clusters with non-default nodepools that are non-deleted and non-errored
+    // Return all non-deleted clusters with non-default nodepools that have apps that were all deleted
+    // or errored outside the grace period (1 hour)
+    //
     // We are excluding clusters with only default nodepools running on them so we do not remove batch-pre-created clusters.
-    // We are calculating the grace period for cluster deletion assuming that the following are valid indicators for an app's last activity
-    //  1. destroyedDate for deleted apps
-    //  2. dateAccessed for error'ed apps
+    // We are calculating the grace period for cluster deletion assuming that the following are valid proxies for an app's last activity:
+    //    1. destroyedDate for deleted apps
+    //    2. dateAccessed for error'ed apps
     override def getK8sClustersToDelete: Stream[F, KubernetesClusterId] =
-      // TODO Check destroyedDate for DELETED apps and dateAccessed for ERROR'ed apps
       sql"""SELECT DISTINCT kc.id, kc.location, kc.clusterName
             FROM KUBERNETES_CLUSTER AS kc
             LEFT JOIN NODEPOOL AS np ON kc.id = np.clusterId
@@ -82,6 +83,9 @@ object DbReader {
                 FROM NODEPOOL AS n
                 LEFT JOIN APP AS a ON n.id = a.nodepoolId
                 WHERE kc.id = n.clusterId AND n.isDefault = 0 AND a.status != "DELETED" AND a.status !="ERROR"
+              ) AND (
+                (app.status = "DELETED" AND app.destroyedDate < now() - INTERVAL 1 HOUR) OR
+                (app.status = "ERROR" AND app.dateAccessed < now() - INTERVAL 1 HOUR)
               );
            """
         .query[KubernetesClusterId]
