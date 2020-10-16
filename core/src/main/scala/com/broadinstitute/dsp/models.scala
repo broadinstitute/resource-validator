@@ -2,7 +2,6 @@ package com.broadinstitute.dsp
 
 import org.broadinstitute.dsde.workbench.google2.DiskName
 import org.broadinstitute.dsde.workbench.google2.GKEModels.{KubernetesClusterId, NodepoolId}
-import org.broadinstitute.dsde.workbench.model.ValueObject
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 sealed abstract class CloudService extends Product with Serializable
