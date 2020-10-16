@@ -71,7 +71,7 @@ object DbReader {
     //    1. destroyedDate for deleted apps
     //    2. dateAccessed for error'ed apps
     override def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove] =
-      sql"""SELECT DISTINCT kc.id, kc.location, kc.clusterName
+      sql"""SELECT DISTINCT kc.id, kc.googleProject
             FROM KUBERNETES_CLUSTER AS kc
             LEFT JOIN NODEPOOL AS np ON kc.id = np.clusterId
             LEFT JOIN APP AS app ON np.id = app.nodepoolId
