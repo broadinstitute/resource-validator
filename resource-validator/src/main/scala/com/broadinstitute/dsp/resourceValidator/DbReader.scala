@@ -70,8 +70,7 @@ object DbReader {
         .transact(xa)
 
     override def getInitBucketsToDelete: Stream[F, InitBucketToRemove] =
-      initBucketsToDeleteQuery
-        .stream
+      initBucketsToDeleteQuery.stream
         .transact(xa)
 
     // Return all clusters that has no non "DELETED" | `ERROR` non-default nodepool
