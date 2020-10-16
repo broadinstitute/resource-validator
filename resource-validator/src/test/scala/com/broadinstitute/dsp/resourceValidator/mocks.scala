@@ -10,9 +10,11 @@ class FakeDbReader extends DbReader[IO] {
 
   override def getErroredRuntimes: Stream[IO, Runtime] = Stream.empty
 
-  override def getBucketsToDelete: Stream[IO, BucketToRemove] = Stream.empty
+  override def getStagingBucketsToDelete: Stream[IO, BucketToRemove] = Stream.empty
 
   override def getK8sClustersToDelete: Stream[IO, GKEModels.KubernetesClusterId] = Stream.empty
 
   override def getDeletedDisks: Stream[IO, Disk] = Stream.empty
+
+  override def getInitBucketsToDelete: Stream[IO, InitBucketToRemove] = Stream.empty
 }

@@ -37,6 +37,11 @@ object Generators {
     nodepoolName <- genNodepoolName
   } yield NodepoolId(clusterId, nodepoolName)
 
+  val genInitBucket: Gen[InitBucketToRemove] = for {
+    project <- genGoogleProject
+    bucketName <- genGcsBucketName
+  } yield InitBucketToRemove(project, Some(InitBucketName(bucketName.value)))
+
   val genK8sClusterToScan: Gen[K8sClusterToScan] = for {
     id <- Gen.chooseNum(0, 100)
     clusterId <- genKubernetesClusterId
@@ -49,6 +54,7 @@ object Generators {
 
   implicit val arbRuntime: Arbitrary[Runtime] = Arbitrary(genRuntime)
   implicit val arbDisk: Arbitrary[Disk] = Arbitrary(genDisk)
+  implicit val arbInitBucket: Arbitrary[InitBucketToRemove] = Arbitrary(genInitBucket)
   implicit val arbKubernetesClusterId: Arbitrary[KubernetesClusterId] = Arbitrary(genKubernetesClusterId)
   implicit val arbK8sClusterToScan: Arbitrary[K8sClusterToScan] = Arbitrary(genK8sClusterToScan)
   implicit val arbNodepoolToScan: Arbitrary[NodepoolToScan] = Arbitrary(genNodepoolToScan)

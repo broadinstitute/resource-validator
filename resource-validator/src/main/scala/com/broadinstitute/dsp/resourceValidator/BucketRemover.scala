@@ -23,11 +23,10 @@ object BucketRemover {
       override def appName: String = resourceValidator.appName
       override def configs = CheckRunnerConfigs("remove-staging-buckets", false)
       override def dependencies: CheckRunnerDeps[F] = deps
-      override def resourceToScan: fs2.Stream[F, BucketToRemove] = dbReader.getBucketsToDelete
+      override def resourceToScan: fs2.Stream[F, BucketToRemove] = dbReader.getStagingBucketsToDelete
 
       // We're ignoring isDryRun flag here since we do want to delete these staging buckets
       // We can improve this by checking if the bucket exists first, but it doesn't hurt to blindly issue deleting bucket
-      // either except it'll be a bit confusing in report, it'll look like this many staging buckets are deleted for a particular run.
       override def checkResource(a: BucketToRemove, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
       ): F[Option[BucketToRemove]] =

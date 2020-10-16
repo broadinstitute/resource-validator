@@ -16,15 +16,32 @@ object Main
         implicit val timer = IO.timer(global)
 
         val enableDryRun = Opts.flag("dryRun", "Default to true").map(_ => true).withDefault(true)
-        val ifRunAll = Opts.flag("all", "run all checks").orFalse
-        val ifRunCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
-        val ifRunCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
-        val ifRunCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse
+        val shouldRunAll = Opts.flag("all", "run all checks").orFalse
+        val shouldRunCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
+        val shouldRunCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
+        val shouldRunCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse
+        val shouldRunCheckInitBuckets =
+          Opts.flag("checkInitBuckets", "checks that init buckets for deleted runtimes are deleted").orFalse
 
-        (enableDryRun, ifRunAll, ifRunCheckDeletedRuntimes, ifRunCheckErroredRuntimes, ifRunCheckDeletedDisks).mapN {
-          (dryRun, runAll, runCheckDeletedRuntimes, runCheckErroredRuntimes, ifRunCheckDeletedDisks) =>
+        (enableDryRun,
+         shouldRunAll,
+         shouldRunCheckDeletedRuntimes,
+         shouldRunCheckErroredRuntimes,
+         shouldRunCheckDeletedDisks,
+         shouldRunCheckInitBuckets).mapN {
+          (dryRun,
+           runAll,
+           shouldCheckDeletedRuntimes,
+           shouldRunCheckErroredRuntimes,
+           shouldRunCheckDeletedDisks,
+           shouldRunCheckInitBuckets) =>
             ResourceValidator
-              .run[IO](dryRun, runAll, runCheckDeletedRuntimes, runCheckErroredRuntimes, ifRunCheckDeletedDisks)
+              .run[IO](dryRun,
+                       runAll,
+                       shouldCheckDeletedRuntimes,
+                       shouldRunCheckErroredRuntimes,
+                       shouldRunCheckDeletedDisks,
+                       shouldRunCheckInitBuckets)
               .compile
               .drain
               .unsafeRunSync()

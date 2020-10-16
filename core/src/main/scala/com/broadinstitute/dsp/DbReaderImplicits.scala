@@ -16,6 +16,7 @@ object DbReaderImplicits {
   )
 
   implicit val gcsBucketNameGet: Get[GcsBucketName] = Get[String].map(GcsBucketName)
+  implicit val initBucketNameGet: Get[InitBucketName] = Get[String].temap(s => InitBucketName.withValidation(s))
   implicit val locationGet: Get[Location] = Get[String].map(Location)
   implicit val kubernetesClusterNameGet: Get[KubernetesClusterName] = Get[String].map(KubernetesClusterName)
   implicit val diskNameMeta: Meta[DiskName] = Meta[String].imap(DiskName)(_.value)
