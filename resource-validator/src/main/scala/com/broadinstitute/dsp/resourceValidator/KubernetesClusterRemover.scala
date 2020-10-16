@@ -39,9 +39,12 @@ object KubernetesClusterRemover {
           _ <- if (!isDryRun) {
             val msg = DeleteKubernetesClusterMessage(a.id, a.googleProject, traceId)
             // TODO: Add publishOne in wb-libs and use it here
-            Stream.emit(msg).covary[F]
+            Stream
+              .emit(msg)
+              .covary[F]
               .through(deps.publisher.publish[DeleteKubernetesClusterMessage])
-              .compile.drain
+              .compile
+              .drain
           } else F.unit
         } yield Some(a)
     }
