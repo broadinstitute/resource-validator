@@ -43,3 +43,13 @@ sbt <project>/run --help
 ```
 
 e.g. `sbt "resourceValidator/run --dryRun --all"`
+
+## Contributing
+
+Currently, `com.broadinstitute.dsp.zombieMonitor.DbReaderSpec` and `com.broadinstitute.dsp.resourceValidator.DbReaderSpec` are not run in CI, hence make sure you run them manually before merging any PRs.
+
+Once a PR is merged, there will be a PR created in [terra-helm](https://github.com/broadinstitute/terra-helm) (WIP). 
+Get this PR merged, and another automatic PR will bump leonardo's chart version. This will trigger another automatic PR 
+in [terra-helmfile](https://github.com/broadinstitute/terra-helmfile). Once all these PRs are merged, 
+go to [argo](https://ap-argocd.dsp-devops.broadinstitute.org/applications), and click `sync apps` button for all leonardo deploys (select `PRUNE` option as well),
+this will sync leonardo's deployment to match [terra-helmfile](https://github.com/broadinstitute/terra-helmfile) repo.

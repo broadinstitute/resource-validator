@@ -4,10 +4,16 @@ import org.broadinstitute.dsde.workbench.google2.DiskName
 import org.broadinstitute.dsde.workbench.google2.GKEModels.{KubernetesClusterId, NodepoolId}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
-sealed abstract class CloudService extends Product with Serializable
+sealed abstract class CloudService extends Product with Serializable {
+  def asString: String
+}
 object CloudService {
-  final case object Gce extends CloudService
-  final case object Dataproc extends CloudService
+  final case object Gce extends CloudService {
+    override def asString: String = "GCE"
+  }
+  final case object Dataproc extends CloudService {
+    override def asString: String = "DATAPROC"
+  }
 }
 final case class Disk(id: Long, googleProject: GoogleProject, diskName: DiskName) {
   override def toString: String = s"${id}/${googleProject.value},${diskName.value}"

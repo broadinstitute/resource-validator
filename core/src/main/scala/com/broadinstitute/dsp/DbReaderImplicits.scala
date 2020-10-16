@@ -1,14 +1,13 @@
 package com.broadinstitute.dsp
 
-import java.sql.Timestamp
-import java.time.Instant
-
 import cats.implicits._
 import doobie.{Get, Meta}
-import doobie.implicits.javasql._
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterName
 import org.broadinstitute.dsde.workbench.google2.{DiskName, Location, RegionName, ZoneName}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
+import doobie.implicits.javasql.TimestampMeta
+import java.sql.Timestamp
+import java.time.Instant
 
 object DbReaderImplicits {
   implicit val cloudServiceGet: Get[CloudService] = Get[String].temap {

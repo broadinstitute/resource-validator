@@ -45,8 +45,7 @@ object ResourceValidator {
         Stream.eval(ErroredRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
 
-      checkRunnerDep = CheckRunnerDeps(deps.runtimeCheckerDeps.reportDestinationBucket,
-                                       deps.runtimeCheckerDeps.storageService)
+      checkRunnerDep = deps.runtimeCheckerDeps.checkRunnerDeps
       removeStagingBucketProcess = if (shouldRunAll)
         Stream.eval(BucketRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
       else Stream.empty
@@ -78,7 +77,7 @@ object ResourceValidator {
     for {
       blocker <- Blocker[F]
       blockerBound <- Resource.liftF(Semaphore[F](250))
-      checkerDeps <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
+      runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
       publisherConfig = PublisherConfig(
         appConfig.pathToCredential.toString,
@@ -88,11 +87,11 @@ object ResourceValidator {
       googlePublisher <- GooglePublisher.resource[F](publisherConfig)
       xa <- DbTransactor.init(appConfig.database)
     } yield {
-      val checkRunnerDeps = CheckRunnerDeps[F](appConfig.reportDestinationBucket, checkerDeps.storageService)
+      val checkRunnerDeps = runtimeCheckerDeps.checkRunnerDeps
       val diskCheckerDeps = DiskCheckerDeps(checkRunnerDeps, diskService)
       val kubernetesClusterToRemoveDeps = KubernetesClusterRemoverDeps(googlePublisher, checkRunnerDeps)
       val dbReader = DbReader.impl(xa)
-      ResourcevalidatorServerDeps(checkerDeps, diskCheckerDeps, kubernetesClusterToRemoveDeps, dbReader, blocker)
+      ResourcevalidatorServerDeps(runtimeCheckerDeps, diskCheckerDeps, kubernetesClusterToRemoveDeps, dbReader, blocker)
     }
 }
 
