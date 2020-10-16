@@ -13,8 +13,9 @@ trait DbReader[F[_]] {
   def getDeletedRuntimes: Stream[F, Runtime]
   def getDeletedDisks: Stream[F, Disk]
   def getErroredRuntimes: Stream[F, Runtime]
-  def getBucketsToDelete: Stream[F, BucketToRemove]
+  def getStagingBucketsToDelete: Stream[F, BucketToRemove]
   def getK8sClustersToDelete: Stream[F, KubernetesClusterId]
+  def getInitBucketsToDelete: Stream[F, InitBucketToRemove]
 }
 
 object DbReader {
@@ -23,10 +24,10 @@ object DbReader {
   val deletedDisksQuery =
     sql"""
            select pd1.id, pd1.googleProject, pd1.name from PERSISTENT_DISK as pd1 where pd1.status="Deleted" and
-           NOT EXISTS 
+           NOT EXISTS
            (
              SELECT *
-             FROM PERSISTENT_DISK pd2 
+             FROM PERSISTENT_DISK pd2
              WHERE pd1.googleProject = pd2.googleProject and pd1.name = pd2.name and pd2.status != "Deleted"
           )
         """.query[Disk]
@@ -37,18 +38,18 @@ object DbReader {
      * AOU reuses runtime names, hence exclude any aou runtimes that have the same names that're still "alive"
      */
     override def getDeletedRuntimes: Stream[F, Runtime] =
-      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1 
-             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Deleted" 
-             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject 
+      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1
+             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Deleted"
+             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject
              and c2.clusterName=c1.clusterName and (c2.status="Stopped" or c2.status="Running"));"""
         .query[Runtime]
         .stream
         .transact(xa)
 
     override def getErroredRuntimes: Stream[F, Runtime] =
-      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1 
-             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Error" 
-             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject 
+      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1
+             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Error"
+             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject
              and c2.clusterName=c1.clusterName and (c2.status="Stopped" or c2.status="Running"));"""
         .query[Runtime]
         .stream
@@ -58,9 +59,15 @@ object DbReader {
     // runtimes have been deleted more than 15 days ago.
     // Checker will blindly delete all buckets returned by this function. Since we've started running the cron job daily,
     // We really only need to delete any new buckets; hence we're skipping buckets whose runtimes were deleted more than 20 days ago
-    override def getBucketsToDelete: Stream[F, BucketToRemove] =
+    override def getStagingBucketsToDelete: Stream[F, BucketToRemove] =
       sql"""select googleProject, stagingBucket from CLUSTER WHERE status="Deleted" and destroyedDate < now() - interval 15 DAY and destroyedDate > now() - interval 20 DAY;"""
         .query[BucketToRemove]
+        .stream
+        .transact(xa)
+
+    override def getInitBucketsToDelete: Stream[F, InitBucketToRemove] =
+      sql"""select googleProject, initBucket from CLUSTER WHERE status="Deleted";"""
+        .query[InitBucketToRemove]
         .stream
         .transact(xa)
 
@@ -68,10 +75,10 @@ object DbReader {
     // TODO: Add grace period
     override def getK8sClustersToDelete: Stream[F, KubernetesClusterId] =
       sql"""SELECT kc.id, kc.location, kc.clusterName
-            FROM KUBERNETES_CLUSTER kc 
+            FROM KUBERNETES_CLUSTER kc
             WHERE NOT EXISTS (
               SELECT *
-                FROM KUBERNETES_CLUSTER kc 
+                FROM KUBERNETES_CLUSTER kc
                 LEFT JOIN NODEPOOL as np on np.clusterId=kc.id
               WHERE np.status != "DELETED" and np.status !="ERROR" and np.isDefault = 0
             );
