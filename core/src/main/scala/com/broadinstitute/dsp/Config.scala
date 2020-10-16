@@ -29,4 +29,3 @@ final case class AppConfig(database: DatabaseConfig,
                            pathToCredential: Path,
                            reportDestinationBucket: GcsBucketName,
                            leonardoPubsub: PubsubConfig)
-

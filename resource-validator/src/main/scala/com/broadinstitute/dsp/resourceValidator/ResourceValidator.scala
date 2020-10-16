@@ -11,7 +11,12 @@ import com.google.pubsub.v1.ProjectTopicName
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
-import org.broadinstitute.dsde.workbench.google2.{GoogleDiskService, GooglePublisher, GoogleTopicAdminInterpreter, PublisherConfig}
+import org.broadinstitute.dsde.workbench.google2.{
+  GoogleDiskService,
+  GooglePublisher,
+  GoogleTopicAdminInterpreter,
+  PublisherConfig
+}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 object ResourceValidator {

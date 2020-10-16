@@ -21,9 +21,7 @@ final case class NodepoolToScan(id: Long, nodepoolId: NodepoolId)
 
 final case class KubernetesClusterToRemove(id: Long, googleProject: GoogleProject)
 // TODO: 'project' below is unnecessary but removing it requires an accompanying change in back Leo so leaving for now
-final case class DeleteKubernetesClusterMessage(clusterId: Long,
-                                                project: GoogleProject,
-                                                traceId: Option[TraceId]) {
+final case class DeleteKubernetesClusterMessage(clusterId: Long, project: GoogleProject, traceId: Option[TraceId]) {
   val messageType: String = "deleteKubernetesCluster"
 }
 
@@ -43,5 +41,6 @@ object LeoPubsubCodec {
 
   implicit val deleteKubernetesClusterMessageEncoder: Encoder[DeleteKubernetesClusterMessage] =
     Encoder.forProduct4("messageType", "clusterId", "project", "traceId")(x =>
-      (x.messageType, x.clusterId, x.project, x.traceId) )
+      (x.messageType, x.clusterId, x.project, x.traceId)
+    )
 }

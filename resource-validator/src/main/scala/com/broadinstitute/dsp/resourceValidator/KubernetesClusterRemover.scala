@@ -32,7 +32,7 @@ object KubernetesClusterRemover {
       // For now, we'll just get alerted when a cluster needs to be deleted
       override def checkResource(a: KubernetesClusterToRemove, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
-      ): F[Option[KubernetesClusterToRemove]] = {
+      ): F[Option[KubernetesClusterToRemove]] =
         for {
           now <- timer.clock.realTime(TimeUnit.MILLISECONDS)
           traceId = Some(TraceId(s"resourceValidator-$now"))
@@ -43,9 +43,7 @@ object KubernetesClusterRemover {
             r.compile.drain
           } else F.unit
         } yield Some(a)
-      }
     }
 }
 
-final case class KubernetesClusterRemoverDeps[F[_]](publisher: GooglePublisher[F],
-                                                    checkRunnerDeps: CheckRunnerDeps[F])
+final case class KubernetesClusterRemoverDeps[F[_]](publisher: GooglePublisher[F], checkRunnerDeps: CheckRunnerDeps[F])
