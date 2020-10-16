@@ -15,10 +15,14 @@ final case class Disk(id: Long, googleProject: GoogleProject, diskName: DiskName
 }
 
 //init buckets are different than staging buckets because we store them with gs://[GcsBucketName]/
-case class InitBucketName(value: String) extends ValueObject with Product with Serializable {
-  require(value.startsWith("gs://"))
-  require(value.endsWith("/"))
-  val asGcsBucketName: GcsBucketName = GcsBucketName(value.trim.subSequence(5, value.trim.length - 1).toString)
+final case class InitBucketName(value: String) extends AnyVal {
+  def asGcsBucketName: GcsBucketName = GcsBucketName(value.trim.subSequence(5, value.trim.length - 1).toString)
+}
+
+object InitBucketName {
+  def withValidation(value: String): Either[String, InitBucketName] =
+    if (value.startsWith("gs://") && value.endsWith("/")) Right(InitBucketName(value))
+    else Left("init bucket names must start with 'gs://' and end with '/'")
 }
 
 final case class InitBucketToRemove(googleProject: GoogleProject, bucket: Option[InitBucketName]) {
