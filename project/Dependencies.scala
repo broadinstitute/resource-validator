@@ -9,6 +9,7 @@ object Dependencies {
     "net.logstash.logback" % "logstash-logback-encoder" % "6.2",
     "ch.qos.logback" % "logback-classic" % "1.2.3",
     "ch.qos.logback" % "logback-core" % "1.2.3",
+    "com.beachape" %% "enumeratum" % "1.5.13",
     "org.tpolecat" %% "doobie-core" % doobieVersion,
     "org.tpolecat" %% "doobie-hikari" % doobieVersion,
     "org.tpolecat" %% "doobie-scalatest" % doobieVersion % Test,

@@ -6,7 +6,6 @@ import doobie._
 import doobie.implicits._
 import fs2.Stream
 import DbReaderImplicits._
-import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 trait DbReader[F[_]] {
@@ -14,7 +13,7 @@ trait DbReader[F[_]] {
   def getDeletedDisks: Stream[F, Disk]
   def getErroredRuntimes: Stream[F, Runtime]
   def getBucketsToDelete: Stream[F, BucketToRemove]
-  def getK8sClustersToDelete: Stream[F, KubernetesClusterId]
+  def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove]
 }
 
 object DbReader {
@@ -23,10 +22,10 @@ object DbReader {
   val deletedDisksQuery =
     sql"""
            select pd1.id, pd1.googleProject, pd1.name from PERSISTENT_DISK as pd1 where pd1.status="Deleted" and
-           NOT EXISTS 
+           NOT EXISTS
            (
              SELECT *
-             FROM PERSISTENT_DISK pd2 
+             FROM PERSISTENT_DISK pd2
              WHERE pd1.googleProject = pd2.googleProject and pd1.name = pd2.name and pd2.status != "Deleted"
           )
         """.query[Disk]
@@ -37,18 +36,18 @@ object DbReader {
      * AOU reuses runtime names, hence exclude any aou runtimes that have the same names that're still "alive"
      */
     override def getDeletedRuntimes: Stream[F, Runtime] =
-      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1 
-             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Deleted" 
-             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject 
+      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1
+             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Deleted"
+             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject
              and c2.clusterName=c1.clusterName and (c2.status="Stopped" or c2.status="Running"));"""
         .query[Runtime]
         .stream
         .transact(xa)
 
     override def getErroredRuntimes: Stream[F, Runtime] =
-      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1 
-             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Error" 
-             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject 
+      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1
+             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Error"
+             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject
              and c2.clusterName=c1.clusterName and (c2.status="Stopped" or c2.status="Running"));"""
         .query[Runtime]
         .stream
@@ -71,7 +70,7 @@ object DbReader {
     // We are calculating the grace period for cluster deletion assuming that the following are valid proxies for an app's last activity:
     //    1. destroyedDate for deleted apps
     //    2. dateAccessed for error'ed apps
-    override def getK8sClustersToDelete: Stream[F, KubernetesClusterId] =
+    override def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove] =
       sql"""SELECT DISTINCT kc.id, kc.location, kc.clusterName
             FROM KUBERNETES_CLUSTER AS kc
             LEFT JOIN NODEPOOL AS np ON kc.id = np.clusterId
@@ -88,7 +87,7 @@ object DbReader {
                 (app.status = "ERROR" AND app.dateAccessed < now() - INTERVAL 1 HOUR)
               );
            """
-        .query[KubernetesClusterId]
+        .query[KubernetesClusterToRemove]
         .stream
         .transact(xa)
 
