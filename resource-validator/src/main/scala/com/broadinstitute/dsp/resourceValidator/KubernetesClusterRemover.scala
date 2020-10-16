@@ -41,6 +41,7 @@ object KubernetesClusterRemover {
               a.id,
               traceId
             )
+            // TODO: Add publishOne in wb-libs and use it here
             val r = Stream.emit(msg).covary[F] through deps.publisher.publish[DeleteKubernetesClusterMessage]
             r.compile.drain
           }else F.unit

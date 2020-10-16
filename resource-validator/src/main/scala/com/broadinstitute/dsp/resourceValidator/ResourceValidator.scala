@@ -44,8 +44,9 @@ object ResourceValidator {
       removeStagingBucketProcess = if (ifRunAll)
         Stream.eval(BucketRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
       else Stream.empty
+
       removeKubernetesClusters = if (ifRunAll)
-        Stream.eval(KubernetesClusterRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
+        Stream.eval(KubernetesClusterRemover.impl(deps.dbReader, deps.kubernetesClusterRemoverDeps).run(isDryRun))
       else Stream.empty
       processes = Stream(
 //          deleteRuntimeCheckerProcess,
@@ -77,14 +78,16 @@ object ResourceValidator {
     } yield {
       val checkRunnerDeps = CheckRunnerDeps[F](appConfig.reportDestinationBucket, checkerDeps.storageService)
       val diskCheckerDeps = DiskCheckerDeps(checkRunnerDeps, diskService)
+      val kubernetesClusterToRemoveDeps = KubernetesClusterRemoverDeps(googlePublisher, checkRunnerDeps)
       val dbReader = DbReader.impl(xa)
-      ResourcevalidatorServerDeps(checkerDeps, diskCheckerDeps, dbReader, blocker)
+      ResourcevalidatorServerDeps(checkerDeps, diskCheckerDeps, kubernetesClusterToRemoveDeps, dbReader, blocker)
     }
 }
 
 final case class ResourcevalidatorServerDeps[F[_]](
   runtimeCheckerDeps: RuntimeCheckerDeps[F],
   deletedDiskCheckerDeps: DiskCheckerDeps[F],
+  kubernetesClusterRemoverDeps: KubernetesClusterRemoverDeps[F],
   dbReader: DbReader[F],
   blocker: Blocker
 )
