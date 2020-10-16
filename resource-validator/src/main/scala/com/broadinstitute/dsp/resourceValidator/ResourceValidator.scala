@@ -54,6 +54,7 @@ object ResourceValidator {
         Stream.eval(KubernetesClusterRemover.impl(deps.dbReader, deps.kubernetesClusterRemoverDeps).run(isDryRun))
       else Stream.empty
       processes = Stream(
+        // TODO Uncomment out when done dry-running
 //          deleteRuntimeCheckerProcess,
 //                         errorRuntimeCheckerProcess,
 //                         removeStagingBucketProcess,
