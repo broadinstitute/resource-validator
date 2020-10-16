@@ -17,7 +17,9 @@ jobs:
       - name: Set commit short hash
         id: setHash
         run: |
+          echo $GITHUB_SHA
           git_short_sha=$(git rev-parse --short HEAD)
+          echo $git_short_sha
           echo "::set-output name=git_short_sha::${git_short_sha}"
       - uses: marceloprado/has-changed-path@v1
         id: resource-validator
@@ -57,9 +59,9 @@ jobs:
           author: broadbot <broadbot@broadinstitute.org>
           branch: resource-validator-version-bump
           delete-branch: true
-          title: 'Bump resource validator version'
+          title: 'Bump leonardo cron jobs version'
           body: |
-            Update resource validator version.
+            Update leonardo cron jobs version.
 
             *This PR was opened by the [${{ github.workflow }} GitHub Actions workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}).*
       - name: Check output
