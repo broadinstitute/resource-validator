@@ -32,6 +32,10 @@ object DbReader {
           )
         """.query[Disk]
 
+  val initBucketsToDeleteQuery =
+    sql"""select googleProject, initBucket from CLUSTER WHERE status="Deleted";"""
+      .query[InitBucketToRemove]
+
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
 
     /**
@@ -66,8 +70,7 @@ object DbReader {
         .transact(xa)
 
     override def getInitBucketsToDelete: Stream[F, InitBucketToRemove] =
-      sql"""select googleProject, initBucket from CLUSTER WHERE status="Deleted";"""
-        .query[InitBucketToRemove]
+      initBucketsToDeleteQuery
         .stream
         .transact(xa)
 

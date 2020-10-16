@@ -5,9 +5,7 @@ import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import cats.mtl.ApplicativeAsk
 import io.chrisdavenport.log4cats.Logger
-import org.broadinstitute.dsde.workbench.google2.GoogleStorageService
 import org.broadinstitute.dsde.workbench.model.TraceId
-import org.broadinstitute.dsde.workbench.model.google.GcsBucketName
 
 object InitBucketChecker {
     def impl[F[_]: Timer](
@@ -32,8 +30,9 @@ object InitBucketChecker {
                 ctx <- ev.ask
                 bucket <- deps.storageService.getBucket(a.googleProject, b.asGcsBucketName, traceId = Some(ctx))
                 deletedBucket <- bucket.traverse { _ =>
+                  // This is currently run in dry run mode
                   if (isDryRun) logger.warn(s"bucket $b still exists in Google. It needs to be deleted").as(a)
-                  else logger.warn(s"bucket $b still exists in Google. It will be deleted") >> deps.storageService.deleteBucket(a.googleProject, b.asGcsBucketName, true)
+                  else deps.storageService.deleteBucket(a.googleProject, b.asGcsBucketName, true)
                     .compile
                     .drain
                     .as(a)
@@ -41,8 +40,4 @@ object InitBucketChecker {
               } yield deletedBucket
             }
       }
-
-  final case class BucketRemoverDeps[F[_]](reportDestinationBucket: GcsBucketName,
-                                           storageService: GoogleStorageService[F])
-
 }

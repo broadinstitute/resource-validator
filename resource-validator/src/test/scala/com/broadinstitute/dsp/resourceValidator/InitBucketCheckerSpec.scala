@@ -42,7 +42,7 @@ class InitBucketCheckerSpec extends AnyFlatSpec with CronJobsTestSuite with Mock
             IO.pure(Some(mockBucket))
 
           override def deleteBucket(googleProject: GoogleProject, bucketName: GcsBucketName, isRecursive: Boolean, bucketSourceOptions: List[Storage.BucketSourceOption], traceId: Option[TraceId], retryConfig: RetryConfig): Stream[IO, Boolean] =
-            if (dryRun) Stream.emit(fail("this shouldn't be called")) else Stream.empty
+            if (dryRun) Stream.emit(fail("this shouldn't be called")) else Stream.emit(true).covary[IO]
         }
 
         val dbReader = new FakeDbReader {
