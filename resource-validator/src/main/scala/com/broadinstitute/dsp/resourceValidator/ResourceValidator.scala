@@ -21,10 +21,11 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 
 object ResourceValidator {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
-                                            ifRunAll: Boolean,
-                                            ifRunCheckDeletedRuntimes: Boolean,
-                                            ifRunCheckErroredRuntimes: Boolean,
-                                            ifRunCheckDeletedDisks: Boolean)(
+                                            shouldRunAll: Boolean,
+                                            shouldRunCheckDeletedRuntimes: Boolean,
+                                            shouldRunCheckErroredRuntimes: Boolean,
+                                            shouldRunCheckDeletedDisks: Boolean,
+                                            shouldRunCheckInitBuckets: Boolean)(
     implicit T: Timer[F],
     C: ContextShift[F]
   ): Stream[F, Nothing] = {
@@ -34,35 +35,36 @@ object ResourceValidator {
     for {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
-      deleteRuntimeCheckerProcess = if (ifRunAll || ifRunCheckDeletedRuntimes)
+      deleteRuntimeCheckerProcess = if (shouldRunAll || shouldRunCheckDeletedRuntimes)
         Stream.eval(DeletedRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
-      deleteDiskCheckerProcess = if (ifRunAll || ifRunCheckDeletedDisks)
+      deleteDiskCheckerProcess = if (shouldRunAll || shouldRunCheckDeletedDisks)
         Stream.eval(DeletedDiskChecker.impl[F](deps.dbReader, deps.deletedDiskCheckerDeps).run(isDryRun))
       else Stream.empty
-      errorRuntimeCheckerProcess = if (ifRunAll || ifRunCheckErroredRuntimes)
+      errorRuntimeCheckerProcess = if (shouldRunAll || shouldRunCheckErroredRuntimes)
         Stream.eval(ErroredRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
 
       checkRunnerDep = CheckRunnerDeps(deps.runtimeCheckerDeps.reportDestinationBucket,
                                        deps.runtimeCheckerDeps.storageService)
-      removeStagingBucketProcess = if (ifRunAll)
+      removeStagingBucketProcess = if (shouldRunAll)
         Stream.eval(BucketRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
       else Stream.empty
 
-      removeKubernetesClusters = if (ifRunAll)
+      removeKubernetesClusters = if (shouldRunAll)
         Stream.eval(KubernetesClusterRemover.impl(deps.dbReader, deps.kubernetesClusterRemoverDeps).run(isDryRun))
       else Stream.empty
       processes = Stream(
         // TODO Uncomment out when done dry-running
-//          deleteRuntimeCheckerProcess,
-//                         errorRuntimeCheckerProcess,
-//                         removeStagingBucketProcess,
-//                         deleteDiskCheckerProcess,
-        removeKubernetesClusters
+        deleteRuntimeCheckerProcess,
+        errorRuntimeCheckerProcess,
+        removeStagingBucketProcess,
+        deleteDiskCheckerProcess,
+        removeKubernetesClusters,
+        removeInitBuckets
       ).covary[F] //TODO: add more check
 
-      _ <- processes.parJoin(5) //Update this number as we add more streams
+      _ <- processes.parJoin(6) //Update this number as we add more streams
     } yield ExitCode.Success
   }.drain
 

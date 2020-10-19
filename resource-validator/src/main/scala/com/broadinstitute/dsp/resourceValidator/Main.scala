@@ -16,12 +16,16 @@ object Main
         implicit val timer = IO.timer(global)
 
         val enableDryRun = Opts.flag("dryRun", "Default to true").map(_ => true).withDefault(true)
-        val ifRunAll = Opts.flag("all", "run all checks").orFalse
-        val ifRunCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
-        val ifRunCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
-        val ifRunCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse
+        val shouldRunAll = Opts.flag("all", "run all checks").orFalse
+        val shouldRunCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
+        val shouldRunCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
+        val shouldRunCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse
 
-        (enableDryRun, ifRunAll, ifRunCheckDeletedRuntimes, ifRunCheckErroredRuntimes, ifRunCheckDeletedDisks).mapN {
+        (enableDryRun,
+         shouldRunAll,
+         shouldRunCheckDeletedRuntimes,
+         shouldRunCheckErroredRuntimes,
+         shouldRunCheckDeletedDisks).mapN {
           (dryRun, runAll, runCheckDeletedRuntimes, runCheckErroredRuntimes, ifRunCheckDeletedDisks) =>
             ResourceValidator
               .run[IO](dryRun, runAll, runCheckDeletedRuntimes, runCheckErroredRuntimes, ifRunCheckDeletedDisks)
