@@ -18,7 +18,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   val transactor = yoloTransactor
 
-  it should "builds deletedDisksQuery properly" in {
+  it should "build deletedDisksQuery properly" in {
     check(DbReader.deletedDisksQuery)
+  }
+
+  it should "build initBucketsToDeleteQuery properly" in {
+    check(DbReader.initBucketsToDeleteQuery)
   }
 }

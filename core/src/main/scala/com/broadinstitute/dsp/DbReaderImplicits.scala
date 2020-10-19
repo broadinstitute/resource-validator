@@ -11,11 +11,12 @@ object DbReaderImplicits {
     s match {
       case "DATAPROC" => CloudService.Dataproc.asRight[String]
       case "GCE"      => CloudService.Gce.asRight[String]
-      case x          => s"invalid cloudService value ${x}".asLeft[CloudService]
+      case x          => s"invalid cloudService value $x".asLeft[CloudService]
     }
   )
 
   implicit val gcsBucketNameGet: Get[GcsBucketName] = Get[String].map(GcsBucketName)
+  implicit val initBucketNameGet: Get[InitBucketName] = Get[String].temap(s => InitBucketName.withValidation(s))
   implicit val locationGet: Get[Location] = Get[String].map(Location)
   implicit val kubernetesClusterNameGet: Get[KubernetesClusterName] = Get[String].map(KubernetesClusterName)
   implicit val diskNameMeta: Meta[DiskName] = Meta[String].imap(DiskName)(_.value)

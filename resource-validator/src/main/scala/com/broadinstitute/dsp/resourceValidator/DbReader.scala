@@ -14,6 +14,7 @@ trait DbReader[F[_]] {
   def getErroredRuntimes: Stream[F, Runtime]
   def getStagingBucketsToDelete: Stream[F, BucketToRemove]
   def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove]
+  def getInitBucketsToDelete: Stream[F, InitBucketToRemove]
 }
 
 object DbReader {
@@ -29,6 +30,10 @@ object DbReader {
              WHERE pd1.googleProject = pd2.googleProject and pd1.name = pd2.name and pd2.status != "Deleted"
           )
         """.query[Disk]
+
+  val initBucketsToDeleteQuery =
+    sql"""select googleProject, initBucket from CLUSTER WHERE status="Deleted";"""
+      .query[InitBucketToRemove]
 
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
 
@@ -61,6 +66,10 @@ object DbReader {
       sql"""select googleProject, stagingBucket from CLUSTER WHERE status="Deleted" and destroyedDate < now() - interval 15 DAY and destroyedDate > now() - interval 20 DAY;"""
         .query[BucketToRemove]
         .stream
+        .transact(xa)
+
+    override def getInitBucketsToDelete: Stream[F, InitBucketToRemove] =
+      initBucketsToDeleteQuery.stream
         .transact(xa)
 
     // Return all non-deleted clusters with non-default nodepools that have apps that were all deleted
