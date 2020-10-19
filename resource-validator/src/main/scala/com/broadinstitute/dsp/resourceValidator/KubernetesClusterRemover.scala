@@ -64,7 +64,7 @@ object LeoPubsubCodec {
   import JsonCodec._
 
   implicit val deleteKubernetesClusterMessageEncoder: Encoder[DeleteKubernetesClusterMessage] =
-    Encoder.forProduct4("messageType", "clusterId", "project", "traceId")(
-      x => (x.messageType, x.clusterId, x.project, x.traceId)
+    Encoder.forProduct4("messageType", "clusterId", "project", "traceId")(x =>
+      (x.messageType, x.clusterId, x.project, x.traceId)
     )
 }
