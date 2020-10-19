@@ -67,7 +67,7 @@ object ResourceValidator {
 //        deleteDiskCheckerProcess,
 //        removeInitBuckets,
         removeKubernetesClusters
-      ).covary[F] //TODO: add more checks
+      ).covary[F]
 
       _ <- processes.parJoin(6) // Update this number as we add more streams
     } yield ExitCode.Success
