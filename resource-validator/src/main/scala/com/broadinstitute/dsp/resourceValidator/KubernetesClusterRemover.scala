@@ -32,16 +32,16 @@ object KubernetesClusterRemover {
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
       override def resourceToScan: fs2.Stream[F, KubernetesClusterToRemove] = dbReader.getKubernetesClustersToDelete
 
-      // TODO: pending decision in https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes
-      // For now, we'll just get alerted when a cluster needs to be deleted
-      override def checkResource(a: KubernetesClusterToRemove, isDryRun: Boolean)(
+      // TODO: This check is to be moved to a new project (a.k.a. 'janitor)
+      // https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes
+      override def checkResource(c: KubernetesClusterToRemove, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
       ): F[Option[KubernetesClusterToRemove]] =
         for {
           now <- timer.clock.realTime(TimeUnit.MILLISECONDS)
           traceId = Some(TraceId(s"resourceValidator-$now"))
           _ <- if (!isDryRun) {
-            val msg = DeleteKubernetesClusterMessage(a.id, a.googleProject, traceId)
+            val msg = DeleteKubernetesClusterMessage(c.id, c.googleProject, traceId)
 
             // TODO: Add publishOne in wb-libs and use it here
             Stream
@@ -51,7 +51,7 @@ object KubernetesClusterRemover {
               .compile
               .drain
           } else F.unit
-        } yield Some(a)
+        } yield Some(c)
     }
 }
 
