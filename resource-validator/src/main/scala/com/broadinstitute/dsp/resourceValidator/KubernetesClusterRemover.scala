@@ -42,6 +42,7 @@ object KubernetesClusterRemover {
           traceId = Some(TraceId(s"resourceValidator-$now"))
           _ <- if (!isDryRun) {
             val msg = DeleteKubernetesClusterMessage(a.id, a.googleProject, traceId)
+
             // TODO: Add publishOne in wb-libs and use it here
             Stream
               .emit(msg)
@@ -64,7 +65,7 @@ object LeoPubsubCodec {
   import JsonCodec._
 
   implicit val deleteKubernetesClusterMessageEncoder: Encoder[DeleteKubernetesClusterMessage] =
-    Encoder.forProduct4("messageType", "clusterId", "project", "traceId")(x =>
-      (x.messageType, x.clusterId, x.project, x.traceId)
+    Encoder.forProduct4("messageType", "clusterId", "project", "traceId")(
+      x => (x.messageType, x.clusterId, x.project, x.traceId)
     )
 }

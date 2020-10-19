@@ -80,7 +80,6 @@ object DbReader {
     //    1. destroyedDate for deleted apps
     //    2. dateAccessed for error'ed apps
     override def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove] =
-      // TODO Handle NULL for destroyedDate and dateAccessed
       sql"""
             SELECT kc.id, kc.googleProject
             FROM KUBERNETES_CLUSTER kc
