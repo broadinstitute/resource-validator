@@ -1,20 +1,23 @@
 package com.broadinstitute.dsp
 
+import java.sql.Timestamp
+import java.time.Instant
+
 import cats.implicits._
 import doobie.{Get, Meta}
+import doobie.implicits.javasql._
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterName
 import org.broadinstitute.dsde.workbench.google2.{DiskName, Location, RegionName, ZoneName}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 object DbReaderImplicits {
-  implicit val cloudServiceGet: Get[CloudService] = Get[String].temap(s =>
-    s match {
-      case "DATAPROC" => CloudService.Dataproc.asRight[String]
-      case "GCE"      => CloudService.Gce.asRight[String]
-      case x          => s"invalid cloudService value $x".asLeft[CloudService]
-    }
-  )
+  implicit val cloudServiceGet: Get[CloudService] = Get[String].temap {
+    case "DATAPROC" => CloudService.Dataproc.asRight[String]
+    case "GCE"      => CloudService.Gce.asRight[String]
+    case x          => s"invalid cloudService value $x".asLeft[CloudService]
+  }
 
+  implicit val instantMeta: Meta[Instant] = Meta[Timestamp].imap(_.toInstant)(Timestamp.from)
   implicit val gcsBucketNameGet: Get[GcsBucketName] = Get[String].map(GcsBucketName)
   implicit val initBucketNameGet: Get[InitBucketName] = Get[String].temap(s => InitBucketName.withValidation(s))
   implicit val locationGet: Get[Location] = Get[String].map(Location)
