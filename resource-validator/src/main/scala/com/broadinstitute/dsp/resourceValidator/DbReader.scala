@@ -71,22 +71,24 @@ object DbReader {
     //    1. destroyedDate for deleted apps
     //    2. dateAccessed for error'ed apps
     override def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove] =
-      sql"""SELECT DISTINCT kc.id, kc.googleProject
-            FROM KUBERNETES_CLUSTER AS kc
-            LEFT JOIN NODEPOOL AS np ON kc.id = np.clusterId
-            LEFT JOIN APP AS app ON np.id = app.nodepoolId
+      // TODO Handle NULL for destroyedDate and dateAccessed
+      sql"""
+            SELECT kc.id, kc.googleProject
+            FROM KUBERNETES_CLUSTER kc
             WHERE
               kc.status != "DELETED" AND
               NOT EXISTS (
                 SELECT *
-                FROM NODEPOOL AS n
-                LEFT JOIN APP AS a ON n.id = a.nodepoolId
-                WHERE kc.id = n.clusterId AND n.isDefault = 0 AND a.status != "DELETED" AND a.status !="ERROR"
-              ) AND (
-                (app.status = "DELETED" AND app.destroyedDate < now() - INTERVAL 1 HOUR) OR
-                (app.status = "ERROR" AND app.dateAccessed < now() - INTERVAL 1 HOUR)
-              );
-           """
+                FROM NODEPOOL np
+                LEFT JOIN APP a ON np.id = a.nodepoolId
+                WHERE
+                  kc.id = np.clusterId AND np.isDefault = 0 AND
+                  (
+                    (a.status != "DELETED" AND a.status != "ERROR") OR
+                    (a.status = "DELETED" AND a.destroyedDate > now() - INTERVAL 1 HOUR) OR
+                    (a.status = "ERROR" AND a.dateAccessed > now() - INTERVAL 1 HOUR)
+                  ));
+         """
         .query[KubernetesClusterToRemove]
         .stream
         .transact(xa)
