@@ -24,8 +24,6 @@ export LEONARDO_DB_PASSWORD=???
 
 export LEONARDO_PATH_TO_CREDENTIAL=???
 
-export REPORT_DESTINATION_BUCKET=<your test google bucket>
-
 Note: You can get this info from `leonardo/config` directory. To setup `leonardo/config` directory, follow [this](https://github.com/broadinstitute/firecloud-develop#quick-start---how-do-i-set-up-my-configs)
 
 ## Run cloud-sql container (if you're connecting to dev leonardo DB instance)
@@ -36,6 +34,8 @@ docker run \
   gcr.io/cloudsql-docker/gce-proxy:1.16 /cloud_sql_proxy \
   -instances=<mysql instance you'd like to connect> -credential_file=/config
 ```
+
+## Copy `application.conf.example` under each project as `application.conf`. Replace values properly
 
 ## Run a job
 ```
