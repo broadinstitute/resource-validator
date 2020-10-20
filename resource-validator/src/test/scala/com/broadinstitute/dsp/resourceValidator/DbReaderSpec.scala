@@ -35,37 +35,197 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
     check(DbReader.kubernetesClustersToDeleteQuery)
   }
 
-  // TODO: Rename this spec as 'DbQueryBuilderSpec' and split out checker-functionality-specific tests below to their own Spec's
-  it should "detect Kubernetes clusters to be removed" in {
-    val now = Instant.now()
-    val gracePeriod = 3600 // in seconds
+  // TODO: Rename this file as 'DbQueryBuilderSpec' and move the checker-functionality-specific tests below to their own Spec(s)
+  val now = Instant.now()
+  val gracePeriod = 3600 // in seconds
 
-    val dateAccessedDefault = Instant.MIN // -1000000000-01-01T00:00:00Z
-    val dateAccessedBeyondGracePeriod = now.minusSeconds(gracePeriod + 100)
-    val dateAccessedWithinGracePeriod = now.minusSeconds(gracePeriod - 50)
+  val dateAccessedBeyondGracePeriod = now.minusSeconds(gracePeriod + 100)
+  val dateAccessedWithinGracePeriod = now.minusSeconds(gracePeriod - 50)
 
-    val destroyedDateDefault = Instant.ofEpochSecond(1) // 1970-01-01T00:00:01Z
-    val destroyedDateBeyondGracePeriod = now.minusSeconds(gracePeriod + 200)
-    val destroyedDateWithinGracePeriod = now.minusSeconds(gracePeriod - 150)
+  val destroyedDateBeyondGracePeriod = now.minusSeconds(gracePeriod + 200)
+  val destroyedDateWithinGracePeriod = now.minusSeconds(gracePeriod - 150)
 
+  it should "detect for removal: Kubernetes cluster in RUNNING status with app in DELETED status BEYOND grace period" in {
     forAll { (cluster: KubernetesClusterId, disk: Disk) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
 
         for {
           diskId <- insertDisk(disk)
-          cluster1Id <- insertK8sCluster(cluster, "RUNNING")
-          nodepool1Id <- insertNodepool(cluster1Id, "np1", false)
-          namespaceId <- insertNamespace(cluster1Id, NamespaceName("ns1"))
-          _ <- insertApp(nodepool1Id,
+          clusterId <- insertK8sCluster(cluster, "RUNNING")
+          _ <- insertNodepool(clusterId, "default-np", true)
+          nodepoolId <- insertNodepool(clusterId, "np", false)
+          namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
+          _ <- insertApp(nodepoolId,
                          namespaceId,
-                         "app1",
+                         "app",
                          diskId,
                          "DELETED",
                          destroyedDateBeyondGracePeriod,
                          dateAccessedWithinGracePeriod)
+
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
-        } yield clustersToRemove.map(_.id) should contain theSameElementsAs List(cluster1Id)
+        } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  it should "detect for removal: Kubernetes cluster in RUNNING status with app in ERROR status BEYOND grace period" in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+
+        for {
+          diskId <- insertDisk(disk)
+          clusterId <- insertK8sCluster(cluster, "RUNNING")
+          _ <- insertNodepool(clusterId, "default-np", true)
+          nodepoolId <- insertNodepool(clusterId, "np", false)
+          namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
+          _ <- insertApp(nodepoolId,
+                         namespaceId,
+                         "app",
+                         diskId,
+                         "ERROR",
+                         destroyedDateWithinGracePeriod,
+                         dateAccessedBeyondGracePeriod)
+          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
+        } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  it should "detect for removal: Kubernetes cluster in RUNNING status with only a default nodepool and no apps" in {
+    forAll { (cluster: KubernetesClusterId) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+
+        for {
+          clusterId <- insertK8sCluster(cluster, "RUNNING")
+          _ <- insertNodepool(clusterId, "default-np", true)
+          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
+        } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  it should "NOT detect for removal: Kubernetes cluster in DELETED status" in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+
+        for {
+          diskId <- insertDisk(disk)
+          clusterId <- insertK8sCluster(cluster, "DELETED")
+          _ <- insertNodepool(clusterId, "default-np", true)
+          nodepoolId <- insertNodepool(clusterId, "np", false)
+          namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
+          _ <- insertApp(nodepoolId,
+                         namespaceId,
+                         "app",
+                         diskId,
+                         "ERROR",
+                         destroyedDateBeyondGracePeriod,
+                         dateAccessedBeyondGracePeriod)
+          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
+        } yield clustersToRemove shouldBe List.empty
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in RUNNING status" in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+
+        for {
+          diskId <- insertDisk(disk)
+          clusterId <- insertK8sCluster(cluster, "RUNNING")
+          _ <- insertNodepool(clusterId, "default-np", true)
+          nodepoolId <- insertNodepool(clusterId, "np", false)
+          namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
+          _ <- insertApp(nodepoolId,
+                         namespaceId,
+                         "app",
+                         diskId,
+                         "RUNNING",
+                         destroyedDateBeyondGracePeriod,
+                         dateAccessedBeyondGracePeriod)
+
+          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
+        } yield clustersToRemove shouldBe List.empty
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in DELETED status WITHIN grace period" in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+
+        for {
+          diskId <- insertDisk(disk)
+          clusterId <- insertK8sCluster(cluster, "RUNNING")
+          _ <- insertNodepool(clusterId, "default-np", true)
+          nodepoolId <- insertNodepool(clusterId, "np", false)
+          namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
+          _ <- insertApp(nodepoolId,
+                         namespaceId,
+                         "app",
+                         diskId,
+                         "DELETED",
+                         destroyedDateWithinGracePeriod,
+                         dateAccessedBeyondGracePeriod)
+
+          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
+        } yield clustersToRemove shouldBe List.empty
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in ERROR status WITHIN grace period" in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+
+        for {
+          diskId <- insertDisk(disk)
+          clusterId <- insertK8sCluster(cluster, "RUNNING")
+          _ <- insertNodepool(clusterId, "default-np", true)
+          nodepoolId <- insertNodepool(clusterId, "np", false)
+          namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
+          _ <- insertApp(nodepoolId,
+                         namespaceId,
+                         "app",
+                         diskId,
+                         "ERROR",
+                         destroyedDateBeyondGracePeriod,
+                         dateAccessedWithinGracePeriod)
+          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
+        } yield clustersToRemove shouldBe List.empty
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  // The scenario below is to mimic a cluster with batch-pre-created nodepools, which we don't want to auto-delete
+  it should "NOT detect for removal: Kubernetes cluster with nodepools but no apps" in {
+    forAll { (cluster: KubernetesClusterId) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+
+        for {
+          clusterId <- insertK8sCluster(cluster, "RUNNING")
+          _ <- insertNodepool(clusterId, "default-np", true)
+          _ <- insertNodepool(clusterId, "np", false)
+
+          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
+        } yield clustersToRemove.map(_.id) shouldBe List.empty
       }
       res.unsafeRunSync()
     }
