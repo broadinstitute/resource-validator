@@ -60,12 +60,11 @@ object ResourceValidator {
       else Stream.empty
 
       processes = Stream(
-        // TODO Uncomment out when done dry-running
-//        deleteRuntimeCheckerProcess,
-//        errorRuntimeCheckerProcess,
-//        removeStagingBucketProcess,
-//        deleteDiskCheckerProcess,
-//        removeInitBuckets,
+        deleteRuntimeCheckerProcess,
+        errorRuntimeCheckerProcess,
+        removeStagingBucketProcess,
+        deleteDiskCheckerProcess,
+        removeInitBuckets,
         removeKubernetesClusters
       ).covary[F]
 
