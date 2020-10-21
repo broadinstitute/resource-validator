@@ -65,13 +65,13 @@ object DBTestHelper {
                 appName: String,
                 diskId: Long,
                 status: String = "RUNNING",
-                destroyedDate: Instant = Instant.now(),
-                dateAccessed: Instant = Instant.now())(
+                createdDate: Instant = Instant.now(),
+                destroyedDate: Instant = Instant.now())(
     implicit xa: HikariTransactor[IO]
   ): IO[Long] =
     sql"""INSERT INTO APP
          (nodepoolId, appType, appName, status, samResourceId, creator, createdDate, destroyedDate, dateAccessed, namespaceId, diskId, customEnvironmentVariables, googleServiceAccount, kubernetesServiceAccount, chart, `release`)
-         VALUES (${nodepoolId}, "GALAXY", ${appName}, ${status}, "samId", "fake@broadinstitute.org", now(), ${destroyedDate}, ${dateAccessed}, ${namespaceId}, ${diskId}, "", "gsa", "ksa", "chart1", "release1")
+         VALUES (${nodepoolId}, "GALAXY", ${appName}, ${status}, "samId", "fake@broadinstitute.org", ${createdDate}, ${destroyedDate}, now(), ${namespaceId}, ${diskId}, "", "gsa", "ksa", "chart1", "release1")
          """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
 
   def getDiskStatus(diskId: Long)(implicit xa: HikariTransactor[IO]): IO[String] =

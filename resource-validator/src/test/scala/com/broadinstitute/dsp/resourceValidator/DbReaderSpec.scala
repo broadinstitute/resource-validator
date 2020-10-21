@@ -39,8 +39,8 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   val now = Instant.now()
   val gracePeriod = 3600 // in seconds
 
-  val dateAccessedBeyondGracePeriod = now.minusSeconds(gracePeriod + 100)
-  val dateAccessedWithinGracePeriod = now.minusSeconds(gracePeriod - 50)
+  val createdDateBeyondGracePeriod = now.minusSeconds(gracePeriod + 100)
+  val createdDateWithinGracePeriod = now.minusSeconds(gracePeriod - 50)
 
   val destroyedDateBeyondGracePeriod = now.minusSeconds(gracePeriod + 200)
   val destroyedDateWithinGracePeriod = now.minusSeconds(gracePeriod - 150)
@@ -61,8 +61,8 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
                          "app",
                          diskId,
                          "DELETED",
-                         destroyedDateBeyondGracePeriod,
-                         dateAccessedWithinGracePeriod)
+                         createdDateWithinGracePeriod,
+                         destroyedDateBeyondGracePeriod)
 
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
@@ -87,8 +87,8 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
                          "app",
                          diskId,
                          "ERROR",
-                         destroyedDateWithinGracePeriod,
-                         dateAccessedBeyondGracePeriod)
+                         createdDateBeyondGracePeriod,
+                         destroyedDateWithinGracePeriod)
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
       }
@@ -127,8 +127,8 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
                          "app",
                          diskId,
                          "ERROR",
-                         destroyedDateBeyondGracePeriod,
-                         dateAccessedBeyondGracePeriod)
+                         createdDateBeyondGracePeriod,
+                         destroyedDateBeyondGracePeriod)
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove shouldBe List.empty
       }
@@ -152,8 +152,8 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
                          "app",
                          diskId,
                          "RUNNING",
-                         destroyedDateBeyondGracePeriod,
-                         dateAccessedBeyondGracePeriod)
+                         createdDateBeyondGracePeriod,
+                         destroyedDateBeyondGracePeriod)
 
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove shouldBe List.empty
@@ -178,8 +178,8 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
                          "app",
                          diskId,
                          "DELETED",
-                         destroyedDateWithinGracePeriod,
-                         dateAccessedBeyondGracePeriod)
+                         createdDateBeyondGracePeriod,
+                         destroyedDateWithinGracePeriod)
 
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove shouldBe List.empty
@@ -204,8 +204,8 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
                          "app",
                          diskId,
                          "ERROR",
-                         destroyedDateBeyondGracePeriod,
-                         dateAccessedWithinGracePeriod)
+                         createdDateWithinGracePeriod,
+                         destroyedDateBeyondGracePeriod)
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove shouldBe List.empty
       }

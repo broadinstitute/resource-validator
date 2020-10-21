@@ -41,7 +41,7 @@ object DbReader {
   // We are excluding clusters with only default nodepools running on them so we do not remove batch-pre-created clusters.
   // We are calculating the grace period for cluster deletion assuming that the following are valid proxies for an app's last activity:
   //    1. destroyedDate for deleted apps
-  //    2. dateAccessed for error'ed apps
+  //    2. createdDate for error'ed apps
   // TODO: Read the grace period (hardcoded to '1 HOUR' below) from config
   val kubernetesClustersToDeleteQuery =
     sql"""
@@ -58,7 +58,7 @@ object DbReader {
                   (
                     (a.status != "DELETED" AND a.status != "ERROR") OR
                     (a.status = "DELETED" AND a.destroyedDate > now() - INTERVAL 1 HOUR) OR
-                    (a.status = "ERROR" AND a.dateAccessed > now() - INTERVAL 1 HOUR) OR
+                    (a.status = "ERROR" AND a.createdDate > now() - INTERVAL 1 HOUR) OR
                     (a.id IS NULL)
                   )
               );
