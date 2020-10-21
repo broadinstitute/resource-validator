@@ -61,7 +61,6 @@ object DbReader {
                     (a.status = "ERROR" AND a.dateAccessed > now() - INTERVAL 1 HOUR) OR
                     (a.id IS NULL)
                   )
-
               );
          """
       .query[KubernetesClusterToRemove]
