@@ -42,4 +42,4 @@ docker run \
 sbt <project>/run --help
 ```
 
-e.g. `sbt resourceValidator/run --dryRun --all`
+e.g. `sbt "resourceValidator/run --dryRun --all"`
