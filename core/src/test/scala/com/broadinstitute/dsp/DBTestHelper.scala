@@ -1,6 +1,7 @@
 package com.broadinstitute.dsp
 
 import java.time.Instant
+import java.util.UUID
 
 import cats.effect.{ContextShift, IO, Resource}
 import doobie.hikari.HikariTransactor
