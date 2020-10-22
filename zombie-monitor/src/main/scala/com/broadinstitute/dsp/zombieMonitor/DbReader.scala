@@ -30,7 +30,7 @@ object DbReader {
         """.query[Disk]
 
   // We only check runtimes that have been created for more than 1 hour because a newly "Creating" runtime may not exist in Google yet
-  val activeRuntime =
+  val activeRuntimeQuery =
     sql"""
          SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status FROM CLUSTER AS c1 
          INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id 
@@ -58,7 +58,7 @@ object DbReader {
            update KUBERNETES_CLUSTER set status = "DELETED", destroyedDate = now() where id = $id
            """.update
 
-  def markNodepoolDeleted(id: Long) =
+  def markNodepoolDeletedQuery(id: Long) =
     sql"""
            update NODEPOOL set status = "DELETED", destroyedDate = now() where id = $id
            """.update
@@ -89,7 +89,7 @@ object DbReader {
            """.update
 
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
-    override def getRuntimeCandidate: Stream[F, Runtime] = activeRuntime.stream.transact(xa)
+    override def getRuntimeCandidate: Stream[F, Runtime] = activeRuntimeQuery.stream.transact(xa)
 
     override def getDisksToDeleteCandidate: Stream[F, Disk] =
       activeDisksQuery.stream.transact(xa)

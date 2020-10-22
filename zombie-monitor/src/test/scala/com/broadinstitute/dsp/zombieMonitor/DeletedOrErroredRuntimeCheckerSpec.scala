@@ -28,7 +28,7 @@ import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.scalatest.flatspec.AnyFlatSpec
 
 class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
-  it should "report runtime if it doesn't exist in google but still active in leonardo DB" in {
+  it should "report a runtime if it doesn't exist in google but is still active in leonardo DB" in {
     forAll { (runtime: Runtime, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
         override def getRuntimeCandidate: Stream[IO, Runtime] =
@@ -47,13 +47,13 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
         ): IO[Option[Cluster]] = IO.pure(None)
       }
       val deps = initRuntimeCheckerDeps(computeService, dataprocService)
-      val checker = DeletedOrErrorRuntimeChecker.impl(dbReader, deps)
+      val checker = DeletedOrErroredRuntimeChecker.impl(dbReader, deps)
       val res = checker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe Some(runtime)
     }
   }
 
-  it should "not report runtime if it still exist in google and active in leonardo DB" in {
+  it should "not a report runtime if it still exists in google and is active in leonardo DB" in {
     forAll { (runtime: Runtime, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
         override def getRuntimeCandidate: Stream[IO, Runtime] =
@@ -75,13 +75,13 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
           )
       }
       val deps = initRuntimeCheckerDeps(computeService, dataprocService)
-      val checker = DeletedOrErrorRuntimeChecker.impl(dbReader, deps)
+      val checker = DeletedOrErroredRuntimeChecker.impl(dbReader, deps)
       val res = checker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe None
     }
   }
 
-  it should "report runtime if it still exist in google in ERROR and active in leonardo DB" in {
+  it should "report a runtime if it still exists in google in ERROR and is active in leonardo DB" in {
     forAll { (rt: Runtime, dryRun: Boolean) =>
       val runtime = rt.copy(cloudService = CloudService.Dataproc)
       val dbReader = new FakeDbReader {
@@ -98,7 +98,7 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
         )
       }
       val deps = initRuntimeCheckerDeps(googleDataprocService = dataprocService)
-      val checker = DeletedOrErrorRuntimeChecker.impl(dbReader, deps)
+      val checker = DeletedOrErroredRuntimeChecker.impl(dbReader, deps)
       val res = checker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe Some(runtime)
     }

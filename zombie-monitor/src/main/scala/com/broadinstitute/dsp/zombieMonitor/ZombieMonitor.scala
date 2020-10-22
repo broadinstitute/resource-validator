@@ -15,7 +15,7 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 
 object ZombieMonitor {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
-                                            ifRunAll: Boolean,
+                                            shouldRunAll: Boolean,
                                             shouldCheckDeletedRuntimes: Boolean,
                                             shouldCheckDeletedDisks: Boolean,
                                             shouldCheckDeletedK8sClusters: Boolean,
@@ -30,18 +30,18 @@ object ZombieMonitor {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
 
-      deleteDiskCheckerProcess = if (ifRunAll || shouldCheckDeletedDisks)
+      deleteDiskCheckerProcess = if (shouldRunAll || shouldCheckDeletedDisks)
         Stream.eval(DeletedDiskChecker.impl(deps.dbReader, deps.diskCheckerDeps).run(isDryRun))
       else Stream.empty
-      deleteRuntimeCheckerProcess = if (ifRunAll || shouldCheckDeletedRuntimes)
-        Stream.eval(DeletedOrErrorRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+      deleteRuntimeCheckerProcess = if (shouldRunAll || shouldCheckDeletedRuntimes)
+        Stream.eval(DeletedOrErroredRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
-      deletek8sClusterCheckerProcess = if (ifRunAll || shouldCheckDeletedK8sClusters)
+      deletek8sClusterCheckerProcess = if (shouldRunAll || shouldCheckDeletedK8sClusters)
         Stream.eval(
           DeletedKubernetesClusterChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
         )
       else Stream.empty
-      deleteOrErroredNodepoolCheckerProcess = if (ifRunAll || shouldCheckDeletedOrErroredNodepool)
+      deleteOrErroredNodepoolCheckerProcess = if (shouldRunAll || shouldCheckDeletedOrErroredNodepool)
         Stream.eval(
           DeletedOrErroredNodepoolChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
         )

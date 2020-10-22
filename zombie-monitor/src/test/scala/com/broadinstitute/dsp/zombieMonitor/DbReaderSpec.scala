@@ -42,7 +42,7 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   }
 
   it should "build activeRuntime properly" in {
-    check(DbReader.activeRuntime)
+    check(DbReader.activeRuntimeQuery)
   }
 
   // This test will fail with `Parameter metadata not available for the given statement`
@@ -70,7 +70,7 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
     }
   }
 
-  it should "not return runtimes that younger than an hour" in {
+  it should "not return runtimes that were created within the past hour" in {
     forAll { (rt: Runtime) =>
       val runtime = rt.copy(status = "Running")
       val res = transactorResource.use { implicit xa =>

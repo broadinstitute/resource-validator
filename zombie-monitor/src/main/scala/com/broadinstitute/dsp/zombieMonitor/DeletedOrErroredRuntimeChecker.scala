@@ -16,7 +16,7 @@ import org.broadinstitute.dsde.workbench.model.TraceId
  * 2. if exists but in Error status in google, update DB to "Error"
  * 3. else, do nothing
  */
-object DeletedOrErrorRuntimeChecker {
+object DeletedOrErroredRuntimeChecker {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: RuntimeCheckerDeps[F]
