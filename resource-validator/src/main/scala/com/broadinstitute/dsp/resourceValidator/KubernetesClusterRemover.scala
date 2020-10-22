@@ -39,9 +39,8 @@ object KubernetesClusterRemover {
       ): F[Option[KubernetesClusterToRemove]] =
         for {
           now <- timer.clock.realTime(TimeUnit.MILLISECONDS)
-          traceId = Some(TraceId(s"resourceValidator-$now"))
           _ <- if (!isDryRun) {
-            val msg = DeleteKubernetesClusterMessage(c.id, c.googleProject, traceId)
+            val msg = DeleteKubernetesClusterMessage(c.id, c.googleProject, TraceId(s"kubernetesClusterRemover-$now"))
 
             // TODO: Add publishOne in wb-libs and use it here
             Stream
@@ -53,6 +52,11 @@ object KubernetesClusterRemover {
           } else F.unit
         } yield Some(c)
     }
+}
+
+// TODO: 'project' below is unnecessary but removing it requires an accompanying change in back Leo so leaving for now
+final case class DeleteKubernetesClusterMessage(clusterId: Long, project: GoogleProject, traceId: TraceId) {
+  val messageType: String = "deleteKubernetesCluster"
 }
 
 final case class KubernetesClusterRemoverDeps[F[_]](publisher: GooglePublisher[F], checkRunnerDeps: CheckRunnerDeps[F])
