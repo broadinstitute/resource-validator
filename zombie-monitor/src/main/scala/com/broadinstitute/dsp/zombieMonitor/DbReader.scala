@@ -78,7 +78,7 @@ object DbReader {
            update NODEPOOL set status = $status where id = $id
            """.update
 
-  def markAppDeletedForNodepoolId(nodepoolId: Long) =
+  def markAppDeletedForNodepoolIdQuery(nodepoolId: Long) =
     sql"""
            update APP set status = "DELETED", destroyedDate = now() where nodepoolId = $nodepoolId
            """.update
@@ -108,8 +108,8 @@ object DbReader {
 
     override def markNodepoolAndAppDeleted(nodepoolId: Long): F[Unit] = {
       val res = for {
-        _ <- markNodepoolDeleted(nodepoolId).run
-        _ <- markAppDeletedForNodepoolId(nodepoolId).run
+        _ <- markNodepoolDeletedQuery(nodepoolId).run
+        _ <- markAppDeletedForNodepoolIdQuery(nodepoolId).run
       } yield ()
       res.transact(xa)
     }
