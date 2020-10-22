@@ -51,6 +51,7 @@ final case class Runtime(id: Long,
                          runtimeName: String,
                          cloudService: CloudService,
                          status: String) {
+  // this is the format we'll output in report, which can be easily consumed by scripts if necessary
   override def toString: String = s"$id,${googleProject.value},${runtimeName},${cloudService},$status"
 }
 final case class RuntimeCheckerDeps[F[_]](computeService: GoogleComputeService[F],
