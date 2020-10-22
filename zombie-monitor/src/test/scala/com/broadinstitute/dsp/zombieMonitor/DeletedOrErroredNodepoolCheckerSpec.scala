@@ -31,7 +31,7 @@ class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestS
     }
   }
 
-  it should "not report nodepool if it still exist in google and active in leonardo DB" in {
+  it should "not report nodepool if it still exists in google and active in leonardo DB" in {
     forAll { (nodepoolToScan: NodepoolToScan, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
         override def getk8sNodepoolsToDeleteCandidate: Stream[IO, NodepoolToScan] =

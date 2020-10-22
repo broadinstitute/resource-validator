@@ -6,7 +6,6 @@ import doobie._
 import doobie.implicits._
 import fs2.Stream
 import DbReaderImplicits._
-import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 trait DbReader[F[_]] {
@@ -14,7 +13,7 @@ trait DbReader[F[_]] {
   def getDeletedDisks: Stream[F, Disk]
   def getErroredRuntimes: Stream[F, Runtime]
   def getStagingBucketsToDelete: Stream[F, BucketToRemove]
-  def getK8sClustersToDelete: Stream[F, KubernetesClusterId]
+  def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove]
   def getInitBucketsToDelete: Stream[F, InitBucketToRemove]
 }
 
@@ -35,6 +34,36 @@ object DbReader {
   val initBucketsToDeleteQuery =
     sql"""select googleProject, initBucket from CLUSTER WHERE status="Deleted";"""
       .query[InitBucketToRemove]
+
+  // Return all non-deleted clusters with non-default nodepools that have apps that were all deleted
+  // or errored outside the grace period (1 hour)
+  //
+  // We are excluding clusters with only default nodepools running on them so we do not remove batch-pre-created clusters.
+  // We are calculating the grace period for cluster deletion assuming that the following are valid proxies for an app's last activity:
+  //    1. destroyedDate for deleted apps
+  //    2. createdDate for error'ed apps
+  // TODO: Read the grace period (hardcoded to '1 HOUR' below) from config
+  val kubernetesClustersToDeleteQuery =
+    sql"""
+            SELECT kc.id, kc.googleProject
+            FROM KUBERNETES_CLUSTER kc
+            WHERE
+              kc.status != "DELETED" AND
+              NOT EXISTS (
+                SELECT *
+                FROM NODEPOOL np
+                LEFT JOIN APP a ON np.id = a.nodepoolId
+                WHERE
+                  kc.id = np.clusterId AND np.isDefault = 0 AND
+                  (
+                    (a.status != "DELETED" AND a.status != "ERROR") OR
+                    (a.status = "DELETED" AND a.destroyedDate > now() - INTERVAL 1 HOUR) OR
+                    (a.status = "ERROR" AND a.createdDate > now() - INTERVAL 1 HOUR) OR
+                    (a.id IS NULL)
+                  )
+              );
+         """
+      .query[KubernetesClusterToRemove]
 
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
 
@@ -70,24 +99,10 @@ object DbReader {
         .transact(xa)
 
     override def getInitBucketsToDelete: Stream[F, InitBucketToRemove] =
-      initBucketsToDeleteQuery.stream
-        .transact(xa)
+      initBucketsToDeleteQuery.stream.transact(xa)
 
-    // Return all clusters that has no non "DELETED" | `ERROR` non-default nodepool
-    // TODO: Add grace period
-    override def getK8sClustersToDelete: Stream[F, KubernetesClusterId] =
-      sql"""SELECT kc.id, kc.location, kc.clusterName
-            FROM KUBERNETES_CLUSTER kc
-            WHERE NOT EXISTS (
-              SELECT *
-                FROM KUBERNETES_CLUSTER kc
-                LEFT JOIN NODEPOOL as np on np.clusterId=kc.id
-              WHERE np.status != "DELETED" and np.status !="ERROR" and np.isDefault = 0
-            );
-           """
-        .query[KubernetesClusterId]
-        .stream
-        .transact(xa)
+    override def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove] =
+      kubernetesClustersToDeleteQuery.stream.transact(xa)
 
     // Same disk names might be re-used
     override def getDeletedDisks: Stream[F, Disk] =

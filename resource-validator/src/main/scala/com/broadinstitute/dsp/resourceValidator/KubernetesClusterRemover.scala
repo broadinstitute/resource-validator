@@ -1,38 +1,75 @@
 package com.broadinstitute.dsp
 package resourceValidator
 
+import java.util.concurrent.TimeUnit
+
+import fs2.Stream
 import cats.effect.{Concurrent, Timer}
+import cats.implicits._
 import cats.mtl.ApplicativeAsk
 import io.chrisdavenport.log4cats.Logger
-import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
-import org.broadinstitute.dsde.workbench.google2.GoogleStorageService
+import io.circe.Encoder
+import org.broadinstitute.dsde.workbench.google2.JsonCodec.traceIdEncoder
+import org.broadinstitute.dsde.workbench.google2.GooglePublisher
 import org.broadinstitute.dsde.workbench.model.TraceId
-import org.broadinstitute.dsde.workbench.model.google.GcsBucketName
+import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 
 // This file will likely be moved out of resource-validator later
 // See https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes?focusedCommentId=807632911#comment-807632911
 object KubernetesClusterRemover {
+  import LeoPubsubCodec._
+
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
-    deps: CheckRunnerDeps[F]
+    deps: KubernetesClusterRemoverDeps[F]
   )(implicit F: Concurrent[F],
     timer: Timer[F],
     logger: Logger[F],
-    ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, KubernetesClusterId] =
-    new CheckRunner[F, KubernetesClusterId] {
+    ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, KubernetesClusterToRemove] =
+    new CheckRunner[F, KubernetesClusterToRemove] {
       override def appName: String = resourceValidator.appName
-      override def configs = CheckRunnerConfigs(s"remove-kubernetes-clusters", true)
-      override def dependencies: CheckRunnerDeps[F] = deps
-      override def resourceToScan: fs2.Stream[F, KubernetesClusterId] = dbReader.getK8sClustersToDelete
+      override def configs = CheckRunnerConfigs(s"remove-kubernetes-clusters", shouldAlert = true)
+      override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
+      override def resourceToScan: fs2.Stream[F, KubernetesClusterToRemove] = dbReader.getKubernetesClustersToDelete
 
-      // TODO: pending decision in https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes
-      // For now, we'll just get alerted when a cluster needs to be deleted
-      override def checkResource(a: KubernetesClusterId, isDryRun: Boolean)(
+      // TODO: This check is to be moved to a new project (a.k.a. 'janitor)
+      // https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes
+      override def checkResource(c: KubernetesClusterToRemove, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
-      ): F[Option[KubernetesClusterId]] = F.pure(Some(a))
-    }
+      ): F[Option[KubernetesClusterToRemove]] =
+        for {
+          now <- timer.clock.realTime(TimeUnit.MILLISECONDS)
+          _ <- if (!isDryRun) {
+            val msg = DeleteKubernetesClusterMessage(c.id, c.googleProject, TraceId(s"kubernetesClusterRemover-$now"))
 
+            // TODO: Add publishOne in wb-libs and use it here
+            Stream
+              .emit(msg)
+              .covary[F]
+              .through(deps.publisher.publish[DeleteKubernetesClusterMessage])
+              .compile
+              .drain
+          } else F.unit
+        } yield Some(c)
+    }
 }
 
-final case class KubernetesClusterRemover[F[_]](reportDestinationBucket: GcsBucketName,
-                                                storageService: GoogleStorageService[F])
+// TODO: 'project' below is unnecessary but removing it requires an accompanying change in back Leo so leaving for now
+final case class DeleteKubernetesClusterMessage(clusterId: Long, project: GoogleProject, traceId: TraceId) {
+  val messageType: String = "deleteKubernetesCluster"
+}
+
+final case class KubernetesClusterRemoverDeps[F[_]](publisher: GooglePublisher[F], checkRunnerDeps: CheckRunnerDeps[F])
+
+object JsonCodec {
+  implicit val googleProjectEncoder: Encoder[GoogleProject] = Encoder.encodeString.contramap(_.value)
+}
+
+object LeoPubsubCodec {
+  import JsonCodec._
+
+  implicit val deleteKubernetesClusterMessageEncoder: Encoder[DeleteKubernetesClusterMessage] =
+    Encoder.forProduct4("messageType", "clusterId", "project", "traceId")(x =>
+      (x.messageType, x.clusterId, x.project, x.traceId)
+    )
+}

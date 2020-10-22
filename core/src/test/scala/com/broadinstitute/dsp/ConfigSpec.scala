@@ -2,7 +2,7 @@ package com.broadinstitute.dsp
 
 import java.nio.file.Paths
 
-import org.broadinstitute.dsde.workbench.model.google.GcsBucketName
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -16,7 +16,11 @@ class ConfigSpec extends AnyFlatSpec with Matchers {
         "leonardo-test"
       ),
       Paths.get("path-to-credential"),
-      GcsBucketName("fake-bucket")
+      GcsBucketName("fake-bucket"),
+      PubsubConfig(
+        GoogleProject("test-project"),
+        "test-topic"
+      )
     )
 
     config shouldBe Right(expectedConfig)

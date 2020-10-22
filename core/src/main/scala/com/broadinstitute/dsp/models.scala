@@ -30,3 +30,5 @@ final case class InitBucketToRemove(googleProject: GoogleProject, bucket: Option
 
 final case class K8sClusterToScan(id: Long, kubernetesClusterId: KubernetesClusterId)
 final case class NodepoolToScan(id: Long, nodepoolId: NodepoolId)
+
+final case class KubernetesClusterToRemove(id: Long, googleProject: GoogleProject)
