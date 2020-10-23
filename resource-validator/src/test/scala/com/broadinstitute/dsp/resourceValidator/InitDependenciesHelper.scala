@@ -1,7 +1,7 @@
 package com.broadinstitute.dsp.resourceValidator
 
 import cats.effect.IO
-import com.broadinstitute.dsp.{CheckRunnerDeps, Config, RuntimeCheckerDeps}
+import com.broadinstitute.dsp.{CheckRunnerDeps, RuntimeCheckerDeps}
 import org.broadinstitute.dsde.workbench.google2.{GoogleComputeService, GoogleDataprocService, GoogleStorageService}
 import org.broadinstitute.dsde.workbench.google2.mock.{
   FakeGoogleComputeService,

@@ -14,7 +14,6 @@ import org.scalatest.DoNotDiscover
 import org.scalatest.flatspec.AnyFlatSpec
 import doobie.implicits._
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
-
 import java.time.Instant
 
 /**
@@ -27,6 +26,7 @@ import java.time.Instant
  */
 @DoNotDiscover
 class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
+  implicit val databaseConfig = ConfigSpec.config.database
   val transactor = yoloTransactor
 
   it should "build activeDisksQuery properly" in {

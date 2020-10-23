@@ -21,6 +21,7 @@ import org.scalatest.flatspec.AnyFlatSpec
  */
 @DoNotDiscover
 class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
+  implicit val config = ConfigSpec.config.database
   val transactor = yoloTransactor
 
   it should "build deletedDisksQuery properly" in {

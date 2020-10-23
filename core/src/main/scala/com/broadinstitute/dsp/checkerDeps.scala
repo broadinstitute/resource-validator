@@ -1,5 +1,7 @@
 package com.broadinstitute.dsp
 
+import java.nio.file.Path
+
 import cats.Parallel
 import cats.effect.concurrent.Semaphore
 import cats.effect.{Async, Blocker, Concurrent, ContextShift, Resource, Timer}
@@ -13,13 +15,13 @@ import org.broadinstitute.dsde.workbench.google2.{
   GoogleDiskService,
   GoogleStorageService
 }
-import org.broadinstitute.dsde.workbench.model.google.GoogleProject
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 import scala.jdk.CollectionConverters._
 
 object RuntimeCheckerDeps {
   def init[F[_]: Concurrent: ContextShift: StructuredLogger: Parallel: Timer](
-    appConfig: AppConfig,
+    appConfig: RuntimeCheckerConfig,
     blocker: Blocker,
     blockerBound: Semaphore[F]
   ): Resource[F, RuntimeCheckerDeps[F]] =
@@ -61,3 +63,5 @@ final case class RuntimeCheckerDeps[F[_]](computeService: GoogleComputeService[F
 final case class KubernetesClusterCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], gkeService: GKEService[F])
 
 final case class DiskCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], googleDiskService: GoogleDiskService[F])
+
+final case class RuntimeCheckerConfig(pathToCredential: Path, reportDestinationBucket: GcsBucketName)

@@ -40,7 +40,7 @@ class KubernetesClusterRemoverSpec extends AnyFlatSpec with CronJobsTestSuite {
   }
 
   private def initDeps(publisher: GooglePublisher[IO]): KubernetesClusterRemoverDeps[IO] = {
-    val checkRunnerDeps = CheckRunnerDeps(config.reportDestinationBucket, FakeGoogleStorageInterpreter)
+    val checkRunnerDeps = CheckRunnerDeps(ConfigSpec.config.reportDestinationBucket, FakeGoogleStorageInterpreter)
     new KubernetesClusterRemoverDeps[IO](publisher, checkRunnerDeps)
   }
 }
