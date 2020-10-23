@@ -36,9 +36,9 @@ object DbReader {
       .query[InitBucketToRemove]
 
   val deletedRuntimeQuery =
-    sql"""SELECT distinct c1.id, googleProject, clusterName, rt.cloudService, c1.status 
+    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status 
           FROM CLUSTER AS c1
-          INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id 
+          INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id 
           WHERE c1.status="Deleted" AND
           NOT EXISTS (
             SELECT * 
@@ -51,7 +51,7 @@ object DbReader {
   val erroredRuntimeQuery =
     sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status 
           FROM CLUSTER AS c1
-          INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id 
+          INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id 
           WHERE 
            c1.status="Error" AND
            NOT EXISTS (
