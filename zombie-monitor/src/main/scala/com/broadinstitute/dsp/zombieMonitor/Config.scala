@@ -4,7 +4,7 @@ package zombieMonitor
 import java.nio.file.Path
 
 import cats.implicits._
-import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
+import org.broadinstitute.dsde.workbench.model.google.GcsBucketName
 import pureconfig._
 import pureconfig.generic.auto._
 import ConfigImplicits._
