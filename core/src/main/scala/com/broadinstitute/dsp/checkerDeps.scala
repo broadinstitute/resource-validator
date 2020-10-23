@@ -13,7 +13,7 @@ import org.broadinstitute.dsde.workbench.google2.{
   GoogleDiskService,
   GoogleStorageService
 }
-import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
+import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 
 import scala.jdk.CollectionConverters._
 
@@ -41,17 +41,22 @@ object RuntimeCheckerDeps {
                                                               blockerBound,
                                                               RetryPredicates.standardRetryConfig)
     } yield {
-      RuntimeCheckerDeps(appConfig.reportDestinationBucket, computeService, storageService, dataprocService)
+      val checkRunnerDeps = CheckRunnerDeps(appConfig.reportDestinationBucket, storageService)
+      RuntimeCheckerDeps(computeService, dataprocService, checkRunnerDeps)
     }
 }
 
-final case class Runtime(googleProject: GoogleProject, runtimeName: String, cloudService: CloudService) {
-  override def toString: String = s"${googleProject.value},${runtimeName},${cloudService}"
+final case class Runtime(id: Long,
+                         googleProject: GoogleProject,
+                         runtimeName: String,
+                         cloudService: CloudService,
+                         status: String) {
+  // this is the format we'll output in report, which can be easily consumed by scripts if necessary
+  override def toString: String = s"$id,${googleProject.value},${runtimeName},${cloudService},$status"
 }
-final case class RuntimeCheckerDeps[F[_]](reportDestinationBucket: GcsBucketName,
-                                          computeService: GoogleComputeService[F],
-                                          storageService: GoogleStorageService[F],
-                                          dataprocService: GoogleDataprocService[F])
+final case class RuntimeCheckerDeps[F[_]](computeService: GoogleComputeService[F],
+                                          dataprocService: GoogleDataprocService[F],
+                                          checkRunnerDeps: CheckRunnerDeps[F])
 
 final case class KubernetesClusterCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], gkeService: GKEService[F])
 

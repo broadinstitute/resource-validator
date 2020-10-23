@@ -13,10 +13,12 @@ import org.broadinstitute.dsde.workbench.google2.Location
 object Generators {
   val genCloudService: Gen[CloudService] = Gen.oneOf(CloudService.Gce, CloudService.Dataproc)
   val genRuntime: Gen[Runtime] = for {
+    id <- Gen.chooseNum(0, 100)
     cloudService <- genCloudService
     project <- genGoogleProject
     runtimeName <- Gen.uuid.map(_.toString)
-  } yield Runtime(project, runtimeName, cloudService)
+    status <- Gen.oneOf("Running", "Creating", "Deleted", "Error")
+  } yield Runtime(id, project, runtimeName, cloudService, status)
   val genDisk: Gen[Disk] = for {
     id <- Gen.chooseNum(0, 100)
     project <- genGoogleProject
@@ -58,6 +60,7 @@ object Generators {
   } yield KubernetesClusterToRemove(id, googleProject)
 
   implicit val arbRuntime: Arbitrary[Runtime] = Arbitrary(genRuntime)
+  implicit val arbCloudService: Arbitrary[CloudService] = Arbitrary(genCloudService)
   implicit val arbDisk: Arbitrary[Disk] = Arbitrary(genDisk)
   implicit val arbInitBucket: Arbitrary[InitBucketToRemove] = Arbitrary(genInitBucket)
   implicit val arbKubernetesClusterId: Arbitrary[KubernetesClusterId] = Arbitrary(genKubernetesClusterId)

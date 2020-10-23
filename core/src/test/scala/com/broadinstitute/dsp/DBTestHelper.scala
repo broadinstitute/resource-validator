@@ -1,16 +1,20 @@
 package com.broadinstitute.dsp
 
 import java.time.Instant
+import java.util.UUID
 
 import cats.effect.{ContextShift, IO, Resource}
 import doobie.hikari.HikariTransactor
 import doobie.implicits._
 import DbReaderImplicits._
+import doobie.Put
 import doobie.util.transactor.Transactor
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
 
 object DBTestHelper {
+  implicit val cloudServicePut: Put[CloudService] = Put[String].contramap(cloudService => cloudService.asString)
+
   def yoloTransactor(implicit cs: ContextShift[IO]): Transactor[IO] = {
     val databaseConfig = Config.appConfig.toOption.get.database
     Transactor.fromDriverManager[IO](
@@ -50,6 +54,72 @@ object DBTestHelper {
     sql"""INSERT INTO NODEPOOL
          (clusterId, nodepoolName, status, creator, createdDate, destroyedDate, dateAccessed, machineType, numNodes, autoScalingMin, autoScalingMax, isDefault)
          VALUES (${clusterId}, ${nodepoolName}, ${status}, "fake@broadinstitute.org", now(), now(), now(), "n1-standard-1", 1, 0, 1, ${isDefault})
+         """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
+
+  def insertRuntime(runtime: Runtime, runtimeConfigId: Long, createdDate: Instant = Instant.now())(
+    implicit xa: HikariTransactor[IO]
+  ): IO[Long] =
+    sql"""INSERT INTO CLUSTER
+         (clusterName, 
+         googleProject, 
+         operationName, 
+         status, 
+         hostIp, 
+         createdDate, 
+         destroyedDate, 
+         initBucket, 
+         creator, 
+         serviceAccount, 
+         stagingBucket, 
+         dateAccessed, 
+         autopauseThreshold, 
+         defaultClientId, 
+         stopAfterCreation, 
+         kernelFoundBusyDate, 
+         welderEnabled, 
+         internalId, 
+         runtimeConfigId, 
+         googleId)
+         VALUES (
+         ${runtime.runtimeName}, 
+         ${runtime.googleProject}, 
+         "op1", 
+         ${runtime.status}, 
+         "fakeIp", 
+         $createdDate, 
+         now(), 
+         "gs://initBucket", 
+         "fake@broadinstitute.org", 
+         "pet@broadinstitute.org", 
+         "stagingBucket", 
+         now(), 
+         30, 
+         "clientId", 
+         false, 
+         now(), 
+         true, 
+         "internalId", 
+         $runtimeConfigId, 
+         ${UUID.randomUUID().toString})
+         """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
+
+  def insertRuntimeConfig(cloudService: CloudService)(implicit xa: HikariTransactor[IO]): IO[Long] =
+    sql"""INSERT INTO RUNTIME_CONFIG
+         (cloudService, 
+          machineType, 
+          diskSize, 
+          numberOfWorkers,
+          dateAccessed,
+          bootDiskSize
+         )
+         VALUES (
+         ${cloudService},
+         "n1-standard-4",
+         100,
+         0,
+         now(),
+         30
+         )
          """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
 
   def insertNamespace(clusterId: Long, namespaceName: NamespaceName)(
@@ -94,6 +164,11 @@ object DBTestHelper {
          SELECT status FROM APP where id = ${id}
          """.query[String].unique.transact(xa)
 
+  def getRuntimeStatus(id: Long)(implicit xa: HikariTransactor[IO]): IO[String] =
+    sql"""
+         SELECT status FROM CLUSTER where id = ${id}
+         """.query[String].unique.transact(xa)
+
   private def truncateTables(xa: HikariTransactor[IO]): IO[Unit] = {
     val res = for {
       _ <- sql"Delete from APP".update.run
@@ -102,6 +177,8 @@ object DBTestHelper {
       _ <- sql"Delete from PERSISTENT_DISK".update.run
       _ <- sql"Delete from NODEPOOL".update.run
       _ <- sql"Delete from KUBERNETES_CLUSTER".update.run
+      _ <- sql"Delete from CLUSTER".update.run
+      _ <- sql"Delete from RUNTIME_CONFIG".update.run
     } yield ()
     res.transact(xa)
   }

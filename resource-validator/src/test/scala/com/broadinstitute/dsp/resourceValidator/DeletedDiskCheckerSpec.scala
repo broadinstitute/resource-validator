@@ -59,6 +59,7 @@ class DeletedDiskCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   def initDeletedDiskCheckerDeps(
     googleDiskService: GoogleDiskService[IO] = MockGoogleDiskService
   ): DiskCheckerDeps[IO] = {
+    val config = Config.appConfig.toOption.get
     val checkRunnerDeps = CheckRunnerDeps(config.reportDestinationBucket, FakeGoogleStorageInterpreter)
     DiskCheckerDeps(checkRunnerDeps, googleDiskService)
   }

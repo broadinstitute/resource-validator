@@ -31,6 +31,14 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
     check(DbReader.initBucketsToDeleteQuery)
   }
 
+  it should "build deletedRuntimeQuery properly" in {
+    check(DbReader.deletedRuntimeQuery)
+  }
+
+  it should "build erroredRuntimeQuery properly" in {
+    check(DbReader.erroredRuntimeQuery)
+  }
+
   it should "build kubernetesClustersToDeleteQuery properly" in {
     check(DbReader.kubernetesClustersToDeleteQuery)
   }

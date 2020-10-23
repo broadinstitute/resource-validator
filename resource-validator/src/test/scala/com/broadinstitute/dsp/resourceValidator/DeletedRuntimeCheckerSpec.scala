@@ -4,6 +4,7 @@ package resourceValidator
 import cats.effect.IO
 import cats.mtl.ApplicativeAsk
 import com.broadinstitute.dsp.Generators._
+import com.broadinstitute.dsp.resourceValidator.InitDependenciesHelper.initRuntimeCheckerDeps
 import com.google.cloud.compute.v1.{Instance, Operation}
 import com.google.cloud.dataproc.v1.{Cluster, ClusterOperationMetadata}
 import fs2.Stream
@@ -14,8 +15,6 @@ import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.scalatest.flatspec.AnyFlatSpec
 
 class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
-  val config = Config.appConfig.toOption.get
-
   it should "return None if runtime no longer exists in Google" in {
     val computeService = new FakeGoogleComputeService {
       override def getInstance(project: GoogleProject, zone: ZoneName, instanceName: InstanceName)(

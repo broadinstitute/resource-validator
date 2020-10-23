@@ -1,6 +1,9 @@
 package com.broadinstitute.dsp
 package zombieMonitor
 
+import java.util.concurrent.TimeUnit
+import java.util.{Calendar, GregorianCalendar}
+
 import com.broadinstitute.dsp.DBTestHelper._
 import com.broadinstitute.dsp.Generators._
 import doobie.scalatest.IOChecker
@@ -11,6 +14,8 @@ import org.scalatest.DoNotDiscover
 import org.scalatest.flatspec.AnyFlatSpec
 import doobie.implicits._
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
+
+import java.time.Instant
 
 /**
  * Not running these tests in CI yet since we'll need to set up mysql container and Leonardo tables in CI. Punt for now
@@ -36,10 +41,51 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
     check(DbReader.activeNodepoolsQuery)
   }
 
+  it should "build activeRuntime properly" in {
+    check(DbReader.activeRuntimeQuery)
+  }
+
   // This test will fail with `Parameter metadata not available for the given statement`
   // This works fine for real, but doesn't work `check` due to limited support for metadata from mysql
   it should "builds updateDiskStatusQuery properly" ignore {
     check(DbReader.updateDiskStatusQuery(82))
+  }
+
+  it should "return active runtimes that are older than an hour" in {
+    forAll { (rt: Runtime) =>
+      val runtime = rt.copy(status = "Running")
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+
+        val oldTimeStamp = (new GregorianCalendar(2020, Calendar.OCTOBER, 1).getTime()).toInstant
+        for {
+          runtimeConfigId <- insertRuntimeConfig(runtime.cloudService)
+          id <- insertRuntime(runtime, runtimeConfigId, oldTimeStamp)
+          runtimes <- dbReader.getRuntimeCandidate.compile.toList
+        } yield {
+          runtimes should contain theSameElementsAs List(runtime.copy(id = id))
+        }
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  it should "not return runtimes that were created within the past hour" in {
+    forAll { (rt: Runtime) =>
+      val runtime = rt.copy(status = "Running")
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+        for {
+          now <- timer.clock.realTime(TimeUnit.MILLISECONDS)
+          runtimeConfigId <- insertRuntimeConfig(runtime.cloudService)
+          _ <- insertRuntime(runtime, runtimeConfigId, Instant.ofEpochMilli(now))
+          runtimes <- dbReader.getRuntimeCandidate.compile.toList
+        } yield {
+          runtimes shouldBe List.empty
+        }
+      }
+      res.unsafeRunSync()
+    }
   }
 
   it should "read a disk properly" in {
@@ -162,6 +208,24 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
         } yield {
           appStatus shouldBe ("DELETED")
           nodepoolStatus shouldBe ("DELETED")
+        }
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  it should "update runtime status properly" in {
+    forAll { (runtime: Runtime, cloudService: CloudService) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+
+        for {
+          runtimeConfigId <- insertRuntimeConfig(cloudService)
+          runtimeId <- insertRuntime(runtime, runtimeConfigId)
+          _ <- dbReader.markRuntimeDeleted(runtimeId)
+          status <- getRuntimeStatus(runtimeId)
+        } yield {
+          status shouldBe ("Deleted")
         }
       }
       res.unsafeRunSync()

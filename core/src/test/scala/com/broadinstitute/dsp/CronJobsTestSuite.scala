@@ -22,4 +22,6 @@ trait CronJobsTestSuite extends Matchers with ScalaCheckPropertyChecks with Conf
   val blocker: Blocker = Blocker.liftExecutionContext(global)
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     PropertyCheckConfiguration(minSuccessful = 3)
+
+  val config = Config.appConfig.toOption.get
 }

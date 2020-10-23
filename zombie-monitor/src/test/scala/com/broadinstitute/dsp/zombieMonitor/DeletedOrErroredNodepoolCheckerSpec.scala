@@ -80,6 +80,7 @@ class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestS
   }
 
   def initDeps(gkeSerivce: GKEService[IO]): KubernetesClusterCheckerDeps[IO] = {
+    val config = Config.appConfig.toOption.get
     val checkRunnerDeps = CheckRunnerDeps(config.reportDestinationBucket, FakeGoogleStorageInterpreter)
     new KubernetesClusterCheckerDeps[IO](checkRunnerDeps, gkeSerivce)
   }

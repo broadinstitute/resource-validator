@@ -35,6 +35,35 @@ object DbReader {
     sql"""select googleProject, initBucket from CLUSTER WHERE status="Deleted";"""
       .query[InitBucketToRemove]
 
+  val deletedRuntimeQuery =
+    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status 
+          FROM CLUSTER AS c1
+          INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id 
+          WHERE c1.status="Deleted" AND
+          NOT EXISTS (
+            SELECT * 
+            FROM CLUSTER as c2 where c2.googleProject = c1.googleProject AND
+            c2.clusterName=c1.clusterName AND
+            (c2.status="Stopped" or c2.status="Running")
+          )"""
+      .query[Runtime]
+
+  val erroredRuntimeQuery =
+    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status 
+          FROM CLUSTER AS c1
+          INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id 
+          WHERE 
+           c1.status="Error" AND
+           NOT EXISTS (
+              SELECT * 
+              FROM CLUSTER as c2 
+              WHERE 
+                c2.googleProject = c1.googleProject AND
+                c2.clusterName=c1.clusterName AND 
+                (c2.status="Stopped" or c2.status="Running")
+             )"""
+      .query[Runtime]
+
   // Return all non-deleted clusters with non-default nodepools that have apps that were all deleted
   // or errored outside the grace period (1 hour)
   //
@@ -71,21 +100,11 @@ object DbReader {
      * AOU reuses runtime names, hence exclude any aou runtimes that have the same names that're still "alive"
      */
     override def getDeletedRuntimes: Stream[F, Runtime] =
-      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1
-             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Deleted"
-             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject
-             and c2.clusterName=c1.clusterName and (c2.status="Stopped" or c2.status="Running"));"""
-        .query[Runtime]
-        .stream
+      deletedRuntimeQuery.stream
         .transact(xa)
 
     override def getErroredRuntimes: Stream[F, Runtime] =
-      sql"""select distinct googleProject, clusterName, rt.cloudService from CLUSTER AS c1
-             INNER join RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id WHERE c1.status="Error"
-             and NOT EXISTS (SELECT * from CLUSTER as c2 where c2.googleProject = c1.googleProject
-             and c2.clusterName=c1.clusterName and (c2.status="Stopped" or c2.status="Running"));"""
-        .query[Runtime]
-        .stream
+      erroredRuntimeQuery.stream
         .transact(xa)
 
     // When we delete runtimes, we keep their staging buckets for 10 days. Hence we're only deleting staging buckets whose
@@ -99,7 +118,8 @@ object DbReader {
         .transact(xa)
 
     override def getInitBucketsToDelete: Stream[F, InitBucketToRemove] =
-      initBucketsToDeleteQuery.stream.transact(xa)
+      initBucketsToDeleteQuery.stream
+        .transact(xa)
 
     override def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove] =
       kubernetesClustersToDeleteQuery.stream.transact(xa)

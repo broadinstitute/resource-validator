@@ -10,14 +10,16 @@ import cats.mtl.ApplicativeAsk
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
-import org.broadinstitute.dsde.workbench.google2.{GKEService, GoogleDiskService, GoogleStorageService}
+import org.broadinstitute.dsde.workbench.google2.{GKEService, GoogleDiskService}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 object ZombieMonitor {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
-                                            ifRunAll: Boolean,
-                                            ifRunCheckDeletedRuntimes: Boolean,
-                                            ifRunCheckDeletedK8sClusters: Boolean)(
+                                            shouldRunAll: Boolean,
+                                            shouldCheckDeletedRuntimes: Boolean,
+                                            shouldCheckDeletedDisks: Boolean,
+                                            shouldCheckDeletedK8sClusters: Boolean,
+                                            shouldCheckDeletedOrErroredNodepool: Boolean)(
     implicit T: Timer[F],
     C: ContextShift[F]
   ): Stream[F, Nothing] = {
@@ -28,16 +30,27 @@ object ZombieMonitor {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
 
-      deleteRuntimeCheckerProcess = if (ifRunAll || ifRunCheckDeletedRuntimes)
+      deleteDiskCheckerProcess = if (shouldRunAll || shouldCheckDeletedDisks)
         Stream.eval(DeletedDiskChecker.impl(deps.dbReader, deps.diskCheckerDeps).run(isDryRun))
       else Stream.empty
-      deletek8sClusterCheckerProcess = if (ifRunAll || ifRunCheckDeletedK8sClusters)
+      deleteRuntimeCheckerProcess = if (shouldRunAll || shouldCheckDeletedRuntimes)
+        Stream.eval(DeletedOrErroredRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+      else Stream.empty
+      deletek8sClusterCheckerProcess = if (shouldRunAll || shouldCheckDeletedK8sClusters)
         Stream.eval(
           DeletedKubernetesClusterChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
         )
       else Stream.empty
+      deleteOrErroredNodepoolCheckerProcess = if (shouldRunAll || shouldCheckDeletedOrErroredNodepool)
+        Stream.eval(
+          DeletedOrErroredNodepoolChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
+        )
+      else Stream.empty
 
-      processes = Stream(deleteRuntimeCheckerProcess, deletek8sClusterCheckerProcess).covary[F]
+      processes = Stream(deleteDiskCheckerProcess,
+                         deleteRuntimeCheckerProcess,
+                         deletek8sClusterCheckerProcess,
+                         deleteOrErroredNodepoolCheckerProcess).covary[F]
       _ <- processes.parJoin(2)
     } yield ExitCode.Success
   }.drain
@@ -48,23 +61,25 @@ object ZombieMonitor {
     for {
       blocker <- Blocker[F]
       blockerBound <- Resource.liftF(Semaphore[F](250))
+      runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
-      storageService <- GoogleStorageService.resource(appConfig.pathToCredential.toString,
-                                                      blocker,
-                                                      Some(blockerBound),
-                                                      None)
       gkeService <- GKEService.resource(appConfig.pathToCredential, blocker, blockerBound)
       xa <- DbTransactor.init(appConfig.database)
     } yield {
       val dbReader = DbReader.impl(xa)
-      val checkRunnerDeps = CheckRunnerDeps(appConfig.reportDestinationBucket, storageService)
+      val checkRunnerDeps = runtimeCheckerDeps.checkRunnerDeps
       val k8sCheckerDeps = KubernetesClusterCheckerDeps(checkRunnerDeps, gkeService)
-      ZombieMonitorDeps(DiskCheckerDeps(checkRunnerDeps, diskService), k8sCheckerDeps, dbReader, blocker)
+      ZombieMonitorDeps(DiskCheckerDeps(checkRunnerDeps, diskService),
+                        runtimeCheckerDeps,
+                        k8sCheckerDeps,
+                        dbReader,
+                        blocker)
     }
 }
 
 final case class ZombieMonitorDeps[F[_]](
   diskCheckerDeps: DiskCheckerDeps[F],
+  runtimeCheckerDeps: RuntimeCheckerDeps[F],
   kubernetesClusterCheckerDeps: KubernetesClusterCheckerDeps[F],
   dbReader: DbReader[F],
   blocker: Blocker

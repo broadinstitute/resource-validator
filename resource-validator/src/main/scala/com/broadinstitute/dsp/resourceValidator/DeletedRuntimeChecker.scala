@@ -21,7 +21,7 @@ object DeletedRuntimeChecker {
 
       override def configs = CheckRunnerConfigs(s"deleted-runtime", true)
 
-      override def dependencies: CheckRunnerDeps[F] = CheckRunnerDeps(deps.reportDestinationBucket, deps.storageService)
+      override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
       override def checkResource(runtime: Runtime,
                                  isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[dsp.Runtime]] =
