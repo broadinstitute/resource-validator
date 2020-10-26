@@ -65,7 +65,7 @@ object DbReader {
       .query[Runtime]
 
   // Return all non-deleted clusters with non-default nodepools that have apps that were all deleted
-  // or errored outside the grace period (1 hour)
+  // or errored outside the grace period (2 hours)
   //
   // We are excluding clusters with only default nodepools running on them so we do not remove batch-pre-created clusters.
   // We are calculating the grace period for cluster deletion assuming that the following are valid proxies for an app's last activity:
@@ -86,8 +86,8 @@ object DbReader {
                   kc.id = np.clusterId AND np.isDefault = 0 AND
                   (
                     (a.status != "DELETED" AND a.status != "ERROR") OR
-                    (a.status = "DELETED" AND a.destroyedDate > now() - INTERVAL 1 HOUR) OR
-                    (a.status = "ERROR" AND a.createdDate > now() - INTERVAL 1 HOUR) OR
+                    (a.status = "DELETED" AND a.destroyedDate > now() - INTERVAL 2 HOUR) OR
+                    (a.status = "ERROR" AND a.createdDate > now() - INTERVAL 2 HOUR) OR
                     (a.id IS NULL)
                   )
               );
