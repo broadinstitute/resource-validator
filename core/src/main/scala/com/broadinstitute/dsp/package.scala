@@ -1,5 +1,7 @@
 package com.broadinstitute
 
+import java.nio.file.Path
+
 import cats.effect.{Resource, Sync, Timer}
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import org.broadinstitute.dsde.workbench.google2.{RegionName, ZoneName}
@@ -11,10 +13,10 @@ package object dsp {
   val regionName = RegionName("us-central1")
 
   def initGoogleCredentials[F[_]: Sync: Timer](
-    appConfig: AppConfig
+    pathToCredential: Path
   ): Resource[F, GoogleCredentials] =
     for {
-      credentialFile <- org.broadinstitute.dsde.workbench.util2.readFile[F](appConfig.pathToCredential.toString)
+      credentialFile <- org.broadinstitute.dsde.workbench.util2.readFile[F](pathToCredential.toString)
       credential <- Resource.liftF(Sync[F].delay(ServiceAccountCredentials.fromStream(credentialFile)))
     } yield credential.createScoped(Seq("https://www.googleapis.com/auth/cloud-platform").asJava)
 }

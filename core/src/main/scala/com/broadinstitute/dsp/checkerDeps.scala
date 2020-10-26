@@ -1,9 +1,10 @@
 package com.broadinstitute.dsp
 
+import java.nio.file.Path
+
 import cats.Parallel
 import cats.effect.concurrent.Semaphore
-import cats.effect.{Async, Blocker, Concurrent, ContextShift, Resource, Timer}
-import com.google.auth.oauth2.ServiceAccountCredentials
+import cats.effect.{Blocker, Concurrent, ContextShift, Resource, Timer}
 import io.chrisdavenport.log4cats.StructuredLogger
 import org.broadinstitute.dsde.workbench.google2.util.RetryPredicates
 import org.broadinstitute.dsde.workbench.google2.{
@@ -13,25 +14,21 @@ import org.broadinstitute.dsde.workbench.google2.{
   GoogleDiskService,
   GoogleStorageService
 }
-import org.broadinstitute.dsde.workbench.model.google.GoogleProject
-
-import scala.jdk.CollectionConverters._
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 object RuntimeCheckerDeps {
   def init[F[_]: Concurrent: ContextShift: StructuredLogger: Parallel: Timer](
-    appConfig: AppConfig,
+    config: RuntimeCheckerConfig,
     blocker: Blocker,
     blockerBound: Semaphore[F]
   ): Resource[F, RuntimeCheckerDeps[F]] =
     for {
-      credentialFile <- org.broadinstitute.dsde.workbench.util2.readFile[F](appConfig.pathToCredential.toString)
-      credential <- Resource.liftF(Async[F].delay(ServiceAccountCredentials.fromStream(credentialFile)))
-      scopedCredential = credential.createScoped(Seq("https://www.googleapis.com/auth/cloud-platform").asJava)
+      scopedCredential <- initGoogleCredentials(config.pathToCredential)
       computeService <- GoogleComputeService.fromCredential(scopedCredential,
                                                             blocker,
                                                             blockerBound,
                                                             RetryPredicates.standardRetryConfig)
-      storageService <- GoogleStorageService.resource(appConfig.pathToCredential.toString,
+      storageService <- GoogleStorageService.resource(config.pathToCredential.toString,
                                                       blocker,
                                                       Some(blockerBound),
                                                       None)
@@ -41,7 +38,7 @@ object RuntimeCheckerDeps {
                                                               blockerBound,
                                                               RetryPredicates.standardRetryConfig)
     } yield {
-      val checkRunnerDeps = CheckRunnerDeps(appConfig.reportDestinationBucket, storageService)
+      val checkRunnerDeps = CheckRunnerDeps(config.reportDestinationBucket, storageService)
       RuntimeCheckerDeps(computeService, dataprocService, checkRunnerDeps)
     }
 }
@@ -61,3 +58,5 @@ final case class RuntimeCheckerDeps[F[_]](computeService: GoogleComputeService[F
 final case class KubernetesClusterCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], gkeService: GKEService[F])
 
 final case class DiskCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], googleDiskService: GoogleDiskService[F])
+
+final case class RuntimeCheckerConfig(pathToCredential: Path, reportDestinationBucket: GcsBucketName)

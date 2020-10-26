@@ -19,3 +19,5 @@ object DbTransactor {
       )
     } yield xa
 }
+
+final case class DatabaseConfig(url: String, user: String, password: String)

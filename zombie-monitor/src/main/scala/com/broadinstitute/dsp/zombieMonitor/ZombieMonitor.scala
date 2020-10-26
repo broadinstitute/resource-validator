@@ -61,7 +61,7 @@ object ZombieMonitor {
     for {
       blocker <- Blocker[F]
       blockerBound <- Resource.liftF(Semaphore[F](250))
-      runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
+      runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig.runtimeCheckerConfig, blocker, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
       gkeService <- GKEService.resource(appConfig.pathToCredential, blocker, blockerBound)
       xa <- DbTransactor.init(appConfig.database)

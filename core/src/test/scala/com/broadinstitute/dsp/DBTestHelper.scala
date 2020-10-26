@@ -15,20 +15,18 @@ import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.Name
 object DBTestHelper {
   implicit val cloudServicePut: Put[CloudService] = Put[String].contramap(cloudService => cloudService.asString)
 
-  def yoloTransactor(implicit cs: ContextShift[IO]): Transactor[IO] = {
-    val databaseConfig = Config.appConfig.toOption.get.database
+  def yoloTransactor(implicit cs: ContextShift[IO], databaseConfig: DatabaseConfig): Transactor[IO] =
     Transactor.fromDriverManager[IO](
       "com.mysql.cj.jdbc.Driver", // driver classname
       databaseConfig.url,
       databaseConfig.user,
       databaseConfig.password
     )
-  }
 
-  def transactorResource(implicit cs: ContextShift[IO]): Resource[IO, HikariTransactor[IO]] =
+  def transactorResource(implicit cs: ContextShift[IO],
+                         databaseConfig: DatabaseConfig): Resource[IO, HikariTransactor[IO]] =
     for {
-      config <- Resource.liftF(IO.fromEither(Config.appConfig))
-      xa <- DbTransactor.init[IO](config.database)
+      xa <- DbTransactor.init[IO](databaseConfig)
       _ <- Resource.liftF(truncateTables(xa))
     } yield xa
 

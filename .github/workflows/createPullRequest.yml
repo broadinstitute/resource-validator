@@ -20,10 +20,12 @@ jobs:
       - uses: marceloprado/has-changed-path@v1
         id: resource-validator
         with:
+          fetch-depth: 10
           paths: resource-validator core
       - uses: marceloprado/has-changed-path@v1
         id: zombie-monitor
         with:
+          fetch-depth: 10
           paths: zombie-monitor core
       - uses: actions/checkout@v2
         with:

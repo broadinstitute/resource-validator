@@ -77,7 +77,7 @@ object ResourceValidator {
     for {
       blocker <- Blocker[F]
       blockerBound <- Resource.liftF(Semaphore[F](250))
-      runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig, blocker, blockerBound)
+      runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig.runtimeCheckerConfig, blocker, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
       publisherConfig = PublisherConfig(
         appConfig.pathToCredential.toString,

@@ -70,6 +70,6 @@ class InitBucketCheckerSpec extends AnyFlatSpec with CronJobsTestSuite with Mock
   def initBucketCheckerDeps(
     googleDiskService: GoogleStorageService[IO] = FakeGoogleStorageInterpreter
   ): CheckRunnerDeps[IO] =
-    CheckRunnerDeps(config.reportDestinationBucket, googleDiskService)
+    CheckRunnerDeps(ConfigSpec.config.reportDestinationBucket, googleDiskService)
 
 }
