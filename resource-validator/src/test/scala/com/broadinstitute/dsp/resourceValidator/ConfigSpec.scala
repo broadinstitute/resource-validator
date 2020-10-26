@@ -11,7 +11,7 @@ class ConfigSpec extends AnyFlatSpec with Matchers {
   it should "read config file correctly" in {
     val config = Config.appConfig
     val expectedPathToCredential = Paths.get("path-to-credential")
-    val expectedReportDestinationBucket = GcsBucketName("qi-test")
+    val expectedReportDestinationBucket = GcsBucketName("test-bucket")
     val expectedConfig = AppConfig(
       DatabaseConfig(
         "jdbc:mysql://localhost:3311/leotestdb?createDatabaseIfNotExist=true&useSSL=false&rewriteBatchedStatements=true&nullNamePatternMatchesAll=true&generateSimpleParameterMetadata=TRUE",
