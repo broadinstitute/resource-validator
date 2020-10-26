@@ -52,7 +52,7 @@ object DeletedOrErroredRuntimeChecker {
                      runtime.id,
                      None,
                      s"""
-                        |Runtime(${runtime.runtimeName}) was removed from Google. Is billing still enabled for ${runtime.googleProject.value}?
+                        |Runtime(${runtime.runtimeName}) was deleted from Google. Is billing still enabled for ${runtime.googleProject.value}?
                         |""".stripMargin
                    )
                  } yield ()
