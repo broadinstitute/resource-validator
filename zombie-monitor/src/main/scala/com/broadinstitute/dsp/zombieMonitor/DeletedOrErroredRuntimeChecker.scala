@@ -45,13 +45,37 @@ object DeletedOrErroredRuntimeChecker {
           res <- runtimeOpt match {
             case None =>
               (if (isDryRun) F.unit
-               else
-                 dbReader.markRuntimeDeleted(runtime.id)).as(Some(runtime))
-            case Some(instance) =>
-              if (instance.getStatus.getState == com.google.cloud.dataproc.v1.ClusterStatus.State.ERROR) {
+               else {
+                 for {
+                   _ <- dbReader.markRuntimeDeleted(runtime.id)
+                   _ <- dbReader.insertClusterError(
+                     runtime.id,
+                     None,
+                     s"""
+                        |Runtime(${runtime.runtimeName}) was removed from Google. Is billing still enabled for ${runtime.googleProject.value}?
+                        |""".stripMargin
+                   )
+                 } yield ()
+               }).as(Some(runtime))
+            case Some(cluster) =>
+              if (cluster.getStatus.getState == com.google.cloud.dataproc.v1.ClusterStatus.State.ERROR) {
                 (if (isDryRun) F.unit
-                 else
-                   dbReader.updateRuntimeStatus(runtime.id, "Error")).as(Some(runtime))
+                 else {
+                   for {
+                     _ <- dbReader.updateRuntimeStatus(runtime.id, "Error")
+                     _ <- dbReader.insertClusterError(
+                       runtime.id,
+                       Some(cluster.getStatus.getState.getNumber),
+                       s"""
+                          |Unrecoverable ERROR state for Spark Cloud Environment: ${cluster.getStatus}
+                          |
+                          |Please Delete and Recreate your Cloud environment. If you have important data you’d like to retrieve 
+                          |from your Cloud environment prior to deleting, try to access the machine via notebook or terminal. 
+                          |If you can't connect to the cluster, please contact customer support and we can help you move your data.
+                          |""".stripMargin
+                     )
+                   } yield ()
+                 }).as(Some(runtime))
               } else F.pure(none[Runtime])
           }
         } yield res

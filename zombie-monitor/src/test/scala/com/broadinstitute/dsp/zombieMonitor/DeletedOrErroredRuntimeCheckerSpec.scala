@@ -35,6 +35,10 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
           Stream.emit(runtime)
         override def markRuntimeDeleted(id: Long): IO[Unit] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called in dryRun mode")) else IO.unit
+
+        override def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): IO[Unit] =
+          if (dryRun) IO.raiseError(fail("this shouldn't be called in dryRun mode"))
+          else IO(errorCode shouldBe (None))
       }
       val computeService = new FakeGoogleComputeService {
         override def getInstance(project: GoogleProject, zone: ZoneName, instanceName: InstanceName)(
@@ -89,6 +93,10 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
           Stream.emit(runtime)
         override def updateRuntimeStatus(id: Long, status: String): IO[Unit] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called in dryRun mode")) else IO.unit
+
+        override def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): IO[Unit] =
+          if (dryRun) IO.raiseError(fail("this shouldn't be called in dryRun mode"))
+          else IO(errorCode shouldBe (Some(3)))
       }
       val dataprocService = new BaseFakeGoogleDataprocService {
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(

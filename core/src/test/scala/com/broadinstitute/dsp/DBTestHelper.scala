@@ -167,6 +167,11 @@ object DBTestHelper {
          SELECT status FROM CLUSTER where id = ${id}
          """.query[String].unique.transact(xa)
 
+  def getRuntimeError(runtimeId: Long)(implicit xa: HikariTransactor[IO]): IO[RuntimeError] =
+    sql"""
+         SELECT errorCode, errorMessage FROM CLUSTER_ERROR where clusterId = ${runtimeId}
+         """.query[RuntimeError].unique.transact(xa)
+
   private def truncateTables(xa: HikariTransactor[IO]): IO[Unit] = {
     val res = for {
       _ <- sql"Delete from APP".update.run
@@ -175,9 +180,12 @@ object DBTestHelper {
       _ <- sql"Delete from PERSISTENT_DISK".update.run
       _ <- sql"Delete from NODEPOOL".update.run
       _ <- sql"Delete from KUBERNETES_CLUSTER".update.run
+      _ <- sql"Delete from CLUSTER_ERROR".update.run
       _ <- sql"Delete from CLUSTER".update.run
       _ <- sql"Delete from RUNTIME_CONFIG".update.run
     } yield ()
     res.transact(xa)
   }
 }
+
+final case class RuntimeError(errorCode: Option[Int], errorMessage: String)

@@ -231,4 +231,23 @@ class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
       res.unsafeRunSync()
     }
   }
+
+  it should "update CLUSTER_ERROR table properly" in {
+    forAll { (runtime: Runtime, cloudService: CloudService) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+
+        for {
+          runtimeConfigId <- insertRuntimeConfig(cloudService)
+          runtimeId <- insertRuntime(runtime, runtimeConfigId)
+          _ <- dbReader.insertClusterError(runtimeId, Some(1), "cluster error")
+          error <- getRuntimeError(runtimeId)
+        } yield {
+          error.errorCode shouldBe Some(1)
+          error.errorMessage shouldBe ("cluster error")
+        }
+      }
+      res.unsafeRunSync()
+    }
+  }
 }

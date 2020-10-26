@@ -20,6 +20,7 @@ trait DbReader[F[_]] {
   def updateK8sClusterStatus(id: Long): F[Unit]
   def markNodepoolAndAppDeleted(nodepoolId: Long): F[Unit]
   def updateNodepoolAndAppStatus(nodepoolId: Long, status: String): F[Unit]
+  def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): F[Unit]
 }
 
 object DbReader {
@@ -88,6 +89,13 @@ object DbReader {
            update APP set status = $status where nodepoolId = $nodepoolId
            """.update
 
+  def insertClusterErrorQuery(clusterId: Long, errorCode: Option[Int], errorMessage: String) =
+    sql"""
+          INSERT INTO CLUSTER_ERROR
+         (clusterId, errorCode, errorMessage)
+         VALUES (${clusterId}, ${errorCode}, ${errorMessage})
+           """.update
+
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
     override def getRuntimeCandidate: Stream[F, Runtime] = activeRuntimeQuery.stream.transact(xa)
 
@@ -126,5 +134,8 @@ object DbReader {
       updateRuntimeStatusQuery(id, status).run.transact(xa).void
 
     override def markRuntimeDeleted(id: Long): F[Unit] = markRuntimeDeletedQuery(id).run.transact(xa).void
+
+    override def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): F[Unit] =
+      insertClusterErrorQuery(clusterId, errorCode, errorMessage).run.transact(xa).void
   }
 }
