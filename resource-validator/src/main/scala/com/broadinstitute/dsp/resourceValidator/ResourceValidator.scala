@@ -18,6 +18,7 @@ import org.broadinstitute.dsde.workbench.google2.{
   PublisherConfig
 }
 import org.broadinstitute.dsde.workbench.model.TraceId
+import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
 
 object ResourceValidator {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
@@ -77,7 +78,8 @@ object ResourceValidator {
     for {
       blocker <- Blocker[F]
       blockerBound <- Resource.liftF(Semaphore[F](250))
-      runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig.runtimeCheckerConfig, blocker, blockerBound)
+      metrics <- OpenTelemetryMetrics.resource(appConfig.pathToCredential, "leonardo-cron-jobs", blocker)
+      runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig.runtimeCheckerConfig, blocker, metrics, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
       publisherConfig = PublisherConfig(
         appConfig.pathToCredential.toString,

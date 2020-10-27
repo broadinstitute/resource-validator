@@ -15,11 +15,13 @@ import org.broadinstitute.dsde.workbench.google2.{
   GoogleStorageService
 }
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
+import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
 
 object RuntimeCheckerDeps {
   def init[F[_]: Concurrent: ContextShift: StructuredLogger: Parallel: Timer](
     config: RuntimeCheckerConfig,
     blocker: Blocker,
+    metrics: OpenTelemetryMetrics[F],
     blockerBound: Semaphore[F]
   ): Resource[F, RuntimeCheckerDeps[F]] =
     for {
@@ -38,7 +40,7 @@ object RuntimeCheckerDeps {
                                                               blockerBound,
                                                               RetryPredicates.standardRetryConfig)
     } yield {
-      val checkRunnerDeps = CheckRunnerDeps(config.reportDestinationBucket, storageService)
+      val checkRunnerDeps = CheckRunnerDeps(config.reportDestinationBucket, storageService, metrics)
       RuntimeCheckerDeps(computeService, dataprocService, checkRunnerDeps)
     }
 }

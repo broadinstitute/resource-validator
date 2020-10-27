@@ -17,6 +17,7 @@ object Dependencies {
     "org.scalatest" %% "scalatest" % "3.2.0" % Test,
     "com.monovore" %% "decline" % "1.0.0",
     "co.fs2" %% "fs2-io" % "2.4.2",
+    "org.broadinstitute.dsde.workbench" %% "workbench-opentelemetry" % "0.1-e66171c",
     "com.google.cloud" % "google-cloud-dataproc" % "0.122.1",
     "com.google.cloud" % "google-cloud-compute" % "0.118.0-alpha",
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2,

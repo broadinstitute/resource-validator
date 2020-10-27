@@ -20,6 +20,7 @@ trait CronJobsTestSuite extends Matchers with ScalaCheckPropertyChecks with Conf
   val fakeTraceId = TraceId("fakeTraceId")
   implicit val traceId: ApplicativeAsk[IO, TraceId] = ApplicativeAsk.const[IO, TraceId](fakeTraceId)
   val blocker: Blocker = Blocker.liftExecutionContext(global)
-  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration = {
     PropertyCheckConfiguration(minSuccessful = 3)
+  }
 }
