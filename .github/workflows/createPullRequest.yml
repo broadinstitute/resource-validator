@@ -3,9 +3,9 @@ name: Create terra-helm Pull Request
 on:
   push:
     branches: [ master ]
-#  pull_request:
-#    branches:
-#      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   build:
@@ -16,6 +16,7 @@ jobs:
         id: setHash
         run: |
           git_short_sha=$(git rev-parse --short HEAD)
+          echo $git_short_sha
           echo "::set-output name=git_short_sha::${git_short_sha}"
       - uses: marceloprado/has-changed-path@v1
         id: resource-validator
