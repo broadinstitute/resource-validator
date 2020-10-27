@@ -52,7 +52,7 @@ object DeletedOrErroredRuntimeChecker {
                      runtime.id,
                      None,
                      s"""
-                        |Runtime(${runtime.runtimeName}) was deleted from Google. Is billing still enabled for ${runtime.googleProject.value}?
+                        |Runtime(${runtime.runtimeName}) was deleted from Google. Make sure billing still enabled for ${runtime.googleProject.value} project.
                         |""".stripMargin
                    )
                  } yield ()
@@ -67,7 +67,7 @@ object DeletedOrErroredRuntimeChecker {
                        runtime.id,
                        Some(cluster.getStatus.getState.getNumber),
                        s"""
-                          |Unrecoverable ERROR state for Spark Cloud Environment: ${cluster.getStatus}
+                          |Unrecoverable ERROR state for Spark Cloud Environment: ${cluster.getStatus.getDetail}
                           |
                           |Please Delete and Recreate your Cloud environment. If you have important data you’d like to retrieve 
                           |from your Cloud environment prior to deleting, try to access the machine via notebook or terminal. 
