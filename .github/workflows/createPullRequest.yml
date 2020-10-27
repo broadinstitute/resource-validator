@@ -12,10 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: '10'
       - name: Set commit short hash
         id: setHash
         run: |
           git_short_sha=$(git rev-parse --short HEAD)
+          echo $git_short_sha
           echo "::set-output name=git_short_sha::${git_short_sha}"
       - uses: marceloprado/has-changed-path@v1
         id: resource-validator
@@ -43,10 +46,6 @@ jobs:
         with:
           command: |
             yq w -i charts/leonardo/values.yaml zombieMonitorCron.imageTag ${{ steps.setHash.outputs.git_short_sha }}
-      - name: bump leonardo chart version
-        if: ${{ steps.resource-validator.outputs.changed == 'true' || steps.zombie-monitor.outputs.changed == 'true' }}
-        run: ./.github/scripts/bumpLeonardoChartVersion.sh
-        shell: bash
       - name: Create Pull Request
         id: cpr
         uses: peter-evans/create-pull-request@v3
