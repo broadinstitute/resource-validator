@@ -8,7 +8,6 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.Configuration
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.global
 

@@ -9,6 +9,7 @@ import org.broadinstitute.dsde.workbench.google2.GKEService
 import org.broadinstitute.dsde.workbench.google2.mock.{FakeGoogleStorageInterpreter, MockGKEService}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.scalatest.flatspec.AnyFlatSpec
+import org.broadinstitute.dsde.workbench.openTelemetry.FakeOpenTelemetryMetricsInterpreter
 
 class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   it should "report nodepool if it doesn't exist in google but still active in leonardo DB" in {
@@ -81,7 +82,8 @@ class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestS
 
   def initDeps(gkeSerivce: GKEService[IO]): KubernetesClusterCheckerDeps[IO] = {
     val config = Config.appConfig.toOption.get
-    val checkRunnerDeps = CheckRunnerDeps(config.reportDestinationBucket, FakeGoogleStorageInterpreter)
+    val checkRunnerDeps =
+      CheckRunnerDeps(config.reportDestinationBucket, FakeGoogleStorageInterpreter, FakeOpenTelemetryMetricsInterpreter)
     new KubernetesClusterCheckerDeps[IO](checkRunnerDeps, gkeSerivce)
   }
 }

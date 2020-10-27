@@ -8,6 +8,7 @@ import org.broadinstitute.dsde.workbench.google2.mock.{
   FakeGoogleDataprocService,
   FakeGoogleStorageInterpreter
 }
+import org.broadinstitute.dsde.workbench.openTelemetry.FakeOpenTelemetryMetricsInterpreter
 
 object InitDependenciesHelper {
   val config = Config.appConfig.toOption.get
@@ -18,6 +19,6 @@ object InitDependenciesHelper {
     RuntimeCheckerDeps(
       googleComputeService,
       googleDataprocService,
-      CheckRunnerDeps(config.reportDestinationBucket, googleStorageService)
+      CheckRunnerDeps(config.reportDestinationBucket, googleStorageService, FakeOpenTelemetryMetricsInterpreter)
     )
 }

@@ -12,6 +12,7 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatestplus.mockito.MockitoSugar
+import org.broadinstitute.dsde.workbench.openTelemetry.FakeOpenTelemetryMetricsInterpreter
 
 class InitBucketCheckerSpec extends AnyFlatSpec with CronJobsTestSuite with MockitoSugar {
   val mockBucket = mock[Bucket]
@@ -70,6 +71,6 @@ class InitBucketCheckerSpec extends AnyFlatSpec with CronJobsTestSuite with Mock
   def initBucketCheckerDeps(
     googleDiskService: GoogleStorageService[IO] = FakeGoogleStorageInterpreter
   ): CheckRunnerDeps[IO] =
-    CheckRunnerDeps(ConfigSpec.config.reportDestinationBucket, googleDiskService)
+    CheckRunnerDeps(ConfigSpec.config.reportDestinationBucket, googleDiskService, FakeOpenTelemetryMetricsInterpreter)
 
 }
