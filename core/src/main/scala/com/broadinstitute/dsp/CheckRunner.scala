@@ -64,7 +64,7 @@ trait CheckRunner[F[_], A] {
             )
           else
             logger.warn(
-              s"${configs.checkType} | Finished check... Check out gs://${dependencies.reportDestinationBucket.value}/${blobName.value} for more details"
+              s"${configs.checkType} | Finished check. Check out gs://${dependencies.reportDestinationBucket.value}/${blobName.value} for more details"
             )
         }
       }
