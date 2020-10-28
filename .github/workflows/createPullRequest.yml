@@ -35,17 +35,17 @@ jobs:
           repository: broadinstitute/terra-helm
 #          ref: ci  you can use this for testing a specific branch of terra-helm
       - name: update resource-validator hash
-        uses: awesome-global-contributions/action-yq@v0.1.2
+        uses: databiosphere/github-actions/actions/yq@master
         if: steps.resource-validator.outputs.changed == 'true'
         with:
           command: |
-            yq w -i charts/leonardo/values.yaml cronjob.imageTag ${{ steps.setHash.outputs.git_short_sha }}
+            yq w -i charts/leonardo/values.yaml cronjob.imageTag "${{ steps.setHash.outputs.git_short_sha }}"
       - name: update zombie-monitor hash
-        uses: awesome-global-contributions/action-yq@v0.1.2
+        uses: databiosphere/github-actions/actions/yq@master
         if: steps.zombie-monitor.outputs.changed == 'true'
         with:
           command: |
-            yq w -i charts/leonardo/values.yaml zombieMonitorCron.imageTag ${{ steps.setHash.outputs.git_short_sha }}
+            yq w -i charts/leonardo/values.yaml zombieMonitorCron.imageTag "${{ steps.setHash.outputs.git_short_sha }}"
       - name: Create Pull Request
         id: cpr
         uses: peter-evans/create-pull-request@v3
