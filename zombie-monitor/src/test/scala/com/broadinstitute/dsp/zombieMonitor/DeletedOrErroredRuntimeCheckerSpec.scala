@@ -26,6 +26,7 @@ import org.broadinstitute.dsde.workbench.google2.{
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.scalatest.flatspec.AnyFlatSpec
+import org.broadinstitute.dsde.workbench.openTelemetry.FakeOpenTelemetryMetricsInterpreter
 
 class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   it should "report a runtime if it doesn't exist in google but is still active in leonardo DB" in {
@@ -122,7 +123,7 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
     RuntimeCheckerDeps(
       googleComputeService,
       googleDataprocService,
-      CheckRunnerDeps(config.reportDestinationBucket, googleStorageService)
+      CheckRunnerDeps(config.reportDestinationBucket, googleStorageService, FakeOpenTelemetryMetricsInterpreter)
     )
   }
 }

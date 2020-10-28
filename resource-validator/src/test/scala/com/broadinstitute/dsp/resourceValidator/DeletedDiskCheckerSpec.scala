@@ -12,6 +12,7 @@ import org.broadinstitute.dsde.workbench.google2.{DiskName, GoogleDiskService, M
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.scalatest.flatspec.AnyFlatSpec
+import org.broadinstitute.dsde.workbench.openTelemetry.FakeOpenTelemetryMetricsInterpreter
 
 class DeletedDiskCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   it should "return None if disk no longer exists in Google" in {
@@ -60,7 +61,8 @@ class DeletedDiskCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
     googleDiskService: GoogleDiskService[IO] = MockGoogleDiskService
   ): DiskCheckerDeps[IO] = {
     val config = Config.appConfig.toOption.get
-    val checkRunnerDeps = CheckRunnerDeps(config.reportDestinationBucket, FakeGoogleStorageInterpreter)
+    val checkRunnerDeps =
+      CheckRunnerDeps(config.reportDestinationBucket, FakeGoogleStorageInterpreter, FakeOpenTelemetryMetricsInterpreter)
     DiskCheckerDeps(checkRunnerDeps, googleDiskService)
   }
 }

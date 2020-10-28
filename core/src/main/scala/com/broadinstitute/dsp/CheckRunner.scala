@@ -12,6 +12,7 @@ import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.{GcsBlobName, GoogleStorageService}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GcsBucketName
+import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
 
 trait CheckRunner[F[_], A] {
   def appName: String
@@ -38,6 +39,7 @@ trait CheckRunner[F[_], A] {
         .parEvalMapUnordered(50)(rt => checkResource(rt, isDryRun).handleErrorWith(_ => F.pure(None)))
         .unNone
         .map(_.toString)
+        .evalTap(_ => dependencies.metrics.incrementCounter(s"${appName}/${configs.checkType}"))
         .intersperse("\n")
         .map(_.getBytes(Charset.forName("UTF-8")))
         .flatMap(arrayOfBytes => Stream.emits(arrayOfBytes))
@@ -72,4 +74,6 @@ trait CheckRunner[F[_], A] {
 }
 
 final case class CheckRunnerConfigs(checkType: String, shouldAlert: Boolean)
-final case class CheckRunnerDeps[F[_]](reportDestinationBucket: GcsBucketName, storageService: GoogleStorageService[F])
+final case class CheckRunnerDeps[F[_]](reportDestinationBucket: GcsBucketName,
+                                       storageService: GoogleStorageService[F],
+                                       metrics: OpenTelemetryMetrics[F])

@@ -8,6 +8,7 @@ import io.circe.Encoder
 import org.broadinstitute.dsde.workbench.google2.GooglePublisher
 import org.broadinstitute.dsde.workbench.google2.mock.FakeGoogleStorageInterpreter
 import org.scalatest.flatspec.AnyFlatSpec
+import org.broadinstitute.dsde.workbench.openTelemetry.FakeOpenTelemetryMetricsInterpreter
 
 class KubernetesClusterRemoverSpec extends AnyFlatSpec with CronJobsTestSuite {
   it should "send DeleteKubernetesClusterMessage when clusters are detected to be auto-deleted" in {
@@ -40,7 +41,10 @@ class KubernetesClusterRemoverSpec extends AnyFlatSpec with CronJobsTestSuite {
   }
 
   private def initDeps(publisher: GooglePublisher[IO]): KubernetesClusterRemoverDeps[IO] = {
-    val checkRunnerDeps = CheckRunnerDeps(ConfigSpec.config.reportDestinationBucket, FakeGoogleStorageInterpreter)
+    val checkRunnerDeps =
+      CheckRunnerDeps(ConfigSpec.config.reportDestinationBucket,
+                      FakeGoogleStorageInterpreter,
+                      FakeOpenTelemetryMetricsInterpreter)
     new KubernetesClusterRemoverDeps[IO](publisher, checkRunnerDeps)
   }
 }

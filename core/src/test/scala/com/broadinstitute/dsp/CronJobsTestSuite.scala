@@ -8,7 +8,6 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.Configuration
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.global
 
@@ -20,6 +19,7 @@ trait CronJobsTestSuite extends Matchers with ScalaCheckPropertyChecks with Conf
   val fakeTraceId = TraceId("fakeTraceId")
   implicit val traceId: ApplicativeAsk[IO, TraceId] = ApplicativeAsk.const[IO, TraceId](fakeTraceId)
   val blocker: Blocker = Blocker.liftExecutionContext(global)
-  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration = {
     PropertyCheckConfiguration(minSuccessful = 3)
+  }
 }
