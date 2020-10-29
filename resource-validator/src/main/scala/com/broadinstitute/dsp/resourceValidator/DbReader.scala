@@ -9,9 +9,10 @@ import DbReaderImplicits._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 trait DbReader[F[_]] {
-  def getDeletedRuntimes: Stream[F, Runtime]
   def getDeletedDisks: Stream[F, Disk]
+  def getDeletedRuntimes: Stream[F, Runtime]
   def getErroredRuntimes: Stream[F, Runtime]
+  def getStoppedRuntimes: Stream[F, Runtime]
   def getStagingBucketsToDelete: Stream[F, BucketToRemove]
   def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove]
   def getInitBucketsToDelete: Stream[F, InitBucketToRemove]
@@ -38,29 +39,47 @@ object DbReader {
   val deletedRuntimeQuery =
     sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status 
           FROM CLUSTER AS c1
-          INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id 
-          WHERE c1.status="Deleted" AND
+          INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
+          WHERE c1.status = "Deleted" AND
           NOT EXISTS (
             SELECT * 
-            FROM CLUSTER as c2 where c2.googleProject = c1.googleProject AND
-            c2.clusterName=c1.clusterName AND
-            (c2.status="Stopped" or c2.status="Running")
+            FROM CLUSTER AS c2
+            WHERE
+              c2.googleProject = c1.googleProject AND
+              c2.clusterName = c1.clusterName AND
+              (c2.status = "Stopped" OR c2.status = "Running")
           )"""
       .query[Runtime]
 
   val erroredRuntimeQuery =
     sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status 
           FROM CLUSTER AS c1
-          INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id 
+          INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
           WHERE 
-           c1.status="Error" AND
+           c1.status = "Error" AND
            NOT EXISTS (
               SELECT * 
-              FROM CLUSTER as c2 
+              FROM CLUSTER AS c2
               WHERE 
                 c2.googleProject = c1.googleProject AND
                 c2.clusterName=c1.clusterName AND 
-                (c2.status="Stopped" or c2.status="Running")
+                (c2.status = "Stopped" OR c2.status = "Running")
+             )"""
+      .query[Runtime]
+
+  val stoppedRuntimeQuery =
+    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status
+          FROM CLUSTER AS c1
+          INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
+          WHERE
+           c1.status = "Stopped" AND
+           NOT EXISTS (
+              SELECT *
+              FROM CLUSTER AS c2
+              WHERE
+                c2.googleProject = c1.googleProject AND
+                c2.clusterName = c1.clusterName AND
+                c2.status = "Running"
              )"""
       .query[Runtime]
 
@@ -100,12 +119,13 @@ object DbReader {
      * AOU reuses runtime names, hence exclude any aou runtimes that have the same names that're still "alive"
      */
     override def getDeletedRuntimes: Stream[F, Runtime] =
-      deletedRuntimeQuery.stream
-        .transact(xa)
+      deletedRuntimeQuery.stream.transact(xa)
 
     override def getErroredRuntimes: Stream[F, Runtime] =
-      erroredRuntimeQuery.stream
-        .transact(xa)
+      erroredRuntimeQuery.stream.transact(xa)
+
+    override def getStoppedRuntimes: Stream[F, Runtime] =
+      erroredRuntimeQuery.stream.transact(xa)
 
     // When we delete runtimes, we keep their staging buckets for 10 days. Hence we're only deleting staging buckets whose
     // runtimes have been deleted more than 15 days ago.

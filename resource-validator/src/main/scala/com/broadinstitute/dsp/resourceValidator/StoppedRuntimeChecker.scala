@@ -10,16 +10,16 @@ import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceN
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 // Implements CheckRunner[F[_], A]
-object ErroredRuntimeChecker {
+object StoppedRuntimeChecker {
   def iml[F[_]: Timer](
     dbReader: DbReader[F],
     deps: RuntimeCheckerDeps[F]
   )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
     new CheckRunner[F, Runtime] {
       override def appName: String = resourceValidator.appName
-      override def configs = CheckRunnerConfigs(s"errored-runtime", shouldAlert = true)
+      override def configs = CheckRunnerConfigs(s"stopped-runtime", shouldAlert = true)
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
-      override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getErroredRuntimes
+      override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getStoppedRuntimes
 
       override def checkResource(runtime: Runtime, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]

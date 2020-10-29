@@ -18,10 +18,9 @@ object DeletedRuntimeChecker {
   )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
     new CheckRunner[F, Runtime] {
       override def appName: String = resourceValidator.appName
-
-      override def configs = CheckRunnerConfigs(s"deleted-runtime", true)
-
+      override def configs = CheckRunnerConfigs(s"deleted-runtime", shouldAlert = true)
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
+      override def resourceToScan: fs2.Stream[F, dsp.Runtime] = dbReader.getDeletedRuntimes
 
       override def checkResource(runtime: Runtime,
                                  isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[dsp.Runtime]] =
@@ -31,8 +30,6 @@ object DeletedRuntimeChecker {
           case Gce =>
             checkGceRuntimeStatus(runtime, isDryRun)
         }
-
-      override def resourceToScan: fs2.Stream[F, dsp.Runtime] = dbReader.getDeletedRuntimes
 
       def checkDataprocClusterStatus(runtime: dsp.Runtime, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
