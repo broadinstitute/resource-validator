@@ -26,12 +26,12 @@ object DeletedRuntimeChecker {
                                  isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[dsp.Runtime]] =
         runtime.cloudService match {
           case Dataproc =>
-            checkDataprocClusterStatus(runtime, isDryRun)
+            checkDataprocCluster(runtime, isDryRun)
           case Gce =>
-            checkGceRuntimeStatus(runtime, isDryRun)
+            checkGceRuntime(runtime, isDryRun)
         }
 
-      def checkDataprocClusterStatus(runtime: dsp.Runtime, isDryRun: Boolean)(
+      def checkDataprocCluster(runtime: dsp.Runtime, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
       ): F[Option[dsp.Runtime]] =
         for {
@@ -39,15 +39,15 @@ object DeletedRuntimeChecker {
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
           _ <- clusterOpt.traverse_ { _ =>
             if (isDryRun)
-              logger.warn(s"${runtime} still exists in Google. It needs to be deleted")
+              logger.warn(s"${runtime} still exists in Google. It needs to be deleted.")
             else
-              logger.warn(s"${runtime} still exists in Google. Going to delete") >> deps.dataprocService
+              logger.warn(s"${runtime} still exists in Google. Going to delete it.") >> deps.dataprocService
                 .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
                 .void
           }
         } yield clusterOpt.fold(none[dsp.Runtime])(_ => Some(runtime))
 
-      def checkGceRuntimeStatus(runtime: dsp.Runtime, isDryRun: Boolean): F[Option[dsp.Runtime]] =
+      def checkGceRuntime(runtime: dsp.Runtime, isDryRun: Boolean): F[Option[dsp.Runtime]] =
         for {
           runtimeOpt <- deps.computeService
             .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))

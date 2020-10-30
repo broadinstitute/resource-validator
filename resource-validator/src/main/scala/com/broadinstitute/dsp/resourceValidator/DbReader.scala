@@ -125,7 +125,7 @@ object DbReader {
       erroredRuntimeQuery.stream.transact(xa)
 
     override def getStoppedRuntimes: Stream[F, Runtime] =
-      erroredRuntimeQuery.stream.transact(xa)
+      stoppedRuntimeQuery.stream.transact(xa)
 
     // When we delete runtimes, we keep their staging buckets for 10 days. Hence we're only deleting staging buckets whose
     // runtimes have been deleted more than 15 days ago.

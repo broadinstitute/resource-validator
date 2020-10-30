@@ -48,7 +48,9 @@ object ErroredRuntimeChecker {
                   )
                   .as(Some(runtime))
               else
-                logger.warn(s"${runtime} still exists in ${cluster.getStatus.getState.name()} status. Going to delete") >> deps.dataprocService
+                logger.warn(
+                  s"${runtime} still exists in ${cluster.getStatus.getState.name()} status. Going to delete it."
+                ) >> deps.dataprocService
                   .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
                   .void
                   .as(Some(runtime))
@@ -64,7 +66,7 @@ object ErroredRuntimeChecker {
             if (isDryRun)
               logger.warn(s"${runtime} still exists in ${rt.getStatus} status. It needs to be deleted.")
             else
-              logger.warn(s"${runtime} still exists in ${rt.getStatus} status. Going to delete") >>
+              logger.warn(s"${runtime} still exists in ${rt.getStatus} status. Going to delete it.") >>
                 deps.computeService
                   .deleteInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
                   .void

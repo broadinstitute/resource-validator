@@ -52,7 +52,7 @@ object ResourceValidator {
       else Stream.empty
 
       stoppedRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedRuntimes)
-        Stream.eval(ErroredRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+        Stream.eval(StoppedRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
 
       removeStagingBucketProcess = if (shouldRunAll)
