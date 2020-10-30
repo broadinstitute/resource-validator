@@ -4,7 +4,6 @@ package resourceValidator
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import cats.mtl.ApplicativeAsk
-import com.broadinstitute.dsp
 import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
 import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName}
@@ -20,10 +19,10 @@ object DeletedRuntimeChecker {
       override def appName: String = resourceValidator.appName
       override def configs = CheckRunnerConfigs(s"deleted-runtime", shouldAlert = true)
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
-      override def resourceToScan: fs2.Stream[F, dsp.Runtime] = dbReader.getDeletedRuntimes
+      override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getDeletedRuntimes
 
       override def checkResource(runtime: Runtime,
-                                 isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[dsp.Runtime]] =
+                                 isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
         runtime.cloudService match {
           case Dataproc =>
             checkDataprocCluster(runtime, isDryRun)
@@ -31,9 +30,9 @@ object DeletedRuntimeChecker {
             checkGceRuntime(runtime, isDryRun)
         }
 
-      def checkDataprocCluster(runtime: dsp.Runtime, isDryRun: Boolean)(
+      def checkDataprocCluster(runtime: Runtime, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
-      ): F[Option[dsp.Runtime]] =
+      ): F[Option[Runtime]] =
         for {
           clusterOpt <- deps.dataprocService
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
@@ -45,9 +44,9 @@ object DeletedRuntimeChecker {
                 .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
                 .void
           }
-        } yield clusterOpt.fold(none[dsp.Runtime])(_ => Some(runtime))
+        } yield clusterOpt.fold(none[Runtime])(_ => Some(runtime))
 
-      def checkGceRuntime(runtime: dsp.Runtime, isDryRun: Boolean): F[Option[dsp.Runtime]] =
+      def checkGceRuntime(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
         for {
           runtimeOpt <- deps.computeService
             .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
@@ -60,6 +59,6 @@ object DeletedRuntimeChecker {
                   .deleteInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
                   .void
           }
-        } yield runtimeOpt.fold(none[dsp.Runtime])(_ => Some(runtime))
+        } yield runtimeOpt.fold(none[Runtime])(_ => Some(runtime))
     }
 }
