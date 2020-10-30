@@ -61,13 +61,15 @@ object StoppedRuntimeChecker {
           runtimeOpt <- deps.computeService
             .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
           _ <- runtimeOpt.traverse_ { rt =>
-            if (isDryRun)
-              logger.warn(s"${runtime} still exists in ${rt.getStatus} status. It needs to be deleted.")
-            else
-              logger.warn(s"${runtime} still exists in ${rt.getStatus} status. Going to delete") >>
-                deps.computeService
-                  .deleteInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
-                  .void
+            if (rt.getStatus == "RUNNING")
+              if (isDryRun)
+                logger.warn(s"${runtime} is running. It needs to be stopped.")
+              else
+                logger.warn(s"${runtime} is running. Going to stop it.") >>
+                  deps.computeService
+                    .stopInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
+                    .void
+            else F.unit
           }
         } yield runtimeOpt.fold(none[Runtime])(_ => Some(runtime))
 
