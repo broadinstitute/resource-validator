@@ -36,23 +36,19 @@ object StoppedRuntimeChecker {
           clusterOpt <- deps.dataprocService
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
           r <- clusterOpt.flatTraverse[F, Runtime] { cluster =>
-            if (cluster.getStatus.getState.name() == "ERROR")
-              logger
-                .warn(s"${runtime} still exists in Google in Error state. User might want to delete the runtime.")
-                .as(none[Runtime])
-            else {
+            if (cluster.getStatus.getState.name() == "RUNNING")
               if (isDryRun)
                 logger
-                  .warn(
-                    s"${runtime} still exists in ${cluster.getStatus.getState.name()} status. It needs to be deleted."
-                  )
+                  .warn(s"${runtime} is running. It needs to be stopped.")
                   .as(Some(runtime))
               else
-                logger.warn(s"${runtime} still exists in ${cluster.getStatus.getState.name()} status. Going to delete") >> deps.dataprocService
+                logger.warn(s"${runtime} is running. Going to stop it.") >> deps.dataprocService
+                // In contrast to in Leo, we're not setting the shutdown script metadata before stopping the instance
+                // in order to keep things simple for the time being
                   .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
                   .void
                   .as(Some(runtime))
-            }
+            else F.pure(none[Runtime])
           }
         } yield r
 
@@ -66,12 +62,13 @@ object StoppedRuntimeChecker {
                 logger.warn(s"${runtime} is running. It needs to be stopped.")
               else
                 logger.warn(s"${runtime} is running. Going to stop it.") >>
+                  // In contrast to in Leo, we're not setting the shutdown script metadata before stopping the instance
+                  // in order to keep things simple for the time being
                   deps.computeService
                     .stopInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
                     .void
             else F.unit
           }
         } yield runtimeOpt.fold(none[Runtime])(_ => Some(runtime))
-
     }
 }
