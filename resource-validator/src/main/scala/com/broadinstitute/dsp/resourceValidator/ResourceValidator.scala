@@ -25,7 +25,8 @@ object ResourceValidator {
                                             shouldRunAll: Boolean,
                                             shouldCheckDeletedRuntimes: Boolean,
                                             shouldCheckErroredRuntimes: Boolean,
-                                            shouldCheckStoppedRuntimes: Boolean,
+                                            shouldCheckStoppedGceRuntimes: Boolean,
+                                            shouldCheckStoppedDataprocRuntimes: Boolean,
                                             shouldCheckDeletedDisks: Boolean,
                                             shouldCheckInitBuckets: Boolean)(
     implicit T: Timer[F],
@@ -51,8 +52,12 @@ object ResourceValidator {
         Stream.eval(ErroredRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
 
-      stoppedRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedRuntimes)
-        Stream.eval(StoppedRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+      stoppedGceRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedGceRuntimes)
+        Stream.eval(StoppedGceRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+      else Stream.empty
+
+      stoppedDataprocRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedDataprocRuntimes)
+        Stream.eval(StoppedDataprocRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
 
       removeStagingBucketProcess = if (shouldRunAll)
@@ -70,7 +75,8 @@ object ResourceValidator {
       processes = Stream(
         deleteRuntimeCheckerProcess,
         errorRuntimeCheckerProcess,
-        stoppedRuntimeCheckerProcess,
+        stoppedGceRuntimeCheckerProcess,
+        stoppedDataprocRuntimeCheckerProcess,
         removeStagingBucketProcess,
         deleteDiskCheckerProcess,
         removeInitBuckets,

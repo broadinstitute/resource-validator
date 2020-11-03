@@ -10,49 +10,20 @@ import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceN
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 // Implements CheckRunner[F[_], A]
-object StoppedRuntimeChecker {
+object StoppedGceRuntimeChecker {
   def iml[F[_]: Timer](
     dbReader: DbReader[F],
     deps: RuntimeCheckerDeps[F]
   )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
     new CheckRunner[F, Runtime] {
       override def appName: String = resourceValidator.appName
-      override def configs = CheckRunnerConfigs(s"stopped-runtime", shouldAlert = true)
+      override def configs = CheckRunnerConfigs(s"stopped-gce-runtime", shouldAlert = true)
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
-      override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getStoppedRuntimes
+      override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getStoppedGceRuntimes
 
       override def checkResource(runtime: Runtime, isDryRun: Boolean)(
         implicit ev: ApplicativeAsk[F, TraceId]
-      ): F[Option[Runtime]] = runtime.cloudService match {
-        case Dataproc =>
-          checkDataprocCluster(runtime, isDryRun)
-        case Gce =>
-          checkGceRuntime(runtime, isDryRun)
-      }
-
-      def checkDataprocCluster(runtime: Runtime,
-                               isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
-        for {
-          clusterOpt <- deps.dataprocService
-            .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
-          r <- clusterOpt.flatTraverse[F, Runtime] { cluster =>
-            if (cluster.getStatus.getState.name() == "RUNNING")
-              if (isDryRun)
-                logger
-                  .warn(s"${runtime} is running. It needs to be stopped.")
-                  .as(Some(runtime))
-              else
-                logger.warn(s"${runtime} is running. Going to stop it.") >> deps.dataprocService
-                // In contrast to in Leo, we're not setting the shutdown script metadata before stopping the instance
-                // in order to keep things simple for the time being
-                  .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
-                  .void
-                  .as(Some(runtime))
-            else F.pure(none[Runtime])
-          }
-        } yield r
-
-      def checkGceRuntime(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
+      ): F[Option[Runtime]] =
         for {
           runtimeOpt <- deps.computeService
             .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))

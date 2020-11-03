@@ -2,6 +2,7 @@ import sbt._
 
 object Dependencies {
   val LogbackVersion = "1.2.3"
+  val workbenchGoogle = "0.13-39c1b35"
   val workbenchGoogle2 = "0.13-39c1b35"
   val doobieVersion = "0.9.0"
   val openTelemetryVersion = "0.1-e66171c"
@@ -20,8 +21,10 @@ object Dependencies {
     "co.fs2" %% "fs2-io" % "2.4.2",
     "org.broadinstitute.dsde.workbench" %% "workbench-opentelemetry" % openTelemetryVersion,
     "org.broadinstitute.dsde.workbench" %% "workbench-opentelemetry" % openTelemetryVersion % Test classifier "tests",
+    "com.google.apis" % "google-api-services-dataproc" % "v1-rev91-1.23.0",
     "com.google.cloud" % "google-cloud-dataproc" % "0.122.1",
     "com.google.cloud" % "google-cloud-compute" % "0.118.0-alpha",
+    "org.broadinstitute.dsde.workbench" %% "workbench-google" % workbenchGoogle,
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2,
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2 % Test classifier "tests",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % Test,
