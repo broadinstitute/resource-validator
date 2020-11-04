@@ -20,31 +20,10 @@ import org.scalatest.flatspec.AnyFlatSpec
  *   * Run this spec
  */
 @DoNotDiscover
-class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
+class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val config = ConfigSpec.config.database
   val transactor = yoloTransactor
 
-  it should "build deletedDisksQuery properly" in {
-    check(DbReader.deletedDisksQuery)
-  }
-
-  it should "build initBucketsToDeleteQuery properly" in {
-    check(DbReader.initBucketsToDeleteQuery)
-  }
-
-  it should "build deletedRuntimeQuery properly" in {
-    check(DbReader.deletedRuntimeQuery)
-  }
-
-  it should "build erroredRuntimeQuery properly" in {
-    check(DbReader.erroredRuntimeQuery)
-  }
-
-  it should "build kubernetesClustersToDeleteQuery properly" in {
-    check(DbReader.kubernetesClustersToDeleteQuery)
-  }
-
-  // TODO: Rename this file as 'DbQueryBuilderSpec' and move the checker-functionality-specific tests below to their own Spec(s)
   val now = Instant.now()
   val gracePeriod = 3600 // in seconds
 

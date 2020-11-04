@@ -15,6 +15,8 @@ trait DbReader[F[_]] {
   def getStagingBucketsToDelete: Stream[F, BucketToRemove]
   def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove]
   def getInitBucketsToDelete: Stream[F, InitBucketToRemove]
+  def getDeletedAndErroredKubernetesClusters: Stream[F, KubernetesCluster]
+  def getDeletedAndErroredNodepools: Stream[F, Nodepool]
 }
 
 object DbReader {
@@ -63,6 +65,21 @@ object DbReader {
                 (c2.status="Stopped" or c2.status="Running")
              )"""
       .query[Runtime]
+
+  val deletedAndErroredKubernetesClusterQuery =
+    sql"""SELECT kc1.clusterName, googleProject, location
+          FROM KUBERNETES_CLUSTER as kc1
+          WHERE kc1.status="DELETED" OR kc1.status="ERROR"
+          """
+      .query[KubernetesCluster]
+
+  val deletedAndErroredNodepoolQuery =
+    sql"""SELECT np.nodepoolName, kc.clusterName, kc.googleProject, kc.location
+         FROM NODEPOOL AS np
+         INNER JOIN KUBERNETES_CLUSTER AS kc ON np.clusterId = kc.id
+         WHERE np.status="DELETED" OR np.status="ERROR"
+         """
+      .query[Nodepool]
 
   // Return all non-deleted clusters with non-default nodepools that have apps that were all deleted
   // or errored outside the grace period (1 hour)
@@ -127,6 +144,12 @@ object DbReader {
     // Same disk names might be re-used
     override def getDeletedDisks: Stream[F, Disk] =
       deletedDisksQuery.stream.transact(xa)
+
+    override def getDeletedAndErroredKubernetesClusters: Stream[F, KubernetesCluster] =
+      deletedAndErroredKubernetesClusterQuery.stream.transact(xa)
+
+    override def getDeletedAndErroredNodepools: Stream[F, Nodepool] =
+      deletedAndErroredNodepoolQuery.stream.transact(xa)
   }
 }
 

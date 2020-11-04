@@ -1,7 +1,12 @@
 package com.broadinstitute.dsp
 
-import org.broadinstitute.dsde.workbench.google2.DiskName
-import org.broadinstitute.dsde.workbench.google2.GKEModels.{KubernetesClusterId, NodepoolId}
+import org.broadinstitute.dsde.workbench.google2.{DiskName, Location}
+import org.broadinstitute.dsde.workbench.google2.GKEModels.{
+  KubernetesClusterId,
+  KubernetesClusterName,
+  NodepoolId,
+  NodepoolName
+}
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 sealed abstract class CloudService extends Product with Serializable {
@@ -38,3 +43,15 @@ final case class K8sClusterToScan(id: Long, kubernetesClusterId: KubernetesClust
 final case class NodepoolToScan(id: Long, nodepoolId: NodepoolId)
 
 final case class KubernetesClusterToRemove(id: Long, googleProject: GoogleProject)
+
+final case class KubernetesCluster(clusterName: KubernetesClusterName,
+                                   googleProject: GoogleProject,
+                                   location: Location) {
+  override def toString: String = s"${clusterName}/${googleProject}"
+}
+final case class Nodepool(nodepoolName: NodepoolName,
+                          clusterName: KubernetesClusterName,
+                          googleProject: GoogleProject,
+                          location: Location) {
+  override def toString: String = s"${nodepoolName}/${googleProject}"
+}

@@ -35,7 +35,7 @@ docker run \
   -instances=<mysql instance you'd like to connect> -credential_file=/config
 ```
 
-## Copy `application.conf.example` under each project as `application.conf`. Replace values properly
+## Copy `application.conf.example` under each project in dir `[project]/src/main/resources` as `application.conf`. Replace values properly
 
 ## Run a job
 ```
