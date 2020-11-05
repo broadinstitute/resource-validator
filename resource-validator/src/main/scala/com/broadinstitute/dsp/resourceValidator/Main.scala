@@ -15,7 +15,7 @@ object Main
         implicit val cs = IO.contextShift(global)
         implicit val timer = IO.timer(global)
 
-        val enableDryRun = Opts.flag("dryRun", "Default to true").map(_ => true).withDefault(true)
+        val enableDryRun = Opts.flag("dryRun", "Default to true").orFalse.withDefault(true)
         val shouldRunAll = Opts.flag("all", "run all checks").orFalse
         val shouldRunCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
         val shouldRunCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
