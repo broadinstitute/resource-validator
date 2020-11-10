@@ -3,7 +3,7 @@ package zombieMonitor
 
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.model.TraceId
@@ -19,7 +19,7 @@ object DeletedOrErroredNodepoolChecker {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: KubernetesClusterCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, NodepoolToScan] =
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, NodepoolToScan] =
     new CheckRunner[F, NodepoolToScan] {
       override def appName: String = zombieMonitor.appName
 
@@ -31,7 +31,7 @@ object DeletedOrErroredNodepoolChecker {
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
       def checkResource(nodepoolToScan: NodepoolToScan,
-                        isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[NodepoolToScan]] =
+                        isDryRun: Boolean)(implicit ev: Ask[F, TraceId]): F[Option[NodepoolToScan]] =
         for {
           nodepoolOpt <- deps.gkeService.getNodepool(nodepoolToScan.nodepoolId)
           nodepoolToReport <- nodepoolOpt match {

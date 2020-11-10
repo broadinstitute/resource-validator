@@ -2,7 +2,7 @@ package com.broadinstitute.dsp
 package zombieMonitor
 
 import cats.effect.{Concurrent, Timer}
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.model.TraceId
@@ -16,7 +16,7 @@ object DeletedKubernetesClusterChecker {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: KubernetesClusterCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, K8sClusterToScan] =
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, K8sClusterToScan] =
     new CheckRunner[F, K8sClusterToScan] {
       override def appName: String = zombieMonitor.appName
 
@@ -27,7 +27,7 @@ object DeletedKubernetesClusterChecker {
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
       def checkResource(cluster: K8sClusterToScan,
-                        isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[K8sClusterToScan]] =
+                        isDryRun: Boolean)(implicit ev: Ask[F, TraceId]): F[Option[K8sClusterToScan]] =
         for {
           clusterOpt <- deps.gkeService.getCluster(cluster.kubernetesClusterId)
           _ <- if (isDryRun) F.unit

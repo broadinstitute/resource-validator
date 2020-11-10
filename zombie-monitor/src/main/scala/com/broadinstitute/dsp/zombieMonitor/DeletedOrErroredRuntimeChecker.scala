@@ -3,7 +3,7 @@ package zombieMonitor
 
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
@@ -20,14 +20,14 @@ object DeletedOrErroredRuntimeChecker {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: RuntimeCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, Runtime] =
     new CheckRunner[F, Runtime] {
       override def resourceToScan: Stream[F, Runtime] = dbReader.getRuntimeCandidate
       override def configs = CheckRunnerConfigs(s"deleted-or-errored-runtime", false)
       override def appName: String = zombieMonitor.appName
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
-      def checkResource(a: Runtime, isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[Runtime]] =
+      def checkResource(a: Runtime, isDryRun: Boolean)(implicit ev: Ask[F, TraceId]): F[Option[Runtime]] =
         a.cloudService match {
           case Dataproc =>
             checkDataprocClusterStatus(a, isDryRun)
@@ -36,7 +36,7 @@ object DeletedOrErroredRuntimeChecker {
         }
 
       def checkDataprocClusterStatus(runtime: Runtime, isDryRun: Boolean)(
-        implicit ev: ApplicativeAsk[F, TraceId]
+        implicit ev: Ask[F, TraceId]
       ): F[Option[Runtime]] =
         for {
           runtimeOpt <- deps.dataprocService
@@ -69,8 +69,8 @@ object DeletedOrErroredRuntimeChecker {
                        s"""
                           |Unrecoverable ERROR state for Spark Cloud Environment: ${cluster.getStatus.getDetail}
                           |
-                          |Please Delete and Recreate your Cloud environment. If you have important data you’d like to retrieve 
-                          |from your Cloud environment prior to deleting, try to access the machine via notebook or terminal. 
+                          |Please Delete and Recreate your Cloud environment. If you have important data you’d like to retrieve
+                          |from your Cloud environment prior to deleting, try to access the machine via notebook or terminal.
                           |If you can't connect to the cluster, please contact customer support and we can help you move your data.
                           |""".stripMargin
                      )

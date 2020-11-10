@@ -3,7 +3,7 @@ package resourceValidator
 
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import com.broadinstitute.dsp
 import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
 import io.chrisdavenport.log4cats.Logger
@@ -15,7 +15,7 @@ object DeletedRuntimeChecker {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: RuntimeCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, Runtime] =
     new CheckRunner[F, Runtime] {
       override def appName: String = resourceValidator.appName
 
@@ -24,7 +24,7 @@ object DeletedRuntimeChecker {
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
       override def checkResource(runtime: Runtime,
-                                 isDryRun: Boolean)(implicit ev: ApplicativeAsk[F, TraceId]): F[Option[dsp.Runtime]] =
+                                 isDryRun: Boolean)(implicit ev: Ask[F, TraceId]): F[Option[dsp.Runtime]] =
         runtime.cloudService match {
           case Dataproc =>
             checkDataprocClusterStatus(runtime, isDryRun)
@@ -35,7 +35,7 @@ object DeletedRuntimeChecker {
       override def resourceToScan: fs2.Stream[F, dsp.Runtime] = dbReader.getDeletedRuntimes
 
       def checkDataprocClusterStatus(runtime: dsp.Runtime, isDryRun: Boolean)(
-        implicit ev: ApplicativeAsk[F, TraceId]
+        implicit ev: Ask[F, TraceId]
       ): F[Option[dsp.Runtime]] =
         for {
           clusterOpt <- deps.dataprocService

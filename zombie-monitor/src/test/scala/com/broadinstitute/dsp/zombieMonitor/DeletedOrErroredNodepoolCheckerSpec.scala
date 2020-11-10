@@ -22,7 +22,7 @@ class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestS
       }
       val gkeService = new MockGKEService {
         override def getNodepool(nodepoolId: NodepoolId)(
-          implicit ev: cats.mtl.ApplicativeAsk[IO, TraceId]
+          implicit ev: cats.mtl.Ask[IO, TraceId]
         ): IO[Option[com.google.container.v1.NodePool]] = IO.pure(None)
       }
       val deps = initDeps(gkeService)
@@ -40,7 +40,7 @@ class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestS
       }
       val gkeService = new MockGKEService {
         override def getNodepool(nodepoolId: NodepoolId)(
-          implicit ev: cats.mtl.ApplicativeAsk[IO, TraceId]
+          implicit ev: cats.mtl.Ask[IO, TraceId]
         ): IO[Option[com.google.container.v1.NodePool]] =
           IO.pure(Some(com.google.container.v1.NodePool.newBuilder().build()))
       }
@@ -62,7 +62,7 @@ class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestS
       }
       val gkeService = new MockGKEService {
         override def getNodepool(nodepoolId: NodepoolId)(
-          implicit ev: cats.mtl.ApplicativeAsk[IO, TraceId]
+          implicit ev: cats.mtl.Ask[IO, TraceId]
         ): IO[Option[com.google.container.v1.NodePool]] =
           IO.pure(
             Some(

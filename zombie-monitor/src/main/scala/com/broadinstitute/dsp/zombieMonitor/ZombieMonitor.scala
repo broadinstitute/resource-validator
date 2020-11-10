@@ -6,7 +6,7 @@ import java.util.UUID
 import cats.Parallel
 import cats.effect.concurrent.Semaphore
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
@@ -25,7 +25,7 @@ object ZombieMonitor {
     C: ContextShift[F]
   ): Stream[F, Nothing] = {
     implicit def getLogger[F[_]: Sync] = Slf4jLogger.getLogger[F]
-    implicit val traceId = ApplicativeAsk.const(TraceId(UUID.randomUUID()))
+    implicit val traceId = Ask.const(TraceId(UUID.randomUUID()))
 
     for {
       config <- Stream.fromEither(Config.appConfig)

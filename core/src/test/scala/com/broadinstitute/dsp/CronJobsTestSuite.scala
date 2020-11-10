@@ -1,7 +1,7 @@
 package com.broadinstitute.dsp
 
 import cats.effect.{Blocker, ContextShift, IO, Timer}
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import org.broadinstitute.dsde.workbench.model.TraceId
@@ -17,7 +17,7 @@ trait CronJobsTestSuite extends Matchers with ScalaCheckPropertyChecks with Conf
   implicit val timer: Timer[IO] = IO.timer(executionContext)
   implicit val unsafeLogger: StructuredLogger[IO] = Slf4jLogger.getLogger[IO]
   val fakeTraceId = TraceId("fakeTraceId")
-  implicit val traceId: ApplicativeAsk[IO, TraceId] = ApplicativeAsk.const[IO, TraceId](fakeTraceId)
+  implicit val traceId: Ask[IO, TraceId] = Ask.const[IO, TraceId](fakeTraceId)
   val blocker: Blocker = Blocker.liftExecutionContext(global)
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration = {
     PropertyCheckConfiguration(minSuccessful = 3)
