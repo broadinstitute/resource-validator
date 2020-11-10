@@ -35,7 +35,7 @@ docker run \
   -instances=<mysql instance you'd like to connect> -credential_file=/config
 ```
 
-## Copy `application.conf.example` under each project as `application.conf`. Replace values properly
+## Copy `application.conf.example` under each project in dir `[project]/src/main/resources` as `application.conf`. Replace values properly
 
 ## Run a job
 ```
@@ -48,7 +48,7 @@ e.g. `sbt "resourceValidator/run --dryRun --all"`
 
 Currently, `com.broadinstitute.dsp.zombieMonitor.DbReaderSpec` and `com.broadinstitute.dsp.resourceValidator.DbReaderSpec` are not run in CI, hence make sure you run them manually before merging any PRs.
 
-Once a PR is merged, there will be a PR created in [terra-helm](https://github.com/broadinstitute/terra-helm) (WIP). 
+Once a PR is merged, there will be a PR created in [terra-helm](https://github.com/broadinstitute/terra-helm). 
 Get this PR merged, and another automatic commit will bump leonardo's chart version. This will trigger another automatic commit 
 in [terra-helmfile](https://github.com/broadinstitute/terra-helmfile), note this commit will only auto bump `dev` and `perf`,
 create another PR for bumping all other environments when you're ready (similar to [this](https://github.com/broadinstitute/terra-helmfile/pull/390)). Once all these PRs are merged, 

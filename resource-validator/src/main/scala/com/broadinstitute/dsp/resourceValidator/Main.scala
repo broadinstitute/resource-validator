@@ -22,26 +22,38 @@ object Main
         val shouldRunCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse
         val shouldRunCheckInitBuckets =
           Opts.flag("checkInitBuckets", "checks that init buckets for deleted runtimes are deleted").orFalse
+        val shouldRunCheckDeletedKubernetesClusters =
+          Opts.flag("checkDeletedKubernetesClusters", "check all deleted or errored kubernetes clusters").orFalse
+        val shouldRunCheckDeletedNodepools =
+          Opts.flag("checkDeletedNodepools", "check all deleted or errored nodepools").orFalse
 
         (enableDryRun,
          shouldRunAll,
          shouldRunCheckDeletedRuntimes,
          shouldRunCheckErroredRuntimes,
          shouldRunCheckDeletedDisks,
-         shouldRunCheckInitBuckets).mapN {
+         shouldRunCheckInitBuckets,
+         shouldRunCheckDeletedKubernetesClusters,
+         shouldRunCheckDeletedNodepools).mapN {
           (dryRun,
            runAll,
            shouldCheckDeletedRuntimes,
            shouldRunCheckErroredRuntimes,
            shouldRunCheckDeletedDisks,
-           shouldRunCheckInitBuckets) =>
+           shouldRunCheckInitBuckets,
+           shouldRunCheckDeletedKubernetesClusters,
+           shouldRunCheckDeletedNodepools) =>
             ResourceValidator
-              .run[IO](dryRun,
-                       runAll,
-                       shouldCheckDeletedRuntimes,
-                       shouldRunCheckErroredRuntimes,
-                       shouldRunCheckDeletedDisks,
-                       shouldRunCheckInitBuckets)
+              .run[IO](
+                isDryRun = dryRun,
+                shouldRunAll = runAll,
+                shouldRunCheckDeletedRuntimes = shouldCheckDeletedRuntimes,
+                shouldRunCheckErroredRuntimes = shouldRunCheckErroredRuntimes,
+                shouldRunCheckDeletedDisks = shouldRunCheckDeletedDisks,
+                shouldRunCheckInitBuckets = shouldRunCheckInitBuckets,
+                shouldRunCheckDeletedKubernetesCluster = shouldRunCheckDeletedKubernetesClusters,
+                shouldRunCheckDeletedNodepool = shouldRunCheckDeletedNodepools
+              )
               .compile
               .drain
               .unsafeRunSync()

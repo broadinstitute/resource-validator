@@ -12,6 +12,7 @@ import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
 import org.broadinstitute.dsde.workbench.google2.{
+  GKEService,
   GoogleDiskService,
   GooglePublisher,
   GoogleTopicAdminInterpreter,
@@ -26,7 +27,9 @@ object ResourceValidator {
                                             shouldRunCheckDeletedRuntimes: Boolean,
                                             shouldRunCheckErroredRuntimes: Boolean,
                                             shouldRunCheckDeletedDisks: Boolean,
-                                            shouldRunCheckInitBuckets: Boolean)(
+                                            shouldRunCheckInitBuckets: Boolean,
+                                            shouldRunCheckDeletedKubernetesCluster: Boolean,
+                                            shouldRunCheckDeletedNodepool: Boolean)(
     implicit T: Timer[F],
     C: ContextShift[F]
   ): Stream[F, Nothing] = {
@@ -44,6 +47,16 @@ object ResourceValidator {
       else Stream.empty
       errorRuntimeCheckerProcess = if (shouldRunAll || shouldRunCheckErroredRuntimes)
         Stream.eval(ErroredRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+      else Stream.empty
+      deleteKubernetesClusterCheckerProcess = if (shouldRunAll || shouldRunCheckDeletedKubernetesCluster)
+        Stream.eval(
+          DeletedOrErroredKubernetesClusterChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
+        )
+      else Stream.empty
+      deleteNodepoolCheckerProcess = if (shouldRunAll || shouldRunCheckDeletedNodepool)
+        Stream.eval(
+          DeletedOrErroredNodepoolChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
+        )
       else Stream.empty
 
       checkRunnerDep = deps.runtimeCheckerDeps.checkRunnerDeps
@@ -65,10 +78,12 @@ object ResourceValidator {
         removeStagingBucketProcess,
         deleteDiskCheckerProcess,
         removeInitBuckets,
-        removeKubernetesClusters
+        removeKubernetesClusters,
+        deleteKubernetesClusterCheckerProcess,
+        deleteNodepoolCheckerProcess
       ).covary[F]
 
-      _ <- processes.parJoin(6) // Update this number as we add more streams
+      _ <- processes.parJoin(8) // Update this number as we add more streams
     } yield ExitCode.Success
   }.drain
 
@@ -86,14 +101,21 @@ object ResourceValidator {
         ProjectTopicName.of(appConfig.leonardoPubsub.googleProject.value, appConfig.leonardoPubsub.topicName),
         GoogleTopicAdminInterpreter.defaultRetryConfig
       )
+      gkeService <- GKEService.resource(appConfig.pathToCredential, blocker, blockerBound)
       googlePublisher <- GooglePublisher.resource[F](publisherConfig)
       xa <- DbTransactor.init(appConfig.database)
     } yield {
       val checkRunnerDeps = runtimeCheckerDeps.checkRunnerDeps
       val diskCheckerDeps = DiskCheckerDeps(checkRunnerDeps, diskService)
       val kubernetesClusterToRemoveDeps = KubernetesClusterRemoverDeps(googlePublisher, checkRunnerDeps)
+      val kubernetesClusterCheckerDeps = KubernetesClusterCheckerDeps(checkRunnerDeps, gkeService)
       val dbReader = DbReader.impl(xa)
-      ResourcevalidatorServerDeps(runtimeCheckerDeps, diskCheckerDeps, kubernetesClusterToRemoveDeps, dbReader, blocker)
+      ResourcevalidatorServerDeps(runtimeCheckerDeps,
+                                  diskCheckerDeps,
+                                  kubernetesClusterToRemoveDeps,
+                                  kubernetesClusterCheckerDeps,
+                                  dbReader,
+                                  blocker)
     }
 }
 
@@ -101,6 +123,7 @@ final case class ResourcevalidatorServerDeps[F[_]](
   runtimeCheckerDeps: RuntimeCheckerDeps[F],
   deletedDiskCheckerDeps: DiskCheckerDeps[F],
   kubernetesClusterRemoverDeps: KubernetesClusterRemoverDeps[F],
+  kubernetesClusterCheckerDeps: KubernetesClusterCheckerDeps[F],
   dbReader: DbReader[F],
   blocker: Blocker
 )

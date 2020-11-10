@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   val LogbackVersion = "1.2.3"
-  val workbenchGoogle2 = "0.13-39c1b35"
+  val workbenchGoogle2 = "0.14-aed2645"
   val doobieVersion = "0.9.0"
   val openTelemetryVersion = "0.1-e66171c"
 
