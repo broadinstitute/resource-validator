@@ -2,7 +2,7 @@ package com.broadinstitute.dsp
 package resourceValidator
 
 import cats.effect.IO
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import com.broadinstitute.dsp.Generators._
 import com.broadinstitute.dsp.resourceValidator.InitDependenciesHelper.initKubernetesClusterCheckerDeps
 import com.google.container.v1.{NodePool, Operation}
@@ -16,7 +16,7 @@ class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestS
   it should "return None if nodepool no longer exists in Google" in {
     val gkeService = new MockGKEService {
       override def getNodepool(nodepoolId: NodepoolId)(
-        implicit ev: ApplicativeAsk[IO, TraceId]
+        implicit ev: Ask[IO, TraceId]
       ): IO[Option[NodePool]] = IO.pure(None)
     }
 
@@ -40,14 +40,14 @@ class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestS
       }
       val gkeService = new MockGKEService {
         override def getNodepool(nodepoolId: NodepoolId)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[NodePool]] = {
           val nodepool = NodePool.newBuilder().build()
           IO.pure(Some(nodepool))
         }
 
         override def deleteNodepool(nodepoolId: NodepoolId)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Operation]] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called")) else IO.pure(Some(Operation.newBuilder().build()))
       }

@@ -3,7 +3,7 @@ package resourceValidator
 
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.model.TraceId
@@ -12,7 +12,7 @@ object DeletedOrErroredKubernetesClusterChecker {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: KubernetesClusterCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, KubernetesCluster] =
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, KubernetesCluster] =
     new CheckRunner[F, KubernetesCluster] {
       override def appName: String = resourceValidator.appName
 
@@ -21,13 +21,13 @@ object DeletedOrErroredKubernetesClusterChecker {
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
       override def checkResource(cluster: KubernetesCluster, isDryRun: Boolean)(
-        implicit ev: ApplicativeAsk[F, TraceId]
+        implicit ev: Ask[F, TraceId]
       ): F[Option[KubernetesCluster]] = checkKubernetesClusterStatus(cluster, isDryRun)
 
       override def resourceToScan: fs2.Stream[F, KubernetesCluster] = dbReader.getDeletedAndErroredKubernetesClusters
 
       def checkKubernetesClusterStatus(cluster: KubernetesCluster, isDryRun: Boolean)(
-        implicit ev: ApplicativeAsk[F, TraceId]
+        implicit ev: Ask[F, TraceId]
       ): F[Option[KubernetesCluster]] =
         for {
           clusterOpt <- deps.gkeService.getCluster(
