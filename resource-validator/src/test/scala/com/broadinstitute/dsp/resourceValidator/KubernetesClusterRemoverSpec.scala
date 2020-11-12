@@ -2,11 +2,13 @@ package com.broadinstitute.dsp
 package resourceValidator
 
 import cats.effect.IO
+import cats.mtl.Ask
 import com.broadinstitute.dsp.Generators._
-import fs2.{Pipe, Stream}
+import fs2.Stream
 import io.circe.Encoder
 import org.broadinstitute.dsde.workbench.google2.GooglePublisher
 import org.broadinstitute.dsde.workbench.google2.mock.{FakeGooglePublisher, FakeGoogleStorageInterpreter}
+import org.broadinstitute.dsde.workbench.model.TraceId
 import org.scalatest.flatspec.AnyFlatSpec
 import org.broadinstitute.dsde.workbench.openTelemetry.FakeOpenTelemetryMetricsInterpreter
 
@@ -21,13 +23,14 @@ class KubernetesClusterRemoverSpec extends AnyFlatSpec with CronJobsTestSuite {
       var count = 0
 
       val publisher = new FakeGooglePublisher {
-        override def publish[MessageType](implicit ev: Encoder[MessageType]): Pipe[IO, MessageType, Unit] =
+        override def publishOne[MessageType](message: MessageType)(implicit evidence$2: Encoder[MessageType], ev: Ask[IO, TraceId]): IO[Unit] = {
           if (dryRun)
-            in => in.evalMap(_ => IO.raiseError(fail("Shouldn't publish message in dryRun mode")))
+            IO.raiseError(fail("Shouldn't publish message in dryRun mode"))
           else {
             count = count + 1
-            super.publish
+            super.publishOne(message)(evidence$2, ev)
           }
+        }
       }
 
       val deps = initDeps(publisher)
