@@ -4,9 +4,8 @@ package resourceValidator
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import cats.mtl.ApplicativeAsk
-import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
 import io.chrisdavenport.log4cats.Logger
-import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName}
+import org.broadinstitute.dsde.workbench.google2.InstanceName
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 // Implements CheckRunner[F[_], A]

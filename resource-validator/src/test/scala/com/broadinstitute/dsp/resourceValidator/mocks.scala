@@ -10,6 +10,7 @@ import org.broadinstitute.dsde.workbench.google2.GooglePublisher
 class FakeDbReader extends DbReader[IO] {
   override def getDeletedRuntimes: Stream[IO, Runtime] = Stream.empty
   override def getErroredRuntimes: Stream[IO, Runtime] = Stream.empty
+  override def getStoppedDataprocRuntimes: Stream[IO, Runtime] = Stream.empty
   override def getStoppedGceRuntimes: Stream[IO, Runtime] = Stream.empty
 
   override def getStagingBucketsToDelete: Stream[IO, BucketToRemove] = Stream.empty

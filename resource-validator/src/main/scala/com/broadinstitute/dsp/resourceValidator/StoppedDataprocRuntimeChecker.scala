@@ -4,23 +4,23 @@ package resourceValidator
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import cats.mtl.ApplicativeAsk
-import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
-import com.google.api.services.dataproc.Dataproc
-import com.google.api.services.dataproc.model.{
-  Cluster => DataprocCluster,
-  ClusterConfig => DataprocClusterConfig,
-  Operation => DataprocOperation,
-  ClusterStatus => _,
-  _
-}
+//import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
+//import com.google.api.services.dataproc.Dataproc
+//import com.google.api.services.dataproc.model.{
+//  Cluster => DataprocCluster,
+//  ClusterConfig => DataprocClusterConfig,
+//  Operation => DataprocOperation,
+//  ClusterStatus => _
+//  _
+//}
 import io.chrisdavenport.log4cats.Logger
 //import org.broadinstitute.dsde.workbench.google.GoogleCredentialModes._
 import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName}
 import org.broadinstitute.dsde.workbench.model.TraceId
-import org.broadinstitute.dsde.workbench.model.google.GoogleProject
-import DataprocModels._
-
-import scala.concurrent.Future
+//import org.broadinstitute.dsde.workbench.model.google.GoogleProject
+//import DataprocModels._
+//
+//import scala.concurrent.Future
 
 // Implements CheckRunner[F[_], A]
 object StoppedDataprocRuntimeChecker {
@@ -117,11 +117,11 @@ object StoppedDataprocRuntimeChecker {
 object DataprocModels {
   final case class DataprocClusterName(asString: String) extends AnyVal
 
-  final case class DataprocInstance(clusterId: Long,
-                                    googleProject: GoogleProject,
-                                    runtimeName: String,
-                                    status: String) {
-    // this is the format we'll output in report, which can be easily consumed by scripts if necessary
-    override def toString: String = s"$id,${googleProject.value},${runtimeName},${cloudService},$status"
-  }
+//  final case class DataprocInstance(clusterId: Long,
+//                                    googleProject: GoogleProject,
+//                                    runtimeName: String,
+//                                    status: String) {
+//    // this is the format we'll output in report, which can be easily consumed by scripts if necessary
+//    override def toString: String = s"$id,${googleProject.value},${runtimeName},${cloudService},$status"
+//  }
 }
