@@ -23,14 +23,14 @@ class KubernetesClusterRemoverSpec extends AnyFlatSpec with CronJobsTestSuite {
       var count = 0
 
       val publisher = new FakeGooglePublisher {
-        override def publishOne[MessageType](message: MessageType)(implicit evidence$2: Encoder[MessageType], ev: Ask[IO, TraceId]): IO[Unit] = {
+        override def publishOne[MessageType](message: MessageType)(implicit evidence$2: Encoder[MessageType],
+                                                                   ev: Ask[IO, TraceId]): IO[Unit] =
           if (dryRun)
             IO.raiseError(fail("Shouldn't publish message in dryRun mode"))
           else {
             count = count + 1
             super.publishOne(message)(evidence$2, ev)
           }
-        }
       }
 
       val deps = initDeps(publisher)
