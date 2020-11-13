@@ -2,7 +2,7 @@ package com.broadinstitute.dsp
 package resourceValidator
 
 import cats.effect.IO
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import com.broadinstitute.dsp.Generators._
 import com.google.cloud.compute.v1
 import com.google.cloud.compute.v1.Operation
@@ -18,7 +18,7 @@ class DeletedDiskCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   it should "return None if disk no longer exists in Google" in {
     val diskService = new MockGoogleDiskService {
       override def getDisk(project: GoogleProject, zone: ZoneName, diskName: DiskName)(
-        implicit ev: ApplicativeAsk[IO, TraceId]
+        implicit ev: Ask[IO, TraceId]
       ): IO[Option[v1.Disk]] = IO.pure(None)
     }
     val checkerDeps =
@@ -41,11 +41,11 @@ class DeletedDiskCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       }
       val diskService = new MockGoogleDiskService {
         override def getDisk(project: GoogleProject, zone: ZoneName, diskName: DiskName)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[v1.Disk]] = IO.pure(Some(v1.Disk.newBuilder.build()))
 
         override def deleteDisk(project: GoogleProject, zone: ZoneName, diskName: DiskName)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Operation]] = if (dryRun) IO.raiseError(fail("this shouldn't be called")) else IO.pure(None)
       }
       val checkerDeps =

@@ -2,7 +2,7 @@ package com.broadinstitute.dsp
 package resourceValidator
 
 import cats.effect.IO
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import com.broadinstitute.dsp.Generators._
 import com.broadinstitute.dsp.resourceValidator.InitDependenciesHelper.initKubernetesClusterCheckerDeps
 import com.google.container.v1.{Cluster, Operation}
@@ -16,7 +16,7 @@ class DeletedOrErroredKubernetesClusterCheckerSpec extends AnyFlatSpec with Cron
   it should "return None if kubernetes cluster no longer exists in Google" in {
     val gkeService = new MockGKEService {
       override def getCluster(clusterId: KubernetesClusterId)(
-        implicit ev: ApplicativeAsk[IO, TraceId]
+        implicit ev: Ask[IO, TraceId]
       ): IO[Option[Cluster]] = IO.pure(None)
     }
 
@@ -40,14 +40,14 @@ class DeletedOrErroredKubernetesClusterCheckerSpec extends AnyFlatSpec with Cron
       }
       val gkeService = new MockGKEService {
         override def getCluster(clusterId: KubernetesClusterId)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Cluster]] = {
           val cluster = Cluster.newBuilder().build()
           IO.pure(Some(cluster))
         }
 
         override def deleteCluster(clusterId: KubernetesClusterId)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Operation]] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called")) else IO.pure(Some(Operation.newBuilder().build()))
       }

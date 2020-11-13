@@ -2,7 +2,7 @@ package com.broadinstitute.dsp
 package resourceValidator
 
 import cats.effect.IO
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import com.broadinstitute.dsp.Generators._
 import com.broadinstitute.dsp.resourceValidator.InitDependenciesHelper.initRuntimeCheckerDeps
 import com.google.cloud.compute.v1.{Instance, Operation}
@@ -18,12 +18,12 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   it should "return None if runtime no longer exists in Google" in {
     val computeService = new FakeGoogleComputeService {
       override def getInstance(project: GoogleProject, zone: ZoneName, instanceName: InstanceName)(
-        implicit ev: ApplicativeAsk[IO, TraceId]
+        implicit ev: Ask[IO, TraceId]
       ): IO[Option[Instance]] = IO.pure(None)
     }
     val dataprocService = new BaseFakeGoogleDataprocService {
       override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
-        implicit ev: ApplicativeAsk[IO, TraceId]
+        implicit ev: Ask[IO, TraceId]
       ): IO[Option[Cluster]] = IO.pure(None)
     }
 
@@ -47,26 +47,26 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       }
       val computeService = new FakeGoogleComputeService {
         override def getInstance(project: GoogleProject, zone: ZoneName, instanceName: InstanceName)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Instance]] = {
           val instance = Instance.newBuilder().build()
           IO.pure(Some(instance))
         }
 
         override def deleteInstance(project: GoogleProject, zone: ZoneName, instanceName: InstanceName)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Operation]] = if (dryRun) IO.raiseError(fail("this shouldn't be called")) else IO.pure(None)
       }
       val dataprocService = new BaseFakeGoogleDataprocService {
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Cluster]] = {
           val cluster = Cluster.newBuilder().build()
           IO.pure(Some(cluster))
         }
 
         override def deleteCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[ClusterOperationMetadata]] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called")) else IO.pure(None)
       }

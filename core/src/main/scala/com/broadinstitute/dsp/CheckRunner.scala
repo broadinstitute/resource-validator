@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit
 
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.{GcsBlobName, GoogleStorageService}
@@ -22,14 +22,14 @@ trait CheckRunner[F[_], A] {
   def dependencies: CheckRunnerDeps[F]
 
   def checkResource(a: A, isDryRun: Boolean)(
-    implicit ev: ApplicativeAsk[F, TraceId]
+    implicit ev: Ask[F, TraceId]
   ): F[Option[A]]
 
   def resourceToScan: Stream[F, A]
 
   def run(
     isDryRun: Boolean
-  )(implicit timer: Timer[F], F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): F[Unit] =
+  )(implicit timer: Timer[F], F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): F[Unit] =
     for {
       now <- timer.clock.realTime(TimeUnit.MILLISECONDS)
       blobName = if (isDryRun)
