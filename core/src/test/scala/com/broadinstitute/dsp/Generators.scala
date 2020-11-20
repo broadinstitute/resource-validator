@@ -31,11 +31,12 @@ object Generators {
   } yield KubernetesCluster(name, project, location)
 
   val genNodepool: Gen[Nodepool] = for {
+    id <- Gen.chooseNum(0, 100)
     nodepoolName <- genNodepoolName
     clusterName <- Gen.uuid.map(x => KubernetesClusterName(x.toString))
     project <- genGoogleProject
     location <- genLocation
-  } yield Nodepool(nodepoolName, clusterName, project, location)
+  } yield Nodepool(id, nodepoolName, clusterName, project, location)
 
   val genK8sClusterToScan: Gen[K8sClusterToScan] = for {
     id <- Gen.chooseNum(0, 100)

@@ -54,7 +54,7 @@ object ResourceValidator {
       else Stream.empty
       deleteNodepoolCheckerProcess = if (shouldCheckAll || shouldCheckDeletedNodepool)
         Stream.eval(
-          DeletedOrErroredNodepoolChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
+          DeletedOrErroredNodepoolChecker.impl(deps.dbReader, deps.nodepoolCheckerDeps).run(isDryRun)
         )
       else Stream.empty
 
@@ -111,11 +111,13 @@ object ResourceValidator {
       val diskCheckerDeps = DiskCheckerDeps(checkRunnerDeps, diskService)
       val kubernetesClusterToRemoveDeps = KubernetesClusterRemoverDeps(googlePublisher, checkRunnerDeps)
       val kubernetesClusterCheckerDeps = KubernetesClusterCheckerDeps(checkRunnerDeps, gkeService)
+      val nodepoolCheckerDeps = NodepoolCheckerDeps(checkRunnerDeps, gkeService, googlePublisher)
       val dbReader = DbReader.impl(xa)
       ResourcevalidatorServerDeps(runtimeCheckerDeps,
                                   diskCheckerDeps,
                                   kubernetesClusterToRemoveDeps,
                                   kubernetesClusterCheckerDeps,
+                                  nodepoolCheckerDeps,
                                   dbReader,
                                   blocker)
     }
@@ -126,6 +128,7 @@ final case class ResourcevalidatorServerDeps[F[_]](
   deletedDiskCheckerDeps: DiskCheckerDeps[F],
   kubernetesClusterRemoverDeps: KubernetesClusterRemoverDeps[F],
   kubernetesClusterCheckerDeps: KubernetesClusterCheckerDeps[F],
+  nodepoolCheckerDeps: NodepoolCheckerDeps[F],
   dbReader: DbReader[F],
   blocker: Blocker
 )
