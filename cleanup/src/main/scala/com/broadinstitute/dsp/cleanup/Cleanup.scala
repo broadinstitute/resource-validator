@@ -27,9 +27,10 @@ object Cleanup {
     for {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
-
       deleteRuntimeCheckerProcess = if (shouldRunAll || shouldDeletePubsubTopics)
-        Stream.eval(PubsubTopicCleaner(config.pubsubTopicCleaner, deps.topicAdminClient, deps.metrics).run(isDryRun))
+        Stream.eval(
+          PubsubTopicCleaner(config.pubsubTopicCleaner, deps.topicAdminClient, deps.metrics).run(isDryRun)
+        )
       else Stream.empty
 
       processes = Stream(deleteRuntimeCheckerProcess).covary[F]

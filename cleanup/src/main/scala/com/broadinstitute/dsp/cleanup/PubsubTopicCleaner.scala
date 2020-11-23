@@ -30,7 +30,7 @@ class PubsubTopicCleaner[F[_]: Timer](config: PubsubTopicCleanerConfig,
         if (isDryRun)
           Stream.eval(logger.info(s"${topicName} will be deleted if run in nonDryRun mode"))
         else Stream.eval(metrics.incrementCounter("pubsubTopicCleaner")) >> topicAdmin.delete(topicName, Some(traceId))
-      } else Stream.eval(logger.info(s"Not going to delete ${topicName}"))
+      } else Stream.eval(F.unit)
     } yield ()
 
     res.compile.drain

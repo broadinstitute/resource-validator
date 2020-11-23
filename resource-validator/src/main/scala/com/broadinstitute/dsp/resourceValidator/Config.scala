@@ -8,12 +8,8 @@ import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProj
 import pureconfig._
 import pureconfig.generic.auto._
 import ConfigImplicits._
-import pureconfig.error.FailureReason
 
 object Config {
-  implicit val googleProjectReader: ConfigReader[GoogleProject] =
-    ConfigReader.fromString(s => GoogleProject(s).asRight[FailureReason])
-
   val appConfig = ConfigSource.default
     .load[AppConfig]
     .leftMap(failures => new RuntimeException(failures.toList.map(_.description).mkString("\n")))
