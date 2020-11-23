@@ -18,8 +18,8 @@ object Cleanup {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
                                             shouldRunAll: Boolean,
                                             shouldDeletePubsubTopics: Boolean)(
-    implicit T: Timer[F],
-    C: ContextShift[F]
+    implicit timer: Timer[F],
+    cs: ContextShift[F]
   ): Stream[F, Nothing] = {
     implicit def getLogger[F[_]: Sync] = Slf4jLogger.getLogger[F]
     implicit val traceId = Ask.const(TraceId(UUID.randomUUID()))
