@@ -1,3 +1,6 @@
+[![Build Status](https://github.com/DataBiosphere/leonardo-cron-jobs/workflows/Unit%20tests/badge.svg)](https://github.com/DataBiosphere/leonardo-cron-jobs/actions) 
+[![codecov](https://codecov.io/gh/DataBiosphere/leonardo-cron-jobs/branch/develop/graph/badge.svg)](https://codecov.io/gh/DataBiosphere/leonardo-cron-jobs)
+
 # Introduction
 
 This repo contains cron jobs running along side with [Leonardo](https://github.com/databiosphere/leonardo)
