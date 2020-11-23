@@ -1,5 +1,5 @@
-[![Build Status](https://github.com/broadinstitute/leonardo-cron-jobs/workflows/Unit%20tests/badge.svg)](https://github.com/broadinstitute/leonardo-cron-jobs/actions) 
-[![codecov](https://codecov.io/gh/broadinstitute/leonardo-cron-jobs/branch/develop/graph/badge.svg)](https://codecov.io/gh/broadinstitute/leonardo-cron-jobs)
+[![Build Status](https://github.com/broadinstitute/leonardo-cron-jobs/workflows/Unit%20Tests/badge.svg)](https://github.com/broadinstitute/leonardo-cron-jobs/actions) 
+[![codecov](https://codecov.io/gh/broadinstitute/leonardo-cron-jobs/branch/master/graph/badge.svg)](https://codecov.io/gh/broadinstitute/leonardo-cron-jobs)
 
 # Introduction
 
