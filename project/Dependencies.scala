@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   val LogbackVersion = "1.2.3"
-  val workbenchGoogle2 = "0.15-c5713ac"
+  val workbenchGoogle2 = "0.16-4b8fb71f-SNAP"
   val doobieVersion = "0.9.0"
   val openTelemetryVersion = "0.1-e66171c"
 
@@ -31,4 +31,6 @@ object Dependencies {
   val resourceValidator = core
 
   val zombieMonitor = core
+
+  val cleanup = core
 }

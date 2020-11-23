@@ -20,3 +20,8 @@ lazy val zombieMonitor = (project in file("zombie-monitor"))
   .settings(Settings.zombieMonitorSettings)
   .enablePlugins(JavaAppPackaging)
   .dependsOn(core % "test->test;compile->compile")
+
+lazy val cleanup = (project in file("cleanup"))
+  .settings(Settings.cleanupSettings)
+  .enablePlugins(JavaAppPackaging)
+  .dependsOn(core % "test->test;compile->compile")
