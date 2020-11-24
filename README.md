@@ -37,8 +37,9 @@ docker run \
   gcr.io/cloudsql-docker/gce-proxy:1.16 /cloud_sql_proxy \
   -instances=<mysql instance you'd like to connect> -credential_file=/config
 ```
-
-## Copy `application.conf.example` under each project in dir `[project]/src/main/resources` as `application.conf`. Replace values properly
+.
+## Set up configuration file
+Copy `application.conf.example` under each project in dir `[project]/src/main/resources` as `application.conf`. Replace values properly.
 
 ## Run a job
 ```

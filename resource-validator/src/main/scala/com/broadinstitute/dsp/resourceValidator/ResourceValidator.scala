@@ -11,13 +11,7 @@ import com.google.pubsub.v1.ProjectTopicName
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
-import org.broadinstitute.dsde.workbench.google2.{
-  GKEService,
-  GoogleDiskService,
-  GooglePublisher,
-  GoogleTopicAdminInterpreter,
-  PublisherConfig
-}
+import org.broadinstitute.dsde.workbench.google2.{GKEService, GoogleDiskService, GooglePublisher, PublisherConfig}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
 
@@ -98,8 +92,7 @@ object ResourceValidator {
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
       publisherConfig = PublisherConfig(
         appConfig.pathToCredential.toString,
-        ProjectTopicName.of(appConfig.leonardoPubsub.googleProject.value, appConfig.leonardoPubsub.topicName),
-        GoogleTopicAdminInterpreter.defaultRetryConfig
+        ProjectTopicName.of(appConfig.leonardoPubsub.googleProject.value, appConfig.leonardoPubsub.topicName)
       )
       gkeService <- GKEService.resource(appConfig.pathToCredential, blocker, blockerBound)
       googlePublisher <- GooglePublisher.resource[F](publisherConfig)

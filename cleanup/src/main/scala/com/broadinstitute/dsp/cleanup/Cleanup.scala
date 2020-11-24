@@ -6,11 +6,10 @@ import java.util.UUID
 import cats.Parallel
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.Ask
-import com.google.auth.oauth2.ServiceAccountCredentials
 import fs2.Stream
 import io.chrisdavenport.log4cats.StructuredLogger
 import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
-import org.broadinstitute.dsde.workbench.google2.{GoogleTopicAdmin, GoogleTopicAdminInterpreter}
+import org.broadinstitute.dsde.workbench.google2.{GoogleSubscriptionAdmin, GoogleTopicAdmin}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
 
@@ -29,7 +28,11 @@ object Cleanup {
       deps <- Stream.resource(initDependencies(config))
       deleteRuntimeCheckerProcess = if (shouldRunAll || shouldDeletePubsubTopics)
         Stream.eval(
-          PubsubTopicCleaner(config.pubsubTopicCleaner, deps.topicAdminClient, deps.metrics).run(isDryRun)
+          PubsubTopicAndSubscriptionCleaner(config.pubsubTopicCleaner,
+                                            deps.topicAdminClient,
+                                            deps.subscriptionClient,
+                                            deps.metrics)
+            .run(isDryRun)
         )
       else Stream.empty
 
@@ -44,17 +47,17 @@ object Cleanup {
     for {
       blocker <- Blocker[F]
       metrics <- OpenTelemetryMetrics.resource(appConfig.pathToCredential, "leonardo-cron-jobs", blocker)
-      credentialFile <- org.broadinstitute.dsde.workbench.util2.readFile[F](appConfig.pathToCredential.toString)
-      credential <- Resource.liftF(Sync[F].delay(ServiceAccountCredentials.fromStream(credentialFile)))
-      topicAdminClient <- GoogleTopicAdmin.fromServiceAccountCrendential(credential,
-                                                                         GoogleTopicAdminInterpreter.defaultRetryConfig)
+      credential <- org.broadinstitute.dsde.workbench.google2.credentialResource[F](appConfig.pathToCredential.toString)
+      topicAdminClient <- GoogleTopicAdmin.fromServiceAccountCrendential(credential)
+      subscriptionClient <- GoogleSubscriptionAdmin.fromServiceAccountCrendential(credential)
     } yield {
-      CleanupDeps(blocker, metrics, topicAdminClient)
+      CleanupDeps(blocker, metrics, topicAdminClient, subscriptionClient)
     }
 }
 
 final case class CleanupDeps[F[_]](
   blocker: Blocker,
   metrics: OpenTelemetryMetrics[F],
-  topicAdminClient: GoogleTopicAdmin[F]
+  topicAdminClient: GoogleTopicAdmin[F],
+  subscriptionClient: GoogleSubscriptionAdmin[F]
 )
