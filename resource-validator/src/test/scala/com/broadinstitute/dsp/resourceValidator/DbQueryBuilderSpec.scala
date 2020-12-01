@@ -50,4 +50,8 @@ final class DbQueryBuilderSpec extends AnyFlatSpec with CronJobsTestSuite with I
   it should "build deletedAndErroredNodepoolQuery properly" in {
     check(DbReader.deletedAndErroredNodepoolQuery)
   }
+
+  it should "build dataprocClusterWithWorkersQuery properly" in {
+    check(DbReader.dataprocClusterWithWorkersQuery)
+  }
 }

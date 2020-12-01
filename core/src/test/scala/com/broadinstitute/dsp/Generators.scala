@@ -53,6 +53,12 @@ object Generators {
     googleProject <- genGoogleProject
   } yield KubernetesClusterToRemove(id, googleProject)
 
+  val genRuntimeWithWorkers: Gen[RuntimeWithWorkers] = for {
+    runtime <- genRuntime
+    num1 <- Gen.chooseNum(1, 100)
+    num2 <- Gen.chooseNum(1, 100)
+  } yield RuntimeWithWorkers(runtime, WorkerConfig(num1, num2))
+
   implicit val arbRuntime: Arbitrary[Runtime] = Arbitrary(genRuntime)
   implicit val arbCloudService: Arbitrary[CloudService] = Arbitrary(genCloudService)
   implicit val arbDisk: Arbitrary[Disk] = Arbitrary(genDisk)
@@ -65,4 +71,5 @@ object Generators {
   )
   implicit val arbKubernetesCluster: Arbitrary[KubernetesCluster] = Arbitrary(genKubernetesCluster)
   implicit val arbNodepool: Arbitrary[Nodepool] = Arbitrary(genNodepool)
+  implicit val arbRuntimeWithWorkers: Arbitrary[RuntimeWithWorkers] = Arbitrary(genRuntimeWithWorkers)
 }

@@ -28,6 +28,9 @@ object Main
         val shouldCheckInitBuckets =
           Opts.flag("checkInitBuckets", "checks that init buckets for deleted runtimes are deleted").orFalse
 
+        val shouldCheckWorkers =
+          Opts.flag("checkWorkers", "check dataproc workers").orFalse
+
         (enableDryRun,
          shouldCheckAll,
          shouldCheckDeletedRuntimes,
@@ -36,7 +39,8 @@ object Main
          shouldCheckDeletedKubernetesClusters,
          shouldCheckDeletedNodepools,
          shouldCheckDeletedDisks,
-         shouldCheckInitBuckets).mapN {
+         shouldCheckInitBuckets,
+         shouldCheckWorkers).mapN {
           (dryRun,
            checkAll,
            shouldCheckDeletedRuntimes,
@@ -45,7 +49,8 @@ object Main
            shouldCheckDeletedKubernetesClusters,
            shouldCheckDeletedNodepools,
            shouldCheckDeletedDisks,
-           shouldCheckInitBuckets) =>
+           shouldCheckInitBuckets,
+           shouldCheckWorkers) =>
             ResourceValidator
               .run[IO](
                 isDryRun = dryRun,
@@ -56,7 +61,8 @@ object Main
                 shouldCheckDeletedKubernetesCluster = shouldCheckDeletedKubernetesClusters,
                 shouldCheckDeletedNodepool = shouldCheckDeletedNodepools,
                 shouldCheckDeletedDisks = shouldCheckDeletedDisks,
-                shouldCheckInitBuckets = shouldCheckInitBuckets
+                shouldCheckInitBuckets = shouldCheckInitBuckets,
+                shouldCheckWorkers = shouldCheckWorkers
               )
               .compile
               .drain
