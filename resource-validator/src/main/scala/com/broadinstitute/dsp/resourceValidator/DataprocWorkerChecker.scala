@@ -3,17 +3,32 @@ package com.broadinstitute.dsp.resourceValidator
 import cats.effect.{Concurrent, Timer}
 import cats.mtl.Ask
 import cats.implicits._
-import com.broadinstitute.dsp.{CheckRunner, CheckRunnerConfigs, CheckRunnerDeps, RuntimeCheckerDeps, RuntimeWithWorkers, regionName, resourceValidator}
+import com.broadinstitute.dsp.{
+  regionName,
+  resourceValidator,
+  CheckRunner,
+  CheckRunnerConfigs,
+  CheckRunnerDeps,
+  RuntimeCheckerDeps,
+  RuntimeWithWorkers
+}
 import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.DataprocClusterName
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 object DataprocWorkerChecker {
+<<<<<<< HEAD
   val unfixableAnomalyCheckType = "unfixable-dataproc-workers"
   def impl[F[_] : Timer](
                           dbReader: DbReader[F],
                           deps: RuntimeCheckerDeps[F]
                         )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, RuntimeWithWorkers] =
+=======
+  def impl[F[_]: Timer](
+    dbReader: DbReader[F],
+    deps: RuntimeCheckerDeps[F]
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, RuntimeWithWorkers] =
+>>>>>>> scalafmt
     new CheckRunner[F, RuntimeWithWorkers] {
       override def appName: String = resourceValidator.appName
 
@@ -30,8 +45,10 @@ object DataprocWorkerChecker {
           clusterOpt <- deps.dataprocService
             .getCluster(runtime.r.googleProject, regionName, DataprocClusterName(runtime.r.runtimeName))
           runtime <- clusterOpt.fold[F[Option[RuntimeWithWorkers]]](F.pure(None)) { c =>
-            val doesPrimaryWorkerMatch = runtime.workerConfig.numberOfWorkers == c.getConfig.getWorkerConfig.getNumInstances
-            val doesSecondaryWorkerMatch = runtime.workerConfig.numberOfPreemptibleWorkers == c.getConfig.getSecondaryWorkerConfig.getNumInstances
+            val doesPrimaryWorkerMatch =
+              runtime.workerConfig.numberOfWorkers == c.getConfig.getWorkerConfig.getNumInstances
+            val doesSecondaryWorkerMatch =
+              runtime.workerConfig.numberOfPreemptibleWorkers == c.getConfig.getSecondaryWorkerConfig.getNumInstances
             val isAnomalyDetected = !(doesPrimaryWorkerMatch && doesSecondaryWorkerMatch)
 
             isAnomalyDetected match {
@@ -56,7 +73,6 @@ object DataprocWorkerChecker {
                       deps.checkRunnerDeps.metrics.incrementCounter(s"$appName/$unfixableAnomalyCheckType") >>
                       logger.warn(s"${runtime} has an anomaly with the number of workers in google. Unable to fix the anomaly. Recording a metric and moving on")
                         .as[Option[RuntimeWithWorkers]](Some(RuntimeWithWorkers(runtime.r, runtime.workerConfig, false)))
-
                 log
               case false => F.pure(None)
             }

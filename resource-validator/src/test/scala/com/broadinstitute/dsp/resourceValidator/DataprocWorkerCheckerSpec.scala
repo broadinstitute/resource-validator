@@ -45,12 +45,24 @@ class DataprocWorkerCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       val dataprocService = new BaseFakeGoogleDataprocService {
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
           implicit ev: Ask[IO, TraceId]
-        ): IO[Option[Cluster]] = IO.pure(Some(Cluster
-          .newBuilder()
-            .setConfig(ClusterConfig.newBuilder()
-            .setWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfWorkers))
-            .setSecondaryWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfPreemptibleWorkers)))
-          .build()))
+        ): IO[Option[Cluster]] =
+          IO.pure(
+            Some(
+              Cluster
+                .newBuilder()
+                .setConfig(
+                  ClusterConfig
+                    .newBuilder()
+                    .setWorkerConfig(
+                      InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfWorkers)
+                    )
+                    .setSecondaryWorkerConfig(
+                      InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfPreemptibleWorkers)
+                    )
+                )
+                .build()
+            )
+          )
       }
 
       val runtimeCheckerDeps =
@@ -71,12 +83,20 @@ class DataprocWorkerCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       val dataprocService = new BaseFakeGoogleDataprocService {
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
           implicit ev: Ask[IO, TraceId]
-        ): IO[Option[Cluster]] = IO.pure(Some(Cluster
-          .newBuilder()
-          .setConfig(ClusterConfig.newBuilder()
-            .setWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(0))
-            .setSecondaryWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(0)))
-          .build()))
+        ): IO[Option[Cluster]] =
+          IO.pure(
+            Some(
+              Cluster
+                .newBuilder()
+                .setConfig(
+                  ClusterConfig
+                    .newBuilder()
+                    .setWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(0))
+                    .setSecondaryWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(0))
+                )
+                .build()
+            )
+          )
       }
 
       val runtimeCheckerDeps =
@@ -97,12 +117,22 @@ class DataprocWorkerCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       val dataprocService = new BaseFakeGoogleDataprocService {
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
           implicit ev: Ask[IO, TraceId]
-        ): IO[Option[Cluster]] = IO.pure(Some(Cluster
-          .newBuilder()
-          .setConfig(ClusterConfig.newBuilder()
-            .setWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(0))
-            .setSecondaryWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfPreemptibleWorkers)))
-          .build()))
+        ): IO[Option[Cluster]] =
+          IO.pure(
+            Some(
+              Cluster
+                .newBuilder()
+                .setConfig(
+                  ClusterConfig
+                    .newBuilder()
+                    .setWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(0))
+                    .setSecondaryWorkerConfig(
+                      InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfPreemptibleWorkers)
+                    )
+                )
+                .build()
+            )
+          )
       }
 
       val runtimeCheckerDeps =
@@ -123,12 +153,22 @@ class DataprocWorkerCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       val dataprocService = new BaseFakeGoogleDataprocService {
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
           implicit ev: Ask[IO, TraceId]
-        ): IO[Option[Cluster]] = IO.pure(Some(Cluster
-          .newBuilder()
-          .setConfig(ClusterConfig.newBuilder()
-            .setWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfWorkers))
-            .setSecondaryWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(0)))
-          .build()))
+        ): IO[Option[Cluster]] =
+          IO.pure(
+            Some(
+              Cluster
+                .newBuilder()
+                .setConfig(
+                  ClusterConfig
+                    .newBuilder()
+                    .setWorkerConfig(
+                      InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfWorkers)
+                    )
+                    .setSecondaryWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(0))
+                )
+                .build()
+            )
+          )
       }
 
       val runtimeCheckerDeps =
