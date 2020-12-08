@@ -65,7 +65,7 @@ object Settings {
   private lazy val commonSettings = List(
     organization := "com.broadinstitute.dsp",
     version := "0.0.1-SNAPSHOT",
-    scalaVersion := "2.13.3",
+    scalaVersion := "2.13.4",
     resolvers ++= commonResolvers,
     addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
     addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
@@ -126,7 +126,7 @@ object Settings {
   lazy val nukerSettings = commonSettings ++ cleanupDockerSettings ++ List(
     name := "nuker",
     libraryDependencies ++= Dependencies.cleanup,
-    assemblyJarName in assembly := "cleanup-assembly.jar",
+    assemblyJarName in assembly := "nuker-assembly.jar",
     // removes all jar mappings in universal and appends the fat jar
     // This is needed to include `core` module in classpath
     mappings in Universal := {
