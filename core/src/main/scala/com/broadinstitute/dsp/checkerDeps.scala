@@ -34,7 +34,8 @@ object RuntimeCheckerDeps {
                                                       blocker,
                                                       Some(blockerBound),
                                                       None)
-      dataprocService <- GoogleDataprocService.fromCredential(scopedCredential,
+      dataprocService <- GoogleDataprocService.fromCredential(computeService,
+                                                              scopedCredential,
                                                               blocker,
                                                               regionName,
                                                               blockerBound,

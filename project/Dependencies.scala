@@ -1,9 +1,9 @@
 import sbt._
 
 object Dependencies {
-  val LogbackVersion = "1.2.3"
-  val workbenchGoogle2 = "0.17-d50b3108-SNAP"
-  val doobieVersion = "0.9.0"
+  val logbackVersion = "1.2.3"
+  val workbenchGoogle2Version = "0.18-c9edd8e"
+  val doobieVersion = "0.9.4"
   val openTelemetryVersion = "0.1-e66171c"
 
   val core = Seq(
@@ -22,8 +22,8 @@ object Dependencies {
     "org.broadinstitute.dsde.workbench" %% "workbench-opentelemetry" % openTelemetryVersion % Test classifier "tests",
     "com.google.cloud" % "google-cloud-dataproc" % "0.122.1",
     "com.google.cloud" % "google-cloud-compute" % "0.118.0-alpha",
-    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2,
-    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2 % Test classifier "tests",
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2Version,
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2Version % Test classifier "tests",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % Test,
     "org.scalatestplus" %% "mockito-3-3" % "3.2.0.0" % Test // https://github.com/scalatest/scalatestplus-selenium
   )
