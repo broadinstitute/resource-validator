@@ -1,5 +1,5 @@
 package com.broadinstitute.dsp
-package cleanup
+package nuker
 
 import java.util.UUID
 
@@ -13,7 +13,7 @@ import org.broadinstitute.dsde.workbench.google2.{GoogleSubscriptionAdmin, Googl
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
 
-object Cleanup {
+object Nuker {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
                                             shouldRunAll: Boolean,
                                             shouldDeletePubsubTopics: Boolean)(

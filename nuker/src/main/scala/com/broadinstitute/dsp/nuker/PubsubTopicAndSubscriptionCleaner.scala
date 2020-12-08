@@ -1,5 +1,5 @@
 package com.broadinstitute.dsp
-package cleanup
+package nuker
 
 import java.util.concurrent.TimeUnit
 
@@ -41,7 +41,7 @@ class PubsubTopicAndSubscriptionCleaner[F[_]: Timer](config: PubsubTopicCleanerC
       } yield ()
       deleteSubscriptionStream = for {
         subscription <- subcriptionAdmin.list(config.googleProject)
-        _ <- if (subscription.getTopic == "_deleted-topic_") { //will be `_deleted-topic_` if the topic has been deleted
+        _ <- if (subscription.getTopic == "_deleted-topic_") { // Google marks the associated topic `_deleted-topic_` if it has been deleted
           if (isDryRun)
             Stream.eval(logger.info(s"${subscription.getName} will be deleted if run in nonDryRun mode"))
           else

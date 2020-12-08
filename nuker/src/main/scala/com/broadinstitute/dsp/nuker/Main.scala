@@ -1,5 +1,5 @@
 package com.broadinstitute.dsp
-package cleanup
+package nuker
 
 import cats.effect.IO
 import cats.implicits._
@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext.global
 
 object Main
     extends CommandApp(
-      name = "cleanup",
+      name = "nuker",
       header = "Clean up cloud resources created by Leonardo in dev/qa projects",
       version = "0.0.1",
       main = {

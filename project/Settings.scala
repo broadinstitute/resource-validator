@@ -123,8 +123,8 @@ object Settings {
     scriptClasspath := Seq((assemblyJarName in assembly).value)
   )
 
-  lazy val cleanupSettings = commonSettings ++ cleanupDockerSettings ++ List(
-    name := "cleanup",
+  lazy val nukerSettings = commonSettings ++ cleanupDockerSettings ++ List(
+    name := "nuker",
     libraryDependencies ++= Dependencies.cleanup,
     assemblyJarName in assembly := "cleanup-assembly.jar",
     // removes all jar mappings in universal and appends the fat jar
