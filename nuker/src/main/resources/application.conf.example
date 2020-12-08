@@ -1,0 +1,3 @@
+pubsub-topic-cleaner {
+  google-project = "broad-dsde-qa"
+}
