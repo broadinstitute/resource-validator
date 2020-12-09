@@ -172,6 +172,16 @@ object DBTestHelper {
          SELECT errorCode, errorMessage FROM CLUSTER_ERROR where clusterId = ${runtimeId}
          """.query[RuntimeError].unique.transact(xa)
 
+  def getK8sClusterName(id: Long)(implicit xa: HikariTransactor[IO]): IO[String] =
+    sql"""
+         SELECT clusterName FROM KUBERNETES_CLUSTER where id = ${id}
+         """.query[String].unique.transact(xa)
+
+  def getNodepoolName(id: Long)(implicit xa: HikariTransactor[IO]): IO[String] =
+    sql"""
+         SELECT nodepoolName FROM NODEPOOL where id = ${id}
+         """.query[String].unique.transact(xa)
+
   private def truncateTables(xa: HikariTransactor[IO]): IO[Unit] = {
     val res = for {
       _ <- sql"Delete from APP".update.run

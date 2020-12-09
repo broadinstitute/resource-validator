@@ -2,7 +2,7 @@ package com.broadinstitute.dsp
 package zombieMonitor
 
 import cats.effect.IO
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import com.broadinstitute.dsp.Generators._
 import com.google.cloud.compute.v1.Instance
 import com.google.cloud.dataproc.v1.ClusterStatus.State
@@ -43,12 +43,12 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
       }
       val computeService = new FakeGoogleComputeService {
         override def getInstance(project: GoogleProject, zone: ZoneName, instanceName: InstanceName)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Instance]] = IO.pure(None)
       }
       val dataprocService = new BaseFakeGoogleDataprocService {
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Cluster]] = IO.pure(None)
       }
       val deps = initRuntimeCheckerDeps(computeService, dataprocService)
@@ -68,12 +68,12 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
       }
       val computeService = new FakeGoogleComputeService {
         override def getInstance(project: GoogleProject, zone: ZoneName, instanceName: InstanceName)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Instance]] = IO.pure(Some(Instance.newBuilder().setStatus("Running").build()))
       }
       val dataprocService = new BaseFakeGoogleDataprocService {
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Cluster]] =
           IO.pure(
             Some(Cluster.newBuilder().setStatus(ClusterStatus.newBuilder().setState(State.RUNNING).build()).build())
@@ -101,7 +101,7 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
       }
       val dataprocService = new BaseFakeGoogleDataprocService {
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
-          implicit ev: ApplicativeAsk[IO, TraceId]
+          implicit ev: Ask[IO, TraceId]
         ): IO[Option[Cluster]] = IO.pure(
           Some(Cluster.newBuilder().setStatus(ClusterStatus.newBuilder().setState(State.ERROR).build()).build())
         )

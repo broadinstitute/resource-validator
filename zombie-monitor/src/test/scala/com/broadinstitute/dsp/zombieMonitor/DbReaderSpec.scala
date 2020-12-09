@@ -25,7 +25,7 @@ import java.time.Instant
  *   * Run this spec
  */
 @DoNotDiscover
-class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
+final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val databaseConfig = ConfigSpec.config.database
   val transactor = yoloTransactor
 

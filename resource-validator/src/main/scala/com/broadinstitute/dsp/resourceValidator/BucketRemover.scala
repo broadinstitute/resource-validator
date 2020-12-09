@@ -3,7 +3,7 @@ package resourceValidator
 
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.GoogleStorageService
 import org.broadinstitute.dsde.workbench.model.TraceId
@@ -18,7 +18,7 @@ object BucketRemover {
   )(implicit F: Concurrent[F],
     timer: Timer[F],
     logger: Logger[F],
-    ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, BucketToRemove] =
+    ev: Ask[F, TraceId]): CheckRunner[F, BucketToRemove] =
     new CheckRunner[F, BucketToRemove] {
       override def appName: String = resourceValidator.appName
       override def configs = CheckRunnerConfigs("remove-staging-buckets", false)
@@ -28,7 +28,7 @@ object BucketRemover {
       // We're ignoring isDryRun flag here since we do want to delete these staging buckets
       // We can improve this by checking if the bucket exists first, but it doesn't hurt to blindly issue deleting bucket
       override def checkResource(a: BucketToRemove, isDryRun: Boolean)(
-        implicit ev: ApplicativeAsk[F, TraceId]
+        implicit ev: Ask[F, TraceId]
       ): F[Option[BucketToRemove]] =
         a.bucket
           .flatTraverse { b =>

@@ -3,7 +3,7 @@ package resourceValidator
 
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 //import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
 //import com.google.api.services.dataproc.Dataproc
 //import com.google.api.services.dataproc.model.{
@@ -33,7 +33,7 @@ object StoppedDataprocRuntimeChecker {
   def iml[F[_]: Timer](
     dbReader: DbReader[F],
     deps: RuntimeCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, Runtime] =
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, Runtime] =
     new CheckRunner[F, Runtime] {
       override def appName: String = resourceValidator.appName
       override def configs = CheckRunnerConfigs(s"stopped-dataproc-runtime", shouldAlert = true)
@@ -41,7 +41,7 @@ object StoppedDataprocRuntimeChecker {
       override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getStoppedDataprocRuntimes
 
       override def checkResource(runtime: Runtime, isDryRun: Boolean)(
-        implicit ev: ApplicativeAsk[F, TraceId]
+        implicit ev: Ask[F, TraceId]
       ): F[Option[Runtime]] =
         for {
           clusterOpt <- deps.dataprocService

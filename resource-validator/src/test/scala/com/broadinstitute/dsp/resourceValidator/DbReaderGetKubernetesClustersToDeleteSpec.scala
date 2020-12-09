@@ -8,7 +8,7 @@ import com.broadinstitute.dsp.Generators._
 import doobie.scalatest.IOChecker
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
-import org.scalatest.DoNotDiscover
+//import org.scalatest.DoNotDiscover
 import org.scalatest.flatspec.AnyFlatSpec
 
 /**
@@ -19,40 +19,11 @@ import org.scalatest.flatspec.AnyFlatSpec
  *   * Run a database unit test in leonardo
  *   * Run this spec
  */
-@DoNotDiscover
-class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
+//@DoNotDiscover
+final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val config = ConfigSpec.config.database
   val transactor = yoloTransactor
 
-  it should "build deletedDisksQuery properly" in {
-    check(DbReader.deletedDisksQuery)
-  }
-
-  it should "build initBucketsToDeleteQuery properly" in {
-    check(DbReader.initBucketsToDeleteQuery)
-  }
-
-  it should "build deletedRuntimeQuery properly" in {
-    check(DbReader.deletedRuntimeQuery)
-  }
-
-  it should "build erroredRuntimeQuery properly" in {
-    check(DbReader.erroredRuntimeQuery)
-  }
-
-  it should "build stoppedDataprocRuntimeQuery properly" in {
-    check(DbReader.stoppedDataprocRuntimeQuery)
-  }
-
-  it should "build stoppedGceRuntimeQuery properly" in {
-    check(DbReader.stoppedGceRuntimeQuery)
-  }
-
-  it should "build kubernetesClustersToDeleteQuery properly" in {
-    check(DbReader.kubernetesClustersToDeleteQuery)
-  }
-
-  // TODO: Rename this file as 'DbQueryBuilderSpec' and move the checker-functionality-specific tests below to their own Spec(s)
   val now = Instant.now()
   val gracePeriod = 3600 // in seconds
 

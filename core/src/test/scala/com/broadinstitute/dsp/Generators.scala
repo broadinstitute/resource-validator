@@ -1,14 +1,8 @@
 package com.broadinstitute.dsp
 
-import org.broadinstitute.dsde.workbench.google2.GKEModels.{
-  KubernetesClusterId,
-  KubernetesClusterName,
-  NodepoolId,
-  NodepoolName
-}
+import org.broadinstitute.dsde.workbench.google2.GKEModels.{KubernetesClusterId, KubernetesClusterName}
 import org.scalacheck.{Arbitrary, Gen}
 import org.broadinstitute.dsde.workbench.google2.Generators._
-import org.broadinstitute.dsde.workbench.google2.Location
 
 object Generators {
   val genCloudService: Gen[CloudService] = Gen.oneOf(CloudService.Gce, CloudService.Dataproc)
@@ -24,25 +18,24 @@ object Generators {
     project <- genGoogleProject
     diskName <- genDiskName
   } yield Disk(id, project, diskName)
-  val genLocation = for {
-    zoneLetter <- Gen.oneOf('a', 'b', 'c')
-  } yield Location(s"us-central1-${zoneLetter}")
-  //TODO: move to google2
-  val genKubernetesClusterId = for {
-    project <- genGoogleProject
-    location <- genLocation
-    clusterName <- Gen.uuid.map(x => KubernetesClusterName(x.toString))
-  } yield KubernetesClusterId(project, location, clusterName)
-  val genNodepoolName = Gen.uuid.map(x => NodepoolName(x.toString))
-  val genNodepoolId = for {
-    clusterId <- genKubernetesClusterId
-    nodepoolName <- genNodepoolName
-  } yield NodepoolId(clusterId, nodepoolName)
 
   val genInitBucket: Gen[InitBucketToRemove] = for {
     project <- genGoogleProject
     bucketName <- genGcsBucketName
   } yield InitBucketToRemove(project, Some(InitBucketName(bucketName.value)))
+
+  val genKubernetesCluster: Gen[KubernetesCluster] = for {
+    name <- Gen.uuid.map(x => KubernetesClusterName(x.toString))
+    project <- genGoogleProject
+    location <- genLocation
+  } yield KubernetesCluster(name, project, location)
+
+  val genNodepool: Gen[Nodepool] = for {
+    nodepoolName <- genNodepoolName
+    clusterName <- Gen.uuid.map(x => KubernetesClusterName(x.toString))
+    project <- genGoogleProject
+    location <- genLocation
+  } yield Nodepool(nodepoolName, clusterName, project, location)
 
   val genK8sClusterToScan: Gen[K8sClusterToScan] = for {
     id <- Gen.chooseNum(0, 100)
@@ -69,4 +62,6 @@ object Generators {
   implicit val arbKubernetesClusterToRemove: Arbitrary[KubernetesClusterToRemove] = Arbitrary(
     genKubernetesClusterToRemove
   )
+  implicit val arbKubernetesCluster: Arbitrary[KubernetesCluster] = Arbitrary(genKubernetesCluster)
+  implicit val arbNodepool: Arbitrary[Nodepool] = Arbitrary(genNodepool)
 }

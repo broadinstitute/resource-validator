@@ -15,7 +15,7 @@ object Main
         implicit val cs = IO.contextShift(global)
         implicit val timer = IO.timer(global)
 
-        val enableDryRun = Opts.flag("dryRun", "Default to true").map(_ => true).withDefault(true)
+        val enableDryRun = Opts.flag("dryRun", "Default to true").orFalse.withDefault(true)
         val shouldCheckAll = Opts.flag("all", "run all checks").orFalse
         val shouldCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
         val shouldCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
@@ -23,6 +23,10 @@ object Main
           Opts.flag("checkStoppedGceRuntimes", "check all stopped GCE runtimes").orFalse
         val shouldCheckStoppedDataprocRuntimes =
           Opts.flag("checkStoppedDataprocRuntimes", "check all stopped Dataproc runtimes").orFalse
+        val shouldRunCheckDeletedKubernetesClusters =
+          Opts.flag("checkDeletedKubernetesClusters", "check all deleted or errored kubernetes clusters").orFalse
+        val shouldRunCheckDeletedNodepools =
+          Opts.flag("checkDeletedNodepools", "check all deleted or errored nodepools").orFalse
         val shouldCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse
         val shouldCheckInitBuckets =
           Opts.flag("checkInitBuckets", "checks that init buckets for deleted runtimes are deleted").orFalse
@@ -33,6 +37,8 @@ object Main
          shouldCheckErroredRuntimes,
          shouldCheckStoppedGceRuntimes,
          shouldCheckStoppedDataprocRuntimes,
+         shouldRunCheckDeletedKubernetesClusters,
+         shouldRunCheckDeletedNodepools,
          shouldCheckDeletedDisks,
          shouldCheckInitBuckets).mapN {
           (dryRun,
@@ -41,6 +47,8 @@ object Main
            shouldCheckErroredRuntimes,
            shouldCheckStoppedGceRuntimes,
            shouldCheckStoppedDataprocRuntimes,
+           shouldCheckDeletedKubernetesClusters,
+           shouldCheckDeletedNodepools,
            shouldCheckDeletedDisks,
            shouldCheckInitBuckets) =>
             ResourceValidator
@@ -51,6 +59,8 @@ object Main
                 shouldCheckErroredRuntimes,
                 shouldCheckStoppedGceRuntimes,
                 shouldCheckStoppedDataprocRuntimes,
+                shouldCheckDeletedKubernetesClusters,
+                shouldCheckDeletedNodepools,
                 shouldCheckDeletedDisks,
                 shouldCheckInitBuckets
               )

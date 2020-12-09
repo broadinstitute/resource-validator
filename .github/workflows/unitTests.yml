@@ -1,4 +1,4 @@
-name: Run unit tests
+name: Unit Tests
 
 on:
   push:
@@ -13,10 +13,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Run tests
-        run: sbt test
+        run: sbt coverage test coverageReport
       - name: Check output
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+      - name: upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
   lint:
     runs-on: ubuntu-latest
     steps:

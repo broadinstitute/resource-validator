@@ -21,6 +21,7 @@ trait DbReader[F[_]] {
   def markNodepoolAndAppDeleted(nodepoolId: Long): F[Unit]
   def updateNodepoolAndAppStatus(nodepoolId: Long, status: String): F[Unit]
   def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): F[Unit]
+  def updateRuntimeDeletedFrom(runtimeId: Long, deletedFrom: String): F[Unit]
 }
 
 object DbReader {
@@ -96,6 +97,11 @@ object DbReader {
          VALUES (${clusterId}, ${errorCode}, ${errorMessage})
            """.update
 
+  def updateRuntimeDeletedFromQuery(runtimeId: Long, deletedFrom: String) =
+    sql"""
+      update CLUSTER set deletedFrom = $deletedFrom where id = $runtimeId
+      """.update
+
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
     override def getRuntimeCandidate: Stream[F, Runtime] = activeRuntimeQuery.stream.transact(xa)
 
@@ -137,5 +143,8 @@ object DbReader {
 
     override def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): F[Unit] =
       insertClusterErrorQuery(clusterId, errorCode, errorMessage).run.transact(xa).void
+
+    override def updateRuntimeDeletedFrom(runtimeId: Long, deletedFrom: String): F[Unit] =
+      updateRuntimeDeletedFromQuery(runtimeId, deletedFrom).run.transact(xa).void
   }
 }

@@ -22,9 +22,9 @@ object DbReaderImplicits {
   implicit val locationGet: Get[Location] = Get[String].map(Location)
   implicit val kubernetesClusterNameGet: Get[KubernetesClusterName] = Get[String].map(KubernetesClusterName)
   implicit val diskNameMeta: Meta[DiskName] = Meta[String].imap(DiskName)(_.value)
-  implicit val zoneNameMeta: Meta[ZoneName] = Meta[String].imap(ZoneName)(_.value)
+  implicit val zoneNameMeta: Meta[ZoneName] = Meta[String].imap(ZoneName(_))(_.value)
   implicit val googleProjectMeta: Meta[GoogleProject] = Meta[String].imap(GoogleProject)(_.value)
   implicit val k8sClusterNameMeta: Meta[KubernetesClusterName] = Meta[String].imap(KubernetesClusterName)(_.value)
   implicit val locationMeta: Meta[Location] = Meta[String].imap(Location)(_.value)
-  implicit val regionNameMeta: Meta[RegionName] = Meta[String].imap(RegionName)(_.value)
+  implicit val regionNameMeta: Meta[RegionName] = Meta[String].imap(RegionName(_))(_.value)
 }

@@ -8,14 +8,14 @@ import sbtassembly.AssemblyKeys._
 import sbtassembly.AssemblyPlugin.autoImport.assembly
 
 object Settings {
-  lazy val artifactory = "https://artifactory.broadinstitute.org/artifactory/"
+  private lazy val artifactory = "https://artifactory.broadinstitute.org/artifactory/"
 
-  lazy val commonResolvers = List(
+  private lazy val commonResolvers = List(
     "artifactory-releases" at artifactory + "libs-release",
     "artifactory-snapshots" at artifactory + "libs-snapshot"
   )
 
-  lazy val resourceValidatorDockerSettings = List(
+  private lazy val resourceValidatorDockerSettings = List(
     dockerUpdateLatest := true,
     mainClass in Compile := Some("com.broadinstitute.dsp.resourceValidator.Main"),
     packageName in Docker := "broad-dsp-gcr-public/resource-validator",
@@ -27,7 +27,7 @@ object Settings {
     )
   )
 
-  lazy val zombieMonitorDockerSettings = List(
+  private lazy val zombieMonitorDockerSettings = List(
     dockerUpdateLatest := true,
     mainClass in Compile := Some("com.broadinstitute.dsp.zombieMonitor.Main"),
     packageName in Docker := "broad-dsp-gcr-public/zombie-monitor",
@@ -39,7 +39,19 @@ object Settings {
     )
   )
 
-  val commonCompilerSettings = Seq(
+  private lazy val cleanupDockerSettings = List(
+    dockerUpdateLatest := true,
+    mainClass in Compile := Some("com.broadinstitute.dsp.cleanup.Main"),
+    packageName in Docker := "broad-dsp-gcr-public/cleanup",
+    dockerAlias := DockerAlias(
+      Some("us.gcr.io"),
+      None,
+      "broad-dsp-gcr-public/cleanup",
+      None
+    )
+  )
+
+  private val commonCompilerSettings = Seq(
     "-deprecation",
     "-encoding",
     "UTF-8",
@@ -50,10 +62,10 @@ object Settings {
     "-Ywarn-unused:imports"
   )
 
-  lazy val commonSettings = List(
+  private lazy val commonSettings = List(
     organization := "com.broadinstitute.dsp",
     version := "0.0.1-SNAPSHOT",
-    scalaVersion := "2.13.3",
+    scalaVersion := "2.13.4",
     resolvers ++= commonResolvers,
     addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
     addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
@@ -95,6 +107,26 @@ object Settings {
     name := "zombie-monitor",
     libraryDependencies ++= Dependencies.zombieMonitor,
     assemblyJarName in assembly := "zombie-monitor-assembly.jar",
+    // removes all jar mappings in universal and appends the fat jar
+    // This is needed to include `core` module in classpath
+    mappings in Universal := {
+      // universalMappings: Seq[(File,String)]
+      val universalMappings = (mappings in Universal).value
+      val fatJar = (assembly in Compile).value
+      // removing means filtering
+      val filtered = universalMappings filter {
+        case (_, name) => !name.endsWith(".jar")
+      }
+      // add the fat jar
+      filtered :+ (fatJar -> ("lib/" + fatJar.getName))
+    },
+    scriptClasspath := Seq((assemblyJarName in assembly).value)
+  )
+
+  lazy val nukerSettings = commonSettings ++ cleanupDockerSettings ++ List(
+    name := "nuker",
+    libraryDependencies ++= Dependencies.cleanup,
+    assemblyJarName in assembly := "nuker-assembly.jar",
     // removes all jar mappings in universal and appends the fat jar
     // This is needed to include `core` module in classpath
     mappings in Universal := {

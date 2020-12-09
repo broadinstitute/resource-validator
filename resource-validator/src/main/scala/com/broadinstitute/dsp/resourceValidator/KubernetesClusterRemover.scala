@@ -3,10 +3,9 @@ package resourceValidator
 
 import java.util.concurrent.TimeUnit
 
-import fs2.Stream
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
-import cats.mtl.ApplicativeAsk
+import cats.mtl.Ask
 import io.chrisdavenport.log4cats.Logger
 import io.circe.Encoder
 import org.broadinstitute.dsde.workbench.google2.JsonCodec.traceIdEncoder
@@ -25,7 +24,7 @@ object KubernetesClusterRemover {
   )(implicit F: Concurrent[F],
     timer: Timer[F],
     logger: Logger[F],
-    ev: ApplicativeAsk[F, TraceId]): CheckRunner[F, KubernetesClusterToRemove] =
+    ev: Ask[F, TraceId]): CheckRunner[F, KubernetesClusterToRemove] =
     new CheckRunner[F, KubernetesClusterToRemove] {
       override def appName: String = resourceValidator.appName
       override def configs = CheckRunnerConfigs(s"remove-kubernetes-clusters", shouldAlert = true)
@@ -35,20 +34,13 @@ object KubernetesClusterRemover {
       // TODO: This check is to be moved to a new project (a.k.a. 'janitor)
       // https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes
       override def checkResource(c: KubernetesClusterToRemove, isDryRun: Boolean)(
-        implicit ev: ApplicativeAsk[F, TraceId]
+        implicit ev: Ask[F, TraceId]
       ): F[Option[KubernetesClusterToRemove]] =
         for {
           now <- timer.clock.realTime(TimeUnit.MILLISECONDS)
           _ <- if (!isDryRun) {
             val msg = DeleteKubernetesClusterMessage(c.id, c.googleProject, TraceId(s"kubernetesClusterRemover-$now"))
-
-            // TODO: Add publishOne in wb-libs and use it here
-            Stream
-              .emit(msg)
-              .covary[F]
-              .through(deps.publisher.publish[DeleteKubernetesClusterMessage])
-              .compile
-              .drain
+            deps.publisher.publishOne(msg)
           } else F.unit
         } yield Some(c)
     }
