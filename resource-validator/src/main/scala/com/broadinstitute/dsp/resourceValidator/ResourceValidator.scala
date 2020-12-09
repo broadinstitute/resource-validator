@@ -92,7 +92,7 @@ object ResourceValidator {
         workerProcess
       ).covary[F]
 
-      _ <- processes.parJoin(9) // Update this number as we add more streams
+      _ <- processes.parJoinUnbounded
     } yield ExitCode.Success
   }.drain
 

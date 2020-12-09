@@ -32,7 +32,7 @@ object DataprocWorkerChecker {
     new CheckRunner[F, RuntimeWithWorkers] {
       override def appName: String = resourceValidator.appName
 
-      override def configs = CheckRunnerConfigs(s"dataproc-workers", shouldAlert = true)
+      override def configs = CheckRunnerConfigs(s"number-of-dataproc-workers", shouldAlert = true)
 
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
