@@ -22,6 +22,8 @@ object DeletedRuntimeChecker {
 
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
+      override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getDeletedRuntimes
+
       override def checkResource(runtime: Runtime,
                                  isDryRun: Boolean)(implicit ev: Ask[F, TraceId]): F[Option[Runtime]] =
         runtime.cloudService match {
@@ -31,9 +33,7 @@ object DeletedRuntimeChecker {
             checkGceRuntime(runtime, isDryRun)
         }
 
-      override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getDeletedRuntimes
-
-      def checkDataprocCluster(runtime: Runtime, isDryRun: Boolean)(
+      private def checkDataprocCluster(runtime: Runtime, isDryRun: Boolean)(
         implicit ev: Ask[F, TraceId]
       ): F[Option[Runtime]] =
         for {
@@ -49,7 +49,7 @@ object DeletedRuntimeChecker {
           }
         } yield clusterOpt.fold(none[Runtime])(_ => Some(runtime))
 
-      def checkGceRuntime(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
+      private def checkGceRuntime(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
         for {
           runtimeOpt <- deps.computeService
             .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))

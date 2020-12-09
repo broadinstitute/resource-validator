@@ -19,10 +19,11 @@ object Main
         val shouldCheckAll = Opts.flag("all", "run all checks").orFalse
         val shouldCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
         val shouldCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
-        val shouldCheckStoppedGceRuntimes =
-          Opts.flag("checkStoppedGceRuntimes", "check all stopped GCE runtimes").orFalse
-        val shouldCheckStoppedDataprocRuntimes =
-          Opts.flag("checkStoppedDataprocRuntimes", "check all stopped Dataproc runtimes").orFalse
+        val shouldCheckStoppedRuntimes = Opts.flag("checkStoppedRuntimes", "check all stopped runtimes").orFalse
+//        val shouldCheckStoppedGceRuntimes =
+//          Opts.flag("checkStoppedGceRuntimes", "check all stopped GCE runtimes").orFalse
+//        val shouldCheckStoppedDataprocRuntimes =
+//          Opts.flag("checkStoppedDataprocRuntimes", "check all stopped Dataproc runtimes").orFalse
         val shouldRunCheckDeletedKubernetesClusters =
           Opts.flag("checkDeletedKubernetesClusters", "check all deleted or errored kubernetes clusters").orFalse
         val shouldRunCheckDeletedNodepools =
@@ -35,8 +36,9 @@ object Main
          shouldCheckAll,
          shouldCheckDeletedRuntimes,
          shouldCheckErroredRuntimes,
-         shouldCheckStoppedGceRuntimes,
-         shouldCheckStoppedDataprocRuntimes,
+         shouldCheckStoppedRuntimes,
+//         shouldCheckStoppedGceRuntimes,
+//         shouldCheckStoppedDataprocRuntimes,
          shouldRunCheckDeletedKubernetesClusters,
          shouldRunCheckDeletedNodepools,
          shouldCheckDeletedDisks,
@@ -45,8 +47,9 @@ object Main
            checkAll,
            shouldCheckDeletedRuntimes,
            shouldCheckErroredRuntimes,
-           shouldCheckStoppedGceRuntimes,
-           shouldCheckStoppedDataprocRuntimes,
+           shouldCheckStoppedRuntimes,
+//           shouldCheckStoppedGceRuntimes,
+//           shouldCheckStoppedDataprocRuntimes,
            shouldCheckDeletedKubernetesClusters,
            shouldCheckDeletedNodepools,
            shouldCheckDeletedDisks,
@@ -57,8 +60,9 @@ object Main
                 checkAll,
                 shouldCheckDeletedRuntimes,
                 shouldCheckErroredRuntimes,
-                shouldCheckStoppedGceRuntimes,
-                shouldCheckStoppedDataprocRuntimes,
+                shouldCheckStoppedRuntimes,
+//                shouldCheckStoppedGceRuntimes,
+//                shouldCheckStoppedDataprocRuntimes,
                 shouldCheckDeletedKubernetesClusters,
                 shouldCheckDeletedNodepools,
                 shouldCheckDeletedDisks,

@@ -12,8 +12,9 @@ trait DbReader[F[_]] {
   def getDeletedDisks: Stream[F, Disk]
   def getDeletedRuntimes: Stream[F, Runtime]
   def getErroredRuntimes: Stream[F, Runtime]
-  def getStoppedGceRuntimes: Stream[F, Runtime]
-  def getStoppedDataprocRuntimes: Stream[F, Runtime]
+  def getStoppedRuntimes: Stream[F, Runtime]
+//  def getStoppedGceRuntimes: Stream[F, Runtime]
+//  def getStoppedDataprocRuntimes: Stream[F, Runtime]
   def getStagingBucketsToDelete: Stream[F, BucketToRemove]
   def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove]
   def getInitBucketsToDelete: Stream[F, InitBucketToRemove]
@@ -70,13 +71,12 @@ object DbReader {
              )"""
       .query[Runtime]
 
-  val stoppedGceRuntimeQuery =
-    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status
+  val stoppedRuntimeQuery =
+    sql"""SELECT DISTINCT c1.id, c1.googleProject, c1.clusterName, rt.cloudService, c1.status
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
           WHERE
             c1.status = "Stopped" AND
-            rt.cloudService = "GCE" AND
             NOT EXISTS (
               SELECT *
               FROM CLUSTER AS c2
@@ -87,23 +87,40 @@ object DbReader {
              )"""
       .query[Runtime]
 
-  val stoppedDataprocRuntimeQuery =
-    sql"""SELECT DISTINCT c1.id, c1.googleProject, c1.status, i.name, i.status
-          FROM CLUSTER AS c1
-          INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
-          LEFT JOIN INSTANCE AS i on i.clusterId = c1.id
-          WHERE
-           c1.status = "Stopped" AND
-           rt.cloudService = "DATAPROC" AND
-           NOT EXISTS (
-              SELECT *
-              FROM CLUSTER AS c2
-              WHERE
-                c2.googleProject = c1.googleProject AND
-                c2.clusterName = c1.clusterName AND
-                c2.status = "Running"
-             )"""
-      .query[Runtime]
+//  val stoppedGceRuntimeQuery =
+//    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status
+//          FROM CLUSTER AS c1
+//          INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
+//          WHERE
+//            c1.status = "Stopped" AND
+//            rt.cloudService = "GCE" AND
+//            NOT EXISTS (
+//              SELECT *
+//              FROM CLUSTER AS c2
+//              WHERE
+//                c2.googleProject = c1.googleProject AND
+//                c2.clusterName = c1.clusterName AND
+//                c2.status = "Running"
+//             )"""
+//      .query[Runtime]
+
+//  val stoppedDataprocRuntimeQuery =
+//    sql"""SELECT DISTINCT c1.id, c1.googleProject, c1.status, i.name, i.status
+//          FROM CLUSTER AS c1
+//          INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
+//          LEFT JOIN INSTANCE AS i on i.clusterId = c1.id
+//          WHERE
+//           c1.status = "Stopped" AND
+//           rt.cloudService = "DATAPROC" AND
+//           NOT EXISTS (
+//              SELECT *
+//              FROM CLUSTER AS c2
+//              WHERE
+//                c2.googleProject = c1.googleProject AND
+//                c2.clusterName = c1.clusterName AND
+//                c2.status = "Running"
+//             )"""
+//      .query[Runtime]
 
   val deletedAndErroredKubernetesClusterQuery =
     sql"""SELECT kc1.clusterName, googleProject, location
@@ -161,11 +178,14 @@ object DbReader {
     override def getErroredRuntimes: Stream[F, Runtime] =
       erroredRuntimeQuery.stream.transact(xa)
 
-    override def getStoppedGceRuntimes: Stream[F, Runtime] =
-      stoppedGceRuntimeQuery.stream.transact(xa)
+    override def getStoppedRuntimes: Stream[F, Runtime] =
+      stoppedRuntimeQuery.stream.transact(xa)
 
-    override def getStoppedDataprocRuntimes: Stream[F, Runtime] =
-      stoppedDataprocRuntimeQuery.stream.transact(xa)
+//    override def getStoppedGceRuntimes: Stream[F, Runtime] =
+//      stoppedGceRuntimeQuery.stream.transact(xa)
+//
+//    override def getStoppedDataprocRuntimes: Stream[F, Runtime] =
+//      stoppedDataprocRuntimeQuery.stream.transact(xa)
 
     // When we delete runtimes, we keep their staging buckets for 10 days. Hence we're only deleting staging buckets whose
     // runtimes have been deleted more than 15 days ago.

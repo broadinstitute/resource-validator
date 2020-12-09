@@ -20,7 +20,6 @@ object Dependencies {
     "co.fs2" %% "fs2-io" % "2.4.2",
     "org.broadinstitute.dsde.workbench" %% "workbench-opentelemetry" % openTelemetryVersion,
     "org.broadinstitute.dsde.workbench" %% "workbench-opentelemetry" % openTelemetryVersion % Test classifier "tests",
-    "com.google.apis" % "google-api-services-dataproc" % "v1-rev91-1.23.0",
     "com.google.cloud" % "google-cloud-dataproc" % "0.122.1",
     "com.google.cloud" % "google-cloud-compute" % "0.118.0-alpha",
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2Version,

@@ -8,7 +8,7 @@ import com.broadinstitute.dsp.Generators._
 import doobie.scalatest.IOChecker
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
-//import org.scalatest.DoNotDiscover
+import org.scalatest.DoNotDiscover
 import org.scalatest.flatspec.AnyFlatSpec
 
 /**
@@ -19,7 +19,7 @@ import org.scalatest.flatspec.AnyFlatSpec
  *   * Run a database unit test in leonardo
  *   * Run this spec
  */
-//@DoNotDiscover
+@DoNotDiscover
 final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val config = ConfigSpec.config.database
   val transactor = yoloTransactor

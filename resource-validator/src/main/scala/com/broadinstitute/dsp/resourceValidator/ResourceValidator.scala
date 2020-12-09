@@ -20,8 +20,9 @@ object ResourceValidator {
                                             shouldRunAll: Boolean,
                                             shouldCheckDeletedRuntimes: Boolean,
                                             shouldCheckErroredRuntimes: Boolean,
-                                            shouldCheckStoppedGceRuntimes: Boolean,
-                                            shouldCheckStoppedDataprocRuntimes: Boolean,
+                                            shouldCheckStoppedRuntimes: Boolean,
+//                                            shouldCheckStoppedGceRuntimes: Boolean,
+//                                            shouldCheckStoppedDataprocRuntimes: Boolean,
                                             shouldRunCheckDeletedKubernetesCluster: Boolean,
                                             shouldRunCheckDeletedNodepool: Boolean,
                                             shouldCheckDeletedDisks: Boolean,
@@ -59,13 +60,17 @@ object ResourceValidator {
         )
       else Stream.empty
 
-      stoppedGceRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedGceRuntimes)
-        Stream.eval(StoppedGceRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+      stoppedRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedRuntimes)
+        Stream.eval(StoppedRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
 
-      stoppedDataprocRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedDataprocRuntimes)
-        Stream.eval(StoppedDataprocRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
-      else Stream.empty
+//      stoppedGceRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedGceRuntimes)
+//        Stream.eval(StoppedGceRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+//      else Stream.empty
+//
+//      stoppedDataprocRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedDataprocRuntimes)
+//        Stream.eval(StoppedDataprocRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+//      else Stream.empty
 
       removeStagingBucketProcess = if (shouldRunAll)
         Stream.eval(BucketRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
@@ -82,8 +87,9 @@ object ResourceValidator {
       processes = Stream(
         deleteRuntimeCheckerProcess,
         errorRuntimeCheckerProcess,
-        stoppedGceRuntimeCheckerProcess,
-        stoppedDataprocRuntimeCheckerProcess,
+        stoppedRuntimeCheckerProcess,
+//        stoppedGceRuntimeCheckerProcess,
+//        stoppedDataprocRuntimeCheckerProcess,
         removeStagingBucketProcess,
         deleteDiskCheckerProcess,
         removeInitBuckets,
