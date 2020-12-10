@@ -21,8 +21,6 @@ object ResourceValidator {
                                             shouldCheckDeletedRuntimes: Boolean,
                                             shouldCheckErroredRuntimes: Boolean,
                                             shouldCheckStoppedRuntimes: Boolean,
-//                                            shouldCheckStoppedGceRuntimes: Boolean,
-//                                            shouldCheckStoppedDataprocRuntimes: Boolean,
                                             shouldRunCheckDeletedKubernetesCluster: Boolean,
                                             shouldRunCheckDeletedNodepool: Boolean,
                                             shouldCheckDeletedDisks: Boolean,
@@ -64,14 +62,6 @@ object ResourceValidator {
         Stream.eval(StoppedRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
 
-//      stoppedGceRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedGceRuntimes)
-//        Stream.eval(StoppedGceRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
-//      else Stream.empty
-//
-//      stoppedDataprocRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedDataprocRuntimes)
-//        Stream.eval(StoppedDataprocRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
-//      else Stream.empty
-
       removeStagingBucketProcess = if (shouldRunAll)
         Stream.eval(BucketRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
       else Stream.empty
@@ -88,8 +78,6 @@ object ResourceValidator {
         deleteRuntimeCheckerProcess,
         errorRuntimeCheckerProcess,
         stoppedRuntimeCheckerProcess,
-//        stoppedGceRuntimeCheckerProcess,
-//        stoppedDataprocRuntimeCheckerProcess,
         removeStagingBucketProcess,
         deleteDiskCheckerProcess,
         removeInitBuckets,
@@ -98,7 +86,7 @@ object ResourceValidator {
         deleteNodepoolCheckerProcess
       ).covary[F]
 
-      _ <- processes.parJoin(8) // Update this number as we add more streams
+      _ <- processes.parJoin(9) // Update this number as we add more streams
     } yield ExitCode.Success
   }.drain
 

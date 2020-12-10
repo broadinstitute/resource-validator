@@ -8,8 +8,6 @@ class FakeDbReader extends DbReader[IO] {
   override def getDeletedRuntimes: Stream[IO, Runtime] = Stream.empty
   override def getErroredRuntimes: Stream[IO, Runtime] = Stream.empty
   override def getStoppedRuntimes: Stream[IO, Runtime] = Stream.empty
-//  override def getStoppedDataprocRuntimes: Stream[IO, Runtime] = Stream.empty
-//  override def getStoppedGceRuntimes: Stream[IO, Runtime] = Stream.empty
 
   override def getKubernetesClustersToDelete: Stream[IO, KubernetesClusterToRemove] = Stream.empty
   override def getDeletedAndErroredKubernetesClusters: Stream[IO, KubernetesCluster] = Stream.empty
