@@ -27,8 +27,7 @@ object StoppedRuntimeChecker {
                                  isDryRun: Boolean)(implicit ev: Ask[F, TraceId]): F[Option[Runtime]] =
         runtime.cloudService match {
           case Dataproc =>
-//            checkDataprocCluster(runtime, isDryRun)
-            F.pure(none[Runtime])
+            checkDataprocCluster(runtime, isDryRun)
           case Gce =>
             checkGceRuntime(runtime, isDryRun)
         }
@@ -55,50 +54,35 @@ object StoppedRuntimeChecker {
           }
         } yield runningRuntimeOpt
 
-//      private def checkDataprocCluster(runtime: Runtime, isDryRun: Boolean)(
-//        implicit ev: Ask[F, TraceId]
-//      ): F[Option[Runtime]] = {
-//        val clusterName = DataprocClusterName(runtime.runtimeName)
-//        val project = runtime.googleProject
-//
-//        for {
-//          clusterOpt <- deps.dataprocService
-//            .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
-//          runningClusterOpt <- clusterOpt.flatTraverse { cluster =>
-//            if (cluster.getStatus.getState.name() == "RUNNING") {
-//              for {
-//                   flag < containsRunningInstance(???)
-//              }  yield    none[Runtime]
-//              F.pure(none[Runtime])
-////              if (isDryRun)
-////                logger.warn(s"${runtime} is running. It needs to be stopped.").as(Option(runtime))
-////              else
-////                logger.warn(s"${runtime} is running. Going to stop it.") >> deps.dataprocService
-////                  // In contrast to in Leo, we're not setting the shutdown script metadata before stopping the instance
-////                  // in order to keep things simple since our main goal here is to prevent unintended cost to users.
-////                  .stopCluster(project, regionName, clusterName, metadata = None)
-////                  .void
-////                  .as(Option(runtime))
-//            }   else F.pure(none[Runtime])
-//          }
-//
-////            containsRunningInstance(project, zoneName, regionName, clusterName).flatMap {
-////              thereIsAtLeastOneRunningInstance =>
-////                if (cluster.getStatus.getState.name() == "RUNNING" && thereIsAtLeastOneRunningInstance) {
-////                  if (isDryRun)
-////                    logger.warn(s"${runtime} is running. It needs to be stopped.").as(Option(runtime))
-////                  else
-////                    logger.warn(s"${runtime} is running. Going to stop it.") >> deps.dataprocService
-////                    // In contrast to in Leo, we're not setting the shutdown script metadata before stopping the instance
-////                    // in order to keep things simple since our main goal here is to prevent unintended cost to users.
-////                      .stopCluster(project, regionName, clusterName, metadata = None)
-////                      .void
-////                      .as(Option(runtime))
-////                } else F.pure(none[Runtime])
-////            }
-//          }
-//        } yield runningClusterOpt
-//      }
+      private def checkDataprocCluster(runtime: Runtime, isDryRun: Boolean)(
+        implicit ev: Ask[F, TraceId]
+      ): F[Option[Runtime]] = {
+        val clusterName = DataprocClusterName(runtime.runtimeName)
+        val project = runtime.googleProject
+
+        for {
+          clusterOpt <- deps.dataprocService
+            .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
+          runningClusterOpt <- clusterOpt.flatTraverse { cluster =>
+            if (cluster.getStatus.getState.name() == "RUNNING") {
+              for {
+                runningInstanceExists <- containsRunningInstance(project, zoneName, regionName, clusterName)
+                rt <- if (runningInstanceExists) {
+                  if (isDryRun)
+                    logger.warn(s"Cluster (${runtime}) is running. It needs to be stopped.").as(Option(runtime))
+                  else
+                    logger.warn(s"Cluster (${runtime}) is running. Going to stop it.") >> deps.dataprocService
+                    // In contrast to in Leo, we're not setting the shutdown script metadata before stopping the instance
+                    // in order to keep things simple since our main goal here is to prevent unintended cost to users.
+                      .stopCluster(project, regionName, clusterName, metadata = None)
+                      .void
+                      .as(Option(runtime))
+                } else F.pure(none[Runtime])
+              } yield rt
+            } else F.pure(none[Runtime])
+          }
+        } yield runningClusterOpt
+      }
 
       private def containsRunningInstance(project: GoogleProject,
                                           zone: ZoneName,
