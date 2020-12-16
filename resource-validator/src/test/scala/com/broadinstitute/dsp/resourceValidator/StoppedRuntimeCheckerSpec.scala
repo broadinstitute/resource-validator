@@ -172,7 +172,6 @@ object StoppedRuntimeCheckerSpec {
       case "CREATING" => "CREATING"
       case "ERROR"    => "ERROR"
       case "DELETED"  => "DELETING"
-      case _          => "UNRECOGNIZED"
     }
     Cluster.newBuilder().setStatus(ClusterStatus.newBuilder().setState(State.valueOf(validStatus))).build()
   }
