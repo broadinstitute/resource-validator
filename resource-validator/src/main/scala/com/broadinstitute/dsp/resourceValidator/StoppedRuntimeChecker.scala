@@ -5,6 +5,7 @@ import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import cats.mtl.Ask
 import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
+import com.google.cloud.compute.v1.Instance
 import fs2.Stream
 import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName, RegionName, ZoneName}
@@ -64,7 +65,7 @@ object StoppedRuntimeChecker {
           clusterOpt <- deps.dataprocService
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
           runningClusterOpt <- clusterOpt.flatTraverse { cluster =>
-            if (cluster.getStatus.getState.name() == "RUNNING") {
+            if (cluster.getStatus.getState.name.toUpperCase == "RUNNING") {
               for {
                 // When we stop Dataproc clusters, we actually stop the underlying instances since it is not
                 // possible to stop Dataproc clusters otherwise. Therefore here, we are also checking that there is
@@ -101,7 +102,7 @@ object StoppedRuntimeChecker {
             .parEvalMapUnordered(10) { instance =>
               deps.computeService
                 .getInstance(project, zone, instance)
-                .handleErrorWith(_ => F.pure(None))
+                .handleErrorWith(_ => F.pure(none[Instance]))
             }
             .exists(_.exists(_.getStatus == "RUNNING"))
             .compile

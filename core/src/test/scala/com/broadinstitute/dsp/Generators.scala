@@ -11,7 +11,7 @@ object Generators {
     cloudService <- genCloudService
     project <- genGoogleProject
     runtimeName <- Gen.uuid.map(_.toString)
-    status <- Gen.oneOf("Running", "Creating", "Deleted", "Error")
+    status <- Gen.oneOf("RUNNING", "CREATING", "DELETED", "ERROR")
   } yield Runtime(id, project, runtimeName, cloudService, status)
   val genDisk: Gen[Disk] = for {
     id <- Gen.chooseNum(0, 100)

@@ -35,7 +35,7 @@ object ErroredRuntimeChecker {
           clusterOpt <- deps.dataprocService
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
           r <- clusterOpt.flatTraverse[F, Runtime] { cluster =>
-            if (cluster.getStatus.getState.name() == "ERROR")
+            if (cluster.getStatus.getState.name.toUpperCase == "ERROR")
               logger
                 .warn(s"${runtime} still exists in Google in Error state. User might want to delete the runtime.")
                 .as(none[Runtime])
@@ -43,12 +43,12 @@ object ErroredRuntimeChecker {
               if (isDryRun)
                 logger
                   .warn(
-                    s"${runtime} still exists in ${cluster.getStatus.getState.name()} status. It needs to be deleted."
+                    s"${runtime} still exists in ${cluster.getStatus.getState.name} status. It needs to be deleted."
                   )
                   .as(Some(runtime))
               else
                 logger.warn(
-                  s"${runtime} still exists in ${cluster.getStatus.getState.name()} status. Going to delete it."
+                  s"${runtime} still exists in ${cluster.getStatus.getState.name} status. Going to delete it."
                 ) >> deps.dataprocService
                   .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
                   .void
