@@ -60,7 +60,7 @@ final class StoppedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite
         override def getInstance(project: GoogleProject, zone: ZoneName, instanceName: InstanceName)(
           implicit ev: Ask[IO, TraceId]
         ): IO[Option[Instance]] = {
-          val instance = Instance.newBuilder().setStatus(runtime.status).build()
+          val instance = Instance.newBuilder().setStatus(runtime.status.toUpperCase).build()
           IO.pure(Some(instance))
         }
 
@@ -73,7 +73,7 @@ final class StoppedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
           implicit ev: Ask[IO, TraceId]
         ): IO[Option[Cluster]] =
-          IO.pure(Some(makeClusterWithStatus(runtime.status)))
+          IO.pure(Some(makeClusterWithStatus(runtime.status.toUpperCase)))
 
         override def getClusterInstances(project: GoogleProject,
                                          region: RegionName,
@@ -95,7 +95,7 @@ final class StoppedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite
       val stoppedRuntimeChecker = StoppedRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
       val res = stoppedRuntimeChecker.checkResource(runtime, dryRun)
       val expectedRes =
-        if (runtime.status == "RUNNING") Some(runtime)
+        if (runtime.status.toUpperCase == "RUNNING") Some(runtime)
         else None
 
       res.unsafeRunSync() shouldBe expectedRes
