@@ -20,9 +20,9 @@ object Main
         val shouldCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
         val shouldCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
         val shouldCheckStoppedRuntimes = Opts.flag("checkStoppedRuntimes", "check all stopped runtimes").orFalse
-        val shouldRunCheckDeletedKubernetesClusters =
+        val shouldCheckDeletedKubernetesClusters =
           Opts.flag("checkDeletedKubernetesClusters", "check all deleted or errored kubernetes clusters").orFalse
-        val shouldRunCheckDeletedNodepools =
+        val shouldCheckDeletedNodepools =
           Opts.flag("checkDeletedNodepools", "check all deleted or errored nodepools").orFalse
         val shouldCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse
         val shouldCheckInitBuckets =
@@ -33,8 +33,8 @@ object Main
          shouldCheckDeletedRuntimes,
          shouldCheckErroredRuntimes,
          shouldCheckStoppedRuntimes,
-         shouldRunCheckDeletedKubernetesClusters,
-         shouldRunCheckDeletedNodepools,
+         shouldCheckDeletedKubernetesClusters,
+         shouldCheckDeletedNodepools,
          shouldCheckDeletedDisks,
          shouldCheckInitBuckets).mapN {
           (dryRun,
@@ -48,15 +48,15 @@ object Main
            shouldCheckInitBuckets) =>
             ResourceValidator
               .run[IO](
-                dryRun,
-                checkAll,
-                shouldCheckDeletedRuntimes,
-                shouldCheckErroredRuntimes,
-                shouldCheckStoppedRuntimes,
-                shouldCheckDeletedKubernetesClusters,
-                shouldCheckDeletedNodepools,
-                shouldCheckDeletedDisks,
-                shouldCheckInitBuckets
+                isDryRun = dryRun,
+                shouldCheckAll = checkAll,
+                shouldCheckDeletedRuntimes = shouldCheckDeletedRuntimes,
+                shouldCheckErroredRuntimes = shouldCheckErroredRuntimes,
+                shouldCheckStoppedRuntimes = shouldCheckStoppedRuntimes,
+                shouldCheckDeletedKubernetesCluster = shouldCheckDeletedKubernetesClusters,
+                shouldCheckDeletedNodepool = shouldCheckDeletedNodepools,
+                shouldCheckDeletedDisks = shouldCheckDeletedDisks,
+                shouldCheckInitBuckets = shouldCheckInitBuckets
               )
               .compile
               .drain

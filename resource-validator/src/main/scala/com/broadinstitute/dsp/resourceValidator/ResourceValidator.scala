@@ -17,12 +17,12 @@ import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
 
 object ResourceValidator {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
-                                            shouldRunAll: Boolean,
+                                            shouldCheckAll: Boolean,
                                             shouldCheckDeletedRuntimes: Boolean,
                                             shouldCheckErroredRuntimes: Boolean,
                                             shouldCheckStoppedRuntimes: Boolean,
-                                            shouldRunCheckDeletedKubernetesCluster: Boolean,
-                                            shouldRunCheckDeletedNodepool: Boolean,
+                                            shouldCheckDeletedKubernetesCluster: Boolean,
+                                            shouldCheckDeletedNodepool: Boolean,
                                             shouldCheckDeletedDisks: Boolean,
                                             shouldCheckInitBuckets: Boolean)(
     implicit T: Timer[F],
@@ -36,41 +36,41 @@ object ResourceValidator {
       deps <- Stream.resource(initDependencies(config))
       checkRunnerDep = deps.runtimeCheckerDeps.checkRunnerDeps
 
-      deleteRuntimeCheckerProcess = if (shouldRunAll || shouldCheckDeletedRuntimes)
+      deleteRuntimeCheckerProcess = if (shouldCheckAll || shouldCheckDeletedRuntimes)
         Stream.eval(DeletedRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
 
-      deleteDiskCheckerProcess = if (shouldRunAll || shouldCheckDeletedDisks)
+      deleteDiskCheckerProcess = if (shouldCheckAll || shouldCheckDeletedDisks)
         Stream.eval(DeletedDiskChecker.impl[F](deps.dbReader, deps.deletedDiskCheckerDeps).run(isDryRun))
       else Stream.empty
 
-      errorRuntimeCheckerProcess = if (shouldRunAll || shouldCheckErroredRuntimes)
+      errorRuntimeCheckerProcess = if (shouldCheckAll || shouldCheckErroredRuntimes)
         Stream.eval(ErroredRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
-      deleteKubernetesClusterCheckerProcess = if (shouldRunAll || shouldRunCheckDeletedKubernetesCluster)
+      deleteKubernetesClusterCheckerProcess = if (shouldCheckAll || shouldCheckDeletedKubernetesCluster)
         Stream.eval(
           DeletedOrErroredKubernetesClusterChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
         )
       else Stream.empty
-      deleteNodepoolCheckerProcess = if (shouldRunAll || shouldRunCheckDeletedNodepool)
+      deleteNodepoolCheckerProcess = if (shouldCheckAll || shouldCheckDeletedNodepool)
         Stream.eval(
           DeletedOrErroredNodepoolChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
         )
       else Stream.empty
 
-      stoppedRuntimeCheckerProcess = if (shouldRunAll || shouldCheckStoppedRuntimes)
+      stoppedRuntimeCheckerProcess = if (shouldCheckAll || shouldCheckStoppedRuntimes)
         Stream.eval(StoppedRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
 
-      removeStagingBucketProcess = if (shouldRunAll)
+      removeStagingBucketProcess = if (shouldCheckAll)
         Stream.eval(BucketRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
       else Stream.empty
 
-      removeKubernetesClusters = if (shouldRunAll)
+      removeKubernetesClusters = if (shouldCheckAll)
         Stream.eval(KubernetesClusterRemover.impl(deps.dbReader, deps.kubernetesClusterRemoverDeps).run(isDryRun))
       else Stream.empty
 
-      removeInitBuckets = if (shouldRunAll || shouldCheckInitBuckets)
+      removeInitBuckets = if (shouldCheckAll || shouldCheckInitBuckets)
         Stream.eval(InitBucketChecker.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
       else Stream.empty
 

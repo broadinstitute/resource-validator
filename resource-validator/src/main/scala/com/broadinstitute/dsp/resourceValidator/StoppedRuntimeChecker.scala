@@ -66,12 +66,17 @@ object StoppedRuntimeChecker {
           runningClusterOpt <- clusterOpt.flatTraverse { cluster =>
             if (cluster.getStatus.getState.name() == "RUNNING") {
               for {
+                // When we stop Dataproc clusters, we actually stop the underlying instances since it is not
+                // possible to stop Dataproc clusters otherwise. Therefore here, we are also checking that there is
+                // at least one underlying instance that is RUNNING.
                 runningInstanceExists <- containsRunningInstance(project, zoneName, regionName, clusterName)
                 rt <- if (runningInstanceExists) {
                   if (isDryRun)
-                    logger.warn(s"Cluster (${runtime}) is running. It needs to be stopped.").as(Option(runtime))
+                    logger
+                      .warn(s"Cluster (${runtime}) has running instance(s). It needs to be stopped.")
+                      .as(Option(runtime))
                   else
-                    logger.warn(s"Cluster (${runtime}) is running. Going to stop it.") >> deps.dataprocService
+                    logger.warn(s"Cluster (${runtime}) has running instances(s). Going to stop it.") >> deps.dataprocService
                     // In contrast to in Leo, we're not setting the shutdown script metadata before stopping the instance
                     // in order to keep things simple since our main goal here is to prevent unintended cost to users.
                       .stopCluster(project, regionName, clusterName, metadata = None)
