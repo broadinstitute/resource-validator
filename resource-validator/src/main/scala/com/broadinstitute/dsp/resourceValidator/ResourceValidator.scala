@@ -17,15 +17,16 @@ import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
 
 object ResourceValidator {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
-                                            shouldRunAll: Boolean,
-                                            shouldRunCheckDeletedRuntimes: Boolean,
-                                            shouldRunCheckErroredRuntimes: Boolean,
-                                            shouldRunCheckDeletedDisks: Boolean,
-                                            shouldRunCheckInitBuckets: Boolean,
-                                            shouldRunCheckDeletedKubernetesCluster: Boolean,
-                                            shouldRunCheckDeletedNodepool: Boolean)(
-    implicit timer: Timer[F],
-    cs: ContextShift[F]
+                                            shouldCheckAll: Boolean,
+                                            shouldCheckDeletedRuntimes: Boolean,
+                                            shouldCheckErroredRuntimes: Boolean,
+                                            shouldCheckStoppedRuntimes: Boolean,
+                                            shouldCheckDeletedKubernetesCluster: Boolean,
+                                            shouldCheckDeletedNodepool: Boolean,
+                                            shouldCheckDeletedDisks: Boolean,
+                                            shouldCheckInitBuckets: Boolean)(
+    implicit T: Timer[F],
+    C: ContextShift[F]
   ): Stream[F, Nothing] = {
     implicit def getLogger[F[_]: Sync] = Slf4jLogger.getLogger[F]
     implicit val traceId = Ask.const(TraceId(UUID.randomUUID()))
@@ -33,42 +34,50 @@ object ResourceValidator {
     for {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
-      deleteRuntimeCheckerProcess = if (shouldRunAll || shouldRunCheckDeletedRuntimes)
+      checkRunnerDep = deps.runtimeCheckerDeps.checkRunnerDeps
+
+      deleteRuntimeCheckerProcess = if (shouldCheckAll || shouldCheckDeletedRuntimes)
         Stream.eval(DeletedRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
-      deleteDiskCheckerProcess = if (shouldRunAll || shouldRunCheckDeletedDisks)
+
+      deleteDiskCheckerProcess = if (shouldCheckAll || shouldCheckDeletedDisks)
         Stream.eval(DeletedDiskChecker.impl[F](deps.dbReader, deps.deletedDiskCheckerDeps).run(isDryRun))
       else Stream.empty
-      errorRuntimeCheckerProcess = if (shouldRunAll || shouldRunCheckErroredRuntimes)
+
+      errorRuntimeCheckerProcess = if (shouldCheckAll || shouldCheckErroredRuntimes)
         Stream.eval(ErroredRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
-      deleteKubernetesClusterCheckerProcess = if (shouldRunAll || shouldRunCheckDeletedKubernetesCluster)
+      deleteKubernetesClusterCheckerProcess = if (shouldCheckAll || shouldCheckDeletedKubernetesCluster)
         Stream.eval(
           DeletedOrErroredKubernetesClusterChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
         )
       else Stream.empty
-      deleteNodepoolCheckerProcess = if (shouldRunAll || shouldRunCheckDeletedNodepool)
+      deleteNodepoolCheckerProcess = if (shouldCheckAll || shouldCheckDeletedNodepool)
         Stream.eval(
           DeletedOrErroredNodepoolChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
         )
       else Stream.empty
 
-      checkRunnerDep = deps.runtimeCheckerDeps.checkRunnerDeps
-      removeStagingBucketProcess = if (shouldRunAll)
+      stoppedRuntimeCheckerProcess = if (shouldCheckAll || shouldCheckStoppedRuntimes)
+        Stream.eval(StoppedRuntimeChecker.iml(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+      else Stream.empty
+
+      removeStagingBucketProcess = if (shouldCheckAll)
         Stream.eval(BucketRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
       else Stream.empty
 
-      removeKubernetesClusters = if (shouldRunAll)
+      removeKubernetesClusters = if (shouldCheckAll)
         Stream.eval(KubernetesClusterRemover.impl(deps.dbReader, deps.kubernetesClusterRemoverDeps).run(isDryRun))
       else Stream.empty
 
-      removeInitBuckets = if (shouldRunAll || shouldRunCheckInitBuckets)
+      removeInitBuckets = if (shouldCheckAll || shouldCheckInitBuckets)
         Stream.eval(InitBucketChecker.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
       else Stream.empty
 
       processes = Stream(
         deleteRuntimeCheckerProcess,
         errorRuntimeCheckerProcess,
+        stoppedRuntimeCheckerProcess,
         removeStagingBucketProcess,
         deleteDiskCheckerProcess,
         removeInitBuckets,
@@ -77,7 +86,7 @@ object ResourceValidator {
         deleteNodepoolCheckerProcess
       ).covary[F]
 
-      _ <- processes.parJoin(8) // Update this number as we add more streams
+      _ <- processes.parJoin(9) // Update this number as we add more streams
     } yield ExitCode.Success
   }.drain
 

@@ -20,7 +20,7 @@ import org.scalatest.flatspec.AnyFlatSpec
  *   * Run this spec
  */
 @DoNotDiscover
-class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
+final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val config = ConfigSpec.config.database
   val transactor = yoloTransactor
 

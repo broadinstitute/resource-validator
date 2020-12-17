@@ -16,43 +16,47 @@ object Main
         implicit val timer = IO.timer(global)
 
         val enableDryRun = Opts.flag("dryRun", "Default to true").orFalse.withDefault(true)
-        val shouldRunAll = Opts.flag("all", "run all checks").orFalse
-        val shouldRunCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
-        val shouldRunCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
-        val shouldRunCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse
-        val shouldRunCheckInitBuckets =
-          Opts.flag("checkInitBuckets", "checks that init buckets for deleted runtimes are deleted").orFalse
-        val shouldRunCheckDeletedKubernetesClusters =
+        val shouldCheckAll = Opts.flag("all", "run all checks").orFalse
+        val shouldCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
+        val shouldCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
+        val shouldCheckStoppedRuntimes = Opts.flag("checkStoppedRuntimes", "check all stopped runtimes").orFalse
+        val shouldCheckDeletedKubernetesClusters =
           Opts.flag("checkDeletedKubernetesClusters", "check all deleted or errored kubernetes clusters").orFalse
-        val shouldRunCheckDeletedNodepools =
+        val shouldCheckDeletedNodepools =
           Opts.flag("checkDeletedNodepools", "check all deleted or errored nodepools").orFalse
+        val shouldCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse
+        val shouldCheckInitBuckets =
+          Opts.flag("checkInitBuckets", "checks that init buckets for deleted runtimes are deleted").orFalse
 
         (enableDryRun,
-         shouldRunAll,
-         shouldRunCheckDeletedRuntimes,
-         shouldRunCheckErroredRuntimes,
-         shouldRunCheckDeletedDisks,
-         shouldRunCheckInitBuckets,
-         shouldRunCheckDeletedKubernetesClusters,
-         shouldRunCheckDeletedNodepools).mapN {
+         shouldCheckAll,
+         shouldCheckDeletedRuntimes,
+         shouldCheckErroredRuntimes,
+         shouldCheckStoppedRuntimes,
+         shouldCheckDeletedKubernetesClusters,
+         shouldCheckDeletedNodepools,
+         shouldCheckDeletedDisks,
+         shouldCheckInitBuckets).mapN {
           (dryRun,
-           runAll,
+           checkAll,
            shouldCheckDeletedRuntimes,
-           shouldRunCheckErroredRuntimes,
-           shouldRunCheckDeletedDisks,
-           shouldRunCheckInitBuckets,
-           shouldRunCheckDeletedKubernetesClusters,
-           shouldRunCheckDeletedNodepools) =>
+           shouldCheckErroredRuntimes,
+           shouldCheckStoppedRuntimes,
+           shouldCheckDeletedKubernetesClusters,
+           shouldCheckDeletedNodepools,
+           shouldCheckDeletedDisks,
+           shouldCheckInitBuckets) =>
             ResourceValidator
               .run[IO](
                 isDryRun = dryRun,
-                shouldRunAll = runAll,
-                shouldRunCheckDeletedRuntimes = shouldCheckDeletedRuntimes,
-                shouldRunCheckErroredRuntimes = shouldRunCheckErroredRuntimes,
-                shouldRunCheckDeletedDisks = shouldRunCheckDeletedDisks,
-                shouldRunCheckInitBuckets = shouldRunCheckInitBuckets,
-                shouldRunCheckDeletedKubernetesCluster = shouldRunCheckDeletedKubernetesClusters,
-                shouldRunCheckDeletedNodepool = shouldRunCheckDeletedNodepools
+                shouldCheckAll = checkAll,
+                shouldCheckDeletedRuntimes = shouldCheckDeletedRuntimes,
+                shouldCheckErroredRuntimes = shouldCheckErroredRuntimes,
+                shouldCheckStoppedRuntimes = shouldCheckStoppedRuntimes,
+                shouldCheckDeletedKubernetesCluster = shouldCheckDeletedKubernetesClusters,
+                shouldCheckDeletedNodepool = shouldCheckDeletedNodepools,
+                shouldCheckDeletedDisks = shouldCheckDeletedDisks,
+                shouldCheckInitBuckets = shouldCheckInitBuckets
               )
               .compile
               .drain

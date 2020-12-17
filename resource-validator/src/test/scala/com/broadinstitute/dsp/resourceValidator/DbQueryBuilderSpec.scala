@@ -15,7 +15,7 @@ import org.scalatest.flatspec.AnyFlatSpec
  *   * Run this spec
  */
 @DoNotDiscover
-class DbQueryBuilderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
+final class DbQueryBuilderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val config = ConfigSpec.config.database
   val transactor = yoloTransactor
 
@@ -33,6 +33,10 @@ class DbQueryBuilderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
 
   it should "build erroredRuntimeQuery properly" in {
     check(DbReader.erroredRuntimeQuery)
+  }
+
+  it should "build stoppedRuntimeQuery properly" in {
+    check(DbReader.stoppedRuntimeQuery)
   }
 
   it should "build kubernetesClustersToDeleteQuery properly" in {

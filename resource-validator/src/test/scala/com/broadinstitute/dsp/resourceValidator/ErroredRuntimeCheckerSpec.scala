@@ -33,10 +33,10 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
     forAll { (runtime: Runtime, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
-        override def getDeletedRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
+        override def getErroredRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
-      val deletedRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
-      val res = deletedRuntimeChecker.checkResource(runtime, dryRun)
+      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
+      val res = erroredRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe None
     }
   }
@@ -44,7 +44,7 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   it should "return Runtime if runtime still exists in Google" in {
     forAll { (runtime: Runtime, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
-        override def getDeletedRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
+        override def getErroredRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
       val computeService = new FakeGoogleComputeService {
         override def getInstance(project: GoogleProject, zone: ZoneName, instanceName: InstanceName)(
@@ -75,8 +75,8 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       val runtimeCheckerDeps =
         initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
 
-      val deletedRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
-      val res = deletedRuntimeChecker.checkResource(runtime, dryRun)
+      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
+      val res = erroredRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe Some(runtime)
     }
   }
@@ -84,7 +84,7 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   it should "return None if dataproc cluster still exists in Google in Error status" in {
     forAll { (runtime: Runtime, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
-        override def getDeletedRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
+        override def getErroredRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
       val dataprocService = new BaseFakeGoogleDataprocService {
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
@@ -104,8 +104,8 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       val runtimeCheckerDeps =
         initRuntimeCheckerDeps(googleDataprocService = dataprocService)
 
-      val deletedRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
-      val res = deletedRuntimeChecker.checkResource(rt, dryRun)
+      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
+      val res = erroredRuntimeChecker.checkResource(rt, dryRun)
       res.unsafeRunSync() shouldBe None
     }
   }
