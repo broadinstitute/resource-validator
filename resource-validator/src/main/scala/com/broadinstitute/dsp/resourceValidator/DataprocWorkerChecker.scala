@@ -49,7 +49,7 @@ object DataprocWorkerChecker {
                 if (isDryRun)
                   logger
                     .warn(
-                      s"${runtime} has an anomaly with the number of workers in google. \n\tPrimary work match status: $doesPrimaryWorkerMatch\n\tSecondary worker match status: ${doesSecondaryWorkerMatch}"
+                      s"${runtime} has an anomaly with the number of workers in google. \n\tPrimary worker match status: $doesPrimaryWorkerMatch\n\tSecondary worker match status: ${doesSecondaryWorkerMatch}"
                     )
                     .as[Option[RuntimeWithWorkers]](Some(runtime))
                 // If the number of primary workers is less than 2, modifying workers requires a creation and deletion. Leo does not handles these, so we will not either
