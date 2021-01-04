@@ -5,18 +5,21 @@ import java.util.concurrent.TimeUnit
 
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
+import io.circe.Encoder
 import cats.mtl.Ask
 import io.chrisdavenport.log4cats.Logger
-import io.circe.Encoder
-import org.broadinstitute.dsde.workbench.google2.JsonCodec.traceIdEncoder
 import org.broadinstitute.dsde.workbench.google2.GooglePublisher
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
+import org.broadinstitute.dsde.workbench.google2.JsonCodec.{googleProjectEncoder, traceIdEncoder}
 
 // This file will likely be moved out of resource-validator later
 // See https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes?focusedCommentId=807632911#comment-807632911
 object KubernetesClusterRemover {
-  import LeoPubsubCodec._
+  implicit val deleteKubernetesClusterMessageEncoder: Encoder[DeleteKubernetesClusterMessage] =
+    Encoder.forProduct4("messageType", "clusterId", "project", "traceId")(x =>
+      (x.messageType, x.clusterId, x.project, x.traceId)
+    )
 
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
@@ -52,16 +55,3 @@ final case class DeleteKubernetesClusterMessage(clusterId: Long, project: Google
 }
 
 final case class KubernetesClusterRemoverDeps[F[_]](publisher: GooglePublisher[F], checkRunnerDeps: CheckRunnerDeps[F])
-
-object JsonCodec {
-  implicit val googleProjectEncoder: Encoder[GoogleProject] = Encoder.encodeString.contramap(_.value)
-}
-
-object LeoPubsubCodec {
-  import JsonCodec._
-
-  implicit val deleteKubernetesClusterMessageEncoder: Encoder[DeleteKubernetesClusterMessage] =
-    Encoder.forProduct4("messageType", "clusterId", "project", "traceId")(x =>
-      (x.messageType, x.clusterId, x.project, x.traceId)
-    )
-}

@@ -49,7 +49,8 @@ final case class KubernetesCluster(clusterName: KubernetesClusterName,
                                    location: Location) {
   override def toString: String = s"${clusterName}/${googleProject}"
 }
-final case class Nodepool(nodepoolName: NodepoolName,
+final case class Nodepool(nodepoolId: Long,
+                          nodepoolName: NodepoolName,
                           clusterName: KubernetesClusterName,
                           googleProject: GoogleProject,
                           location: Location) {

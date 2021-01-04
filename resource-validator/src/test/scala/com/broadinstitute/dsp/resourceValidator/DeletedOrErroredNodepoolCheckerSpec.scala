@@ -4,40 +4,23 @@ package resourceValidator
 import cats.effect.IO
 import cats.mtl.Ask
 import com.broadinstitute.dsp.Generators._
-import com.broadinstitute.dsp.resourceValidator.InitDependenciesHelper.initKubernetesClusterCheckerDeps
-import com.google.container.v1.{NodePool, Operation}
+import com.broadinstitute.dsp.resourceValidator.InitDependenciesHelper.initNodepoolCheckerDeps
 import fs2.Stream
+import io.circe.Encoder
 import org.broadinstitute.dsde.workbench.google2.GKEModels.NodepoolId
-import org.broadinstitute.dsde.workbench.google2.mock.MockGKEService
+import org.broadinstitute.dsde.workbench.google2.mock.{FakeGooglePublisher, MockGKEService}
 import org.broadinstitute.dsde.workbench.model.TraceId
+import com.google.container.v1.NodePool
 import org.scalatest.flatspec.AnyFlatSpec
 
 class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
-  it should "return None if nodepool no longer exists in Google" in {
-    val gkeService = new MockGKEService {
-      override def getNodepool(nodepoolId: NodepoolId)(
-        implicit ev: Ask[IO, TraceId]
-      ): IO[Option[NodePool]] = IO.pure(None)
-    }
 
-    val deps = initKubernetesClusterCheckerDeps(gkeService = gkeService)
-
+  it should "not publish to subscriber if dryRun" in {
     forAll { (nodepool: Nodepool, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
         override def getDeletedAndErroredNodepools: fs2.Stream[IO, Nodepool] = Stream.emit(nodepool)
       }
-      val deletedOrErroredNodepoolChecker =
-        DeletedOrErroredNodepoolChecker.impl(dbReader, deps)
-      val res = deletedOrErroredNodepoolChecker.checkResource(nodepool, dryRun)
-      res.unsafeRunSync() shouldBe None
-    }
-  }
 
-  it should "return nodepool if nodepool still exists in Google" in {
-    forAll { (nodepool: Nodepool, dryRun: Boolean) =>
-      val dbReader = new FakeDbReader {
-        override def getDeletedAndErroredNodepools: fs2.Stream[IO, Nodepool] = Stream.emit(nodepool)
-      }
       val gkeService = new MockGKEService {
         override def getNodepool(nodepoolId: NodepoolId)(
           implicit ev: Ask[IO, TraceId]
@@ -45,18 +28,28 @@ class DeletedOrErroredNodepoolCheckerSpec extends AnyFlatSpec with CronJobsTestS
           val nodepool = NodePool.newBuilder().build()
           IO.pure(Some(nodepool))
         }
-
-        override def deleteNodepool(nodepoolId: NodepoolId)(
-          implicit ev: Ask[IO, TraceId]
-        ): IO[Option[Operation]] =
-          if (dryRun) IO.raiseError(fail("this shouldn't be called")) else IO.pure(Some(Operation.newBuilder().build()))
       }
 
-      val deps = initKubernetesClusterCheckerDeps(gkeService = gkeService)
+      var count = 0
 
+      val publisher = new FakeGooglePublisher {
+        override def publishOne[MessageType](message: MessageType)(implicit evidence$2: Encoder[MessageType],
+                                                                   ev: Ask[IO, TraceId]): IO[Unit] =
+          if (dryRun)
+            IO.raiseError(fail("Shouldn't publish message in dryRun mode"))
+          else {
+            count = count + 1
+            super.publishOne(message)(evidence$2, ev)
+          }
+      }
+
+      val deps = initNodepoolCheckerDeps(gkeService = gkeService, publisher = publisher)
       val deletedOrErroredNodepoolChecker = DeletedOrErroredNodepoolChecker.impl(dbReader, deps)
       val res = deletedOrErroredNodepoolChecker.checkResource(nodepool, dryRun)
+
       res.unsafeRunSync() shouldBe Some(nodepool)
+      if (dryRun) count shouldBe 0
+      else count shouldBe 1
     }
   }
 }

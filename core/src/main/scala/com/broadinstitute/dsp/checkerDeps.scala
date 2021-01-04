@@ -12,6 +12,7 @@ import org.broadinstitute.dsde.workbench.google2.{
   GoogleComputeService,
   GoogleDataprocService,
   GoogleDiskService,
+  GooglePublisher,
   GoogleStorageService
 }
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
@@ -59,6 +60,10 @@ final case class RuntimeCheckerDeps[F[_]](computeService: GoogleComputeService[F
                                           checkRunnerDeps: CheckRunnerDeps[F])
 
 final case class KubernetesClusterCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], gkeService: GKEService[F])
+
+final case class NodepoolCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F],
+                                           gkeService: GKEService[F],
+                                           publisher: GooglePublisher[F])
 
 final case class DiskCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], googleDiskService: GoogleDiskService[F])
 

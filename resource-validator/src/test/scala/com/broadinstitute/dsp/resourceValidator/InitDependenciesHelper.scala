@@ -1,16 +1,18 @@
 package com.broadinstitute.dsp.resourceValidator
 
 import cats.effect.IO
-import com.broadinstitute.dsp.{CheckRunnerDeps, KubernetesClusterCheckerDeps, RuntimeCheckerDeps}
+import com.broadinstitute.dsp.{CheckRunnerDeps, KubernetesClusterCheckerDeps, NodepoolCheckerDeps, RuntimeCheckerDeps}
 import org.broadinstitute.dsde.workbench.google2.{
   GKEService,
   GoogleComputeService,
   GoogleDataprocService,
+  GooglePublisher,
   GoogleStorageService
 }
 import org.broadinstitute.dsde.workbench.google2.mock.{
   FakeGoogleComputeService,
   FakeGoogleDataprocService,
+  FakeGooglePublisher,
   FakeGoogleStorageInterpreter,
   MockGKEService
 }
@@ -33,5 +35,14 @@ object InitDependenciesHelper {
     KubernetesClusterCheckerDeps(
       CheckRunnerDeps(config.reportDestinationBucket, googleStorageService, FakeOpenTelemetryMetricsInterpreter),
       gkeService
+    )
+
+  def initNodepoolCheckerDeps(gkeService: GKEService[IO] = MockGKEService,
+                              googleStorageService: GoogleStorageService[IO] = FakeGoogleStorageInterpreter,
+                              publisher: GooglePublisher[IO] = new FakeGooglePublisher) =
+    NodepoolCheckerDeps(
+      CheckRunnerDeps(config.reportDestinationBucket, googleStorageService, FakeOpenTelemetryMetricsInterpreter),
+      gkeService,
+      publisher
     )
 }
