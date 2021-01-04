@@ -18,10 +18,10 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 
 object DataprocWorkerChecker {
   val unfixableAnomalyCheckType = "unfixable-dataproc-workers"
-  def impl[F[_] : Timer](
-                          dbReader: DbReader[F],
-                          deps: RuntimeCheckerDeps[F]
-                        )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, RuntimeWithWorkers] =
+  def impl[F[_]: Timer](
+    dbReader: DbReader[F],
+    deps: RuntimeCheckerDeps[F]
+  )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, RuntimeWithWorkers] =
     new CheckRunner[F, RuntimeWithWorkers] {
       override def appName: String = resourceValidator.appName
 
@@ -46,27 +46,35 @@ object DataprocWorkerChecker {
 
             isAnomalyDetected match {
               case true =>
-                val log =
-                  if (isDryRun)
-                    logger
-                      .warn(s"${runtime} has an anomaly with the number of workers in google. \n\tPrimary work match status: $doesPrimaryWorkerMatch\n\tSecondary worker match status: ${doesSecondaryWorkerMatch}")
-                .as[Option[RuntimeWithWorkers]](Some(runtime))
-                  else
-                    if (c.getConfig.getWorkerConfig.getNumInstances >= 2)
-                      deps.dataprocService
-                        .resizeCluster(runtime.r.googleProject,
-                          regionName,
-                          DataprocClusterName(runtime.r.runtimeName),
+                if (isDryRun)
+                  logger
+                    .warn(
+                      s"${runtime} has an anomaly with the number of workers in google. \n\tPrimary work match status: $doesPrimaryWorkerMatch\n\tSecondary worker match status: ${doesSecondaryWorkerMatch}"
+                    )
+                    .as[Option[RuntimeWithWorkers]](Some(runtime))
+                else if (c.getConfig.getWorkerConfig.getNumInstances >= 2)
+                  deps.dataprocService
+                    .resizeCluster(
+                      runtime.r.googleProject,
+                      regionName,
+                      DataprocClusterName(runtime.r.runtimeName),
                       if (doesPrimaryWorkerMatch) None else Some(runtime.workerConfig.numberOfWorkers),
                       if (doesSecondaryWorkerMatch) None else Some(runtime.workerConfig.numberOfPreemptibleWorkers)
-                        ) >>
-                        logger.warn(s"${runtime} has an anomaly with the number of workers in google. \n\tPrimary work match status: $doesPrimaryWorkerMatch\n\tSecondary worker match status: ${doesSecondaryWorkerMatch}")
-                .as[Option[RuntimeWithWorkers]](Some(runtime))
-                    else
-                      deps.checkRunnerDeps.metrics.incrementCounter(s"$appName/$unfixableAnomalyCheckType") >>
-                      logger.warn(s"${runtime} has an anomaly with the number of workers in google. Unable to fix the anomaly. Recording a metric and moving on")
-                        .as[Option[RuntimeWithWorkers]](Some(RuntimeWithWorkers(runtime.r, runtime.workerConfig, false)))
-                log
+                    ) >>
+                    logger
+                      .warn(
+                        s"${runtime} has an anomaly with the number of workers in google. \n\tPrimary work match status: $doesPrimaryWorkerMatch\n\tSecondary worker match status: ${doesSecondaryWorkerMatch}"
+                      )
+                      .as[Option[RuntimeWithWorkers]](Some(runtime))
+                else
+                  deps.checkRunnerDeps.metrics.incrementCounter(s"$appName/$unfixableAnomalyCheckType") >>
+                    logger
+                      .warn(
+                        s"${runtime} has an anomaly with the number of workers in google. Unable to fix the anomaly. Recording a metric and moving on"
+                      )
+                      .as[Option[RuntimeWithWorkers]](
+                        Some(RuntimeWithWorkers(runtime.r, runtime.workerConfig, false))
+                      )
               case false => F.pure(None)
             }
           }
