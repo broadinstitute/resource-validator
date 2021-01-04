@@ -17,18 +17,11 @@ import org.broadinstitute.dsde.workbench.google2.DataprocClusterName
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 object DataprocWorkerChecker {
-<<<<<<< HEAD
   val unfixableAnomalyCheckType = "unfixable-dataproc-workers"
   def impl[F[_] : Timer](
                           dbReader: DbReader[F],
                           deps: RuntimeCheckerDeps[F]
                         )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, RuntimeWithWorkers] =
-=======
-  def impl[F[_]: Timer](
-    dbReader: DbReader[F],
-    deps: RuntimeCheckerDeps[F]
-  )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, RuntimeWithWorkers] =
->>>>>>> scalafmt
     new CheckRunner[F, RuntimeWithWorkers] {
       override def appName: String = resourceValidator.appName
 
