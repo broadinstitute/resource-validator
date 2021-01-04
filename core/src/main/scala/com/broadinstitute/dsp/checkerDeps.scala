@@ -58,7 +58,8 @@ final case class Runtime(id: Long,
 
 final case class WorkerConfig(numberOfWorkers: Int, numberOfPreemptibleWorkers: Int)
 final case class RuntimeWithWorkers(r: Runtime, workerConfig: WorkerConfig) {
-  override def toString: String = s"Runtime details: ${r.toString}. Worker details: primary: ${workerConfig.numberOfWorkers}, secondary: ${workerConfig.numberOfPreemptibleWorkers}"
+  override def toString: String =
+    s"Runtime details: ${r.toString}. Worker details: primary: ${workerConfig.numberOfWorkers}, secondary: ${workerConfig.numberOfPreemptibleWorkers}"
 }
 final case class RuntimeCheckerDeps[F[_]](computeService: GoogleComputeService[F],
                                           dataprocService: GoogleDataprocService[F],
