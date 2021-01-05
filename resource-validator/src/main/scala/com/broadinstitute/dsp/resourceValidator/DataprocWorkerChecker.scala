@@ -82,7 +82,7 @@ object DataprocWorkerChecker {
                     else
                       logger
                         .warn(
-                          s"${runtime} has an anomaly with the number of workers in google, but we cannot attempt to fix it because the cluster is not running."
+                          s"${runtime} has an anomaly with the number of workers in google, but we cannot attempt to fix it because the cluster is not running. \n\tprimary in google: ${c.getConfig.getWorkerConfig.getNumInstances} secondary in google ${c.getConfig.getSecondaryWorkerConfig.getNumInstances}."
                         )
                         .as(Option(runtime))
                   case _ =>
@@ -90,7 +90,7 @@ object DataprocWorkerChecker {
                     deps.checkRunnerDeps.metrics.incrementCounter(s"$appName/$unfixableAnomalyCheckType") >>
                       logger
                         .warn(
-                          s"${runtime} has an anomaly with the number of workers in google. Unable to fix the anomaly. Recording a metric and moving on"
+                          s"${runtime.toString} has an anomaly with the number of workers in google. Unable to fix the anomaly. Recording a metric and moving on."
                         )
                         .as(Option(runtime))
                 }
