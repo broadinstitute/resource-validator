@@ -57,7 +57,7 @@ object Generators {
     runtime <- genRuntime
     num1 <- Gen.chooseNum(1, 100)
     num2 <- Gen.chooseNum(1, 100)
-  } yield RuntimeWithWorkers(runtime, WorkerConfig(num1, num2))
+  } yield RuntimeWithWorkers(runtime, WorkerConfig(Some(num1), Some(num2)))
 
   implicit val arbRuntime: Arbitrary[Runtime] = Arbitrary(genRuntime)
   implicit val arbCloudService: Arbitrary[CloudService] = Arbitrary(genCloudService)

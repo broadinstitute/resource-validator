@@ -136,7 +136,7 @@ object DbReader {
     sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.numberOfWorkers, rt.numberOfPreemptibleWorkers
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id
-          WHERE rt.cloudService="DATAPROC" AND NOT rt.numberOfWorkers=0 AND rt.numberOfWorkers IS NOT NULL AND NOT c1.status="DELETED"
+          WHERE rt.cloudService="DATAPROC" AND NOT c1.status="DELETED"
          """
       .query[RuntimeWithWorkers]
 

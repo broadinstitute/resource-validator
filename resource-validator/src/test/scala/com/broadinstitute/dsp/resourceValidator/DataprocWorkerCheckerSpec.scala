@@ -54,10 +54,14 @@ class DataprocWorkerCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
                   ClusterConfig
                     .newBuilder()
                     .setWorkerConfig(
-                      InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfWorkers)
+                      InstanceGroupConfig
+                        .newBuilder()
+                        .setNumInstances(runtime.workerConfig.numberOfWorkers.getOrElse(0))
                     )
                     .setSecondaryWorkerConfig(
-                      InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfPreemptibleWorkers)
+                      InstanceGroupConfig
+                        .newBuilder()
+                        .setNumInstances(runtime.workerConfig.numberOfPreemptibleWorkers.getOrElse(0))
                     )
                 )
                 .build()
@@ -127,7 +131,9 @@ class DataprocWorkerCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
                     .newBuilder()
                     .setWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(0))
                     .setSecondaryWorkerConfig(
-                      InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfPreemptibleWorkers)
+                      InstanceGroupConfig
+                        .newBuilder()
+                        .setNumInstances(runtime.workerConfig.numberOfPreemptibleWorkers.getOrElse(0))
                     )
                 )
                 .build()
@@ -162,7 +168,9 @@ class DataprocWorkerCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
                   ClusterConfig
                     .newBuilder()
                     .setWorkerConfig(
-                      InstanceGroupConfig.newBuilder().setNumInstances(runtime.workerConfig.numberOfWorkers)
+                      InstanceGroupConfig
+                        .newBuilder()
+                        .setNumInstances(runtime.workerConfig.numberOfWorkers.getOrElse(0))
                     )
                     .setSecondaryWorkerConfig(InstanceGroupConfig.newBuilder().setNumInstances(0))
                 )

@@ -25,7 +25,7 @@ object ResourceValidator {
                                             shouldCheckDeletedNodepool: Boolean,
                                             shouldCheckDeletedDisks: Boolean,
                                             shouldCheckInitBuckets: Boolean,
-                                            shouldCheckWorkers: Boolean)(
+                                            shouldCheckDataprocWorkers: Boolean)(
     implicit T: Timer[F],
     C: ContextShift[F]
   ): Stream[F, Nothing] = {
@@ -75,7 +75,7 @@ object ResourceValidator {
         Stream.eval(InitBucketChecker.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
       else Stream.empty
 
-      workerProcess = if (shouldCheckAll || shouldCheckWorkers)
+      workerProcess = if (shouldCheckAll || shouldCheckDataprocWorkers)
         Stream.eval(DataprocWorkerChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
       else Stream.empty
 

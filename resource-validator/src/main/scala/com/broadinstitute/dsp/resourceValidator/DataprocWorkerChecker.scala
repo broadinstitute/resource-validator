@@ -25,7 +25,8 @@ object DataprocWorkerChecker {
     new CheckRunner[F, RuntimeWithWorkers] {
       override def appName: String = resourceValidator.appName
 
-      override def configs = CheckRunnerConfigs(s"number-of-dataproc-workers", shouldAlert = true)
+      val checkType = s"number-of-dataproc-workers"
+      override def configs = CheckRunnerConfigs(checkType, shouldAlert = true)
 
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
@@ -37,47 +38,63 @@ object DataprocWorkerChecker {
         for {
           clusterOpt <- deps.dataprocService
             .getCluster(runtime.r.googleProject, regionName, DataprocClusterName(runtime.r.runtimeName))
-          runtime <- clusterOpt.fold[F[Option[RuntimeWithWorkers]]](F.pure(None)) { c =>
+          runtime <- clusterOpt.flatTraverse { c =>
             val doesPrimaryWorkerMatch =
-              runtime.workerConfig.numberOfWorkers == c.getConfig.getWorkerConfig.getNumInstances
+              runtime.workerConfig.numberOfWorkers.getOrElse(0) == c.getConfig.getWorkerConfig.getNumInstances
             val doesSecondaryWorkerMatch =
-              runtime.workerConfig.numberOfPreemptibleWorkers == c.getConfig.getSecondaryWorkerConfig.getNumInstances
+              runtime.workerConfig.numberOfPreemptibleWorkers
+                .getOrElse(0) == c.getConfig.getSecondaryWorkerConfig.getNumInstances
             val isAnomalyDetected = !(doesPrimaryWorkerMatch && doesSecondaryWorkerMatch)
 
             isAnomalyDetected match {
               case true =>
-                if (isDryRun)
-                  logger
-                    .warn(
-                      s"${runtime} has an anomaly with the number of workers in google. \n\tPrimary worker match status: $doesPrimaryWorkerMatch\n\tSecondary worker match status: ${doesSecondaryWorkerMatch}"
-                    )
-                    .as[Option[RuntimeWithWorkers]](Some(runtime))
-                // If the number of primary workers is less than 2, modifying workers requires a creation and deletion. Leo does not handles these, so we will not either
-                else if (c.getConfig.getWorkerConfig.getNumInstances >= 2)
-                  deps.dataprocService
-                    .resizeCluster(
-                      runtime.r.googleProject,
-                      regionName,
-                      DataprocClusterName(runtime.r.runtimeName),
-                      if (doesPrimaryWorkerMatch) None else Some(runtime.workerConfig.numberOfWorkers),
-                      if (doesSecondaryWorkerMatch) None else Some(runtime.workerConfig.numberOfPreemptibleWorkers)
-                    ) >>
+                isDryRun match {
+                  case true =>
                     logger
                       .warn(
-                        s"${runtime} has an anomaly with the number of workers in google. \n\tPrimary work match status: $doesPrimaryWorkerMatch\n\tSecondary worker match status: ${doesSecondaryWorkerMatch}"
+                        s"${runtime} has an anomaly with the number of workers in google. \n\tPrimary worker match status: $doesPrimaryWorkerMatch\n\tSecondary worker match status: ${doesSecondaryWorkerMatch}"
                       )
-                      .as[Option[RuntimeWithWorkers]](Some(runtime))
-                else
-                  // Here we log a metric if we detect the aforementioned unfixable anomaly. This metric is in addition to the one already reported for finding a worker mismatch
-                  deps.checkRunnerDeps.metrics.incrementCounter(s"$appName/$unfixableAnomalyCheckType") >>
-                    logger
-                      .warn(
-                        s"${runtime} has an anomaly with the number of workers in google. Unable to fix the anomaly. Recording a metric and moving on"
-                      )
-                      .as[Option[RuntimeWithWorkers]](
-                        Some(runtime)
-                      )
-              case false => F.pure(None)
+                      .as(Option(runtime))
+                  // If the number of primary workers is less than 2, modifying workers requires a creation and deletion. Leo does not handles these, so we will not either
+                  case false if c.getConfig.getWorkerConfig.getNumInstances >= 2 =>
+                    if (runtime.r.status.toLowerCase == "running")
+                      deps.dataprocService
+                        .resizeCluster(
+                          runtime.r.googleProject,
+                          regionName,
+                          DataprocClusterName(runtime.r.runtimeName),
+                          if (doesPrimaryWorkerMatch) None else Some(runtime.workerConfig.numberOfWorkers.getOrElse(0)),
+                          if (doesSecondaryWorkerMatch) None
+                          else Some(runtime.workerConfig.numberOfPreemptibleWorkers.getOrElse(0))
+                        )
+                        .void
+                        .handleErrorWith {
+                          case e: com.google.api.gax.rpc.ApiException =>
+                            logger.warn(
+                              s"${runtime} has an anomaly with the number of workers in google, and the resize failed."
+                            ) >> deps.checkRunnerDeps.metrics.incrementCounter(s"$appName/$checkType/failure")
+                        } >>
+                        logger
+                          .warn(
+                            s"${runtime} has an anomaly with the number of workers in google. \n\tPrimary work match status: $doesPrimaryWorkerMatch\n\tSecondary worker match status: ${doesSecondaryWorkerMatch}"
+                          )
+                          .as(Option(runtime))
+                    else
+                      logger
+                        .warn(
+                          s"${runtime} has an anomaly with the number of workers in google, but we cannot attempt to fix it because the cluster is not running."
+                        )
+                        .as(Option(runtime))
+                  case _ =>
+                    // Here we log a metric when we detect the aforementioned anomaly is unfixable (workers < 2). This metric is in addition to the one already reported for finding a worker mismatch
+                    deps.checkRunnerDeps.metrics.incrementCounter(s"$appName/$unfixableAnomalyCheckType") >>
+                      logger
+                        .warn(
+                          s"${runtime} has an anomaly with the number of workers in google. Unable to fix the anomaly. Recording a metric and moving on"
+                        )
+                        .as(Option(runtime))
+                }
+              case false => F.pure[Option[RuntimeWithWorkers]](None)
             }
           }
         } yield runtime
