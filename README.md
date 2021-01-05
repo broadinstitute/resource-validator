@@ -56,5 +56,5 @@ Once a PR is merged, there will be a PR created in [terra-helm](https://github.c
 Get this PR merged, and another automatic commit will bump leonardo's chart version. This will trigger another automatic commit 
 in [terra-helmfile](https://github.com/broadinstitute/terra-helmfile), note this commit will only auto bump `dev` and `perf`, and will be auto-merged. Once the terra-helmfile PR is auto-merged, go to [argo](https://ap-argocd.dsp-devops.broadinstitute.org/applications) (you need to be on VPN to access argo), and click `SYNC APPS` button on the left upper corner for dev and perf leonardo deploys (select `PRUNE` option as well).
 this will sync leonardo's deployment to match [terra-helmfile](https://github.com/broadinstitute/terra-helmfile) repo.
-create another PR for bumping all other environments when you're ready (similar to [this](https://github.com/broadinstitute/terra-helmfile/pull/390)) and then after that is merged, sync those environments in argo as well.
+the chartVersion bump and sync for other environments will happen automatically when there is a Leo release.
 
