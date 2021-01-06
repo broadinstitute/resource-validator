@@ -12,12 +12,13 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 import org.scalatest.flatspec.AnyFlatSpec
 import org.broadinstitute.dsde.workbench.openTelemetry.FakeOpenTelemetryMetricsInterpreter
 
-class KubernetesClusterRemoverSpec extends AnyFlatSpec with CronJobsTestSuite {
-  it should "send DeleteKubernetesClusterMessage when clusters are detected to be auto-deleted" in {
-    forAll { (clusterToRemove: KubernetesClusterToRemove, dryRun: Boolean) =>
+class NodepoolRemoverSpec extends AnyFlatSpec with CronJobsTestSuite {
+
+  it should "send DeleteNodepoolMessage when nodepools are detected to be auto-deleted" in {
+    forAll { (n: Nodepool, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
-        override def getKubernetesClustersToDelete: Stream[IO, KubernetesClusterToRemove] =
-          Stream.emit(clusterToRemove)
+        override def getNodepoolsToDelete: Stream[IO, Nodepool] =
+          Stream.emit(n)
       }
 
       var count = 0
@@ -34,10 +35,10 @@ class KubernetesClusterRemoverSpec extends AnyFlatSpec with CronJobsTestSuite {
       }
 
       val deps = initDeps(publisher)
-      val checker = KubernetesClusterRemover.impl(dbReader, deps)
-      val res = checker.checkResource(clusterToRemove, dryRun)
+      val checker = NodepoolRemover.impl(dbReader, deps)
+      val res = checker.checkResource(n, dryRun)
 
-      res.unsafeRunSync() shouldBe Some(clusterToRemove)
+      res.unsafeRunSync() shouldBe Some(n)
       if (dryRun) count shouldBe 0
       else count shouldBe 1
     }

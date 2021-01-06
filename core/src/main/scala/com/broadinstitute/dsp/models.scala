@@ -1,5 +1,7 @@
 package com.broadinstitute.dsp
 
+import ca.mrvisser.sealerate
+import io.circe.Encoder
 import org.broadinstitute.dsde.workbench.google2.{DiskName, Location}
 import org.broadinstitute.dsde.workbench.google2.GKEModels.{
   KubernetesClusterId,
@@ -7,7 +9,9 @@ import org.broadinstitute.dsde.workbench.google2.GKEModels.{
   NodepoolId,
   NodepoolName
 }
+import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
+import org.broadinstitute.dsde.workbench.google2.JsonCodec.{googleProjectEncoder, traceIdEncoder}
 
 sealed abstract class CloudService extends Product with Serializable {
   def asString: String
@@ -49,10 +53,46 @@ final case class KubernetesCluster(clusterName: KubernetesClusterName,
                                    location: Location) {
   override def toString: String = s"${googleProject}/${clusterName}"
 }
+
 final case class Nodepool(nodepoolId: Long,
                           nodepoolName: NodepoolName,
                           clusterName: KubernetesClusterName,
                           googleProject: GoogleProject,
                           location: Location) {
   override def toString: String = s"${googleProject}/${nodepoolName}"
+}
+
+final case class DeleteNodepoolMeesage(nodepoolId: Long, googleProject: GoogleProject, traceId: Option[TraceId]) {
+  val messageType: String = "deleteNodepool"
+}
+
+sealed abstract class RemovableStatus extends Product with Serializable {
+  def asString: String
+}
+object RemovableStatus {
+  final case object StatusUnspecified extends RemovableStatus {
+    override def asString: String = "STATUS_UNSPECIFIED"
+  }
+  final case object Running extends RemovableStatus {
+    override def asString: String = "RUNNING"
+  }
+  final case object Reconciling extends RemovableStatus {
+    override def asString: String = "RECONCILING"
+  }
+  final case object Error extends RemovableStatus {
+    override def asString: String = "ERROR"
+  }
+  final case object RunningWithError extends RemovableStatus {
+    override def asString: String = "RUNNING_WITH_ERROR"
+  }
+  val removableStatuses = sealerate.values[RemovableStatus]
+  val stringToStatus: Map[String, RemovableStatus] =
+    sealerate.collect[RemovableStatus].map(a => (a.asString, a)).toMap
+}
+
+object JsonCodec {
+  implicit val deleteNodepoolMessageEncoder: Encoder[DeleteNodepoolMeesage] =
+    Encoder.forProduct4("messageType", "nodepoolId", "googleProject", "traceId")(x =>
+      (x.messageType, x.nodepoolId, x.googleProject, x.traceId)
+    )
 }
