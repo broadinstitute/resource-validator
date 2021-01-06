@@ -82,7 +82,7 @@ object DataprocWorkerChecker {
                     else
                       logger
                         .warn(
-                          s"${runtime} has an anomaly with the number of workers in google, but we cannot attempt to fix it because the cluster is not running. \n\tprimary in google: ${c.getConfig.getWorkerConfig.getNumInstances} secondary in google ${c.getConfig.getSecondaryWorkerConfig.getNumInstances}."
+                          s"${runtime} has an anomaly with the number of workers in google, but we cannot attempt to fix it because the cluster is not running. \n\tNumber of primary workers in google: ${c.getConfig.getWorkerConfig.getNumInstances}. Number of secondary workers in google ${c.getConfig.getSecondaryWorkerConfig.getNumInstances}."
                         )
                         .as(Option(runtime))
                   case _ =>
@@ -94,7 +94,7 @@ object DataprocWorkerChecker {
                         )
                         .as(Option(runtime))
                 }
-              case false => F.pure[Option[RuntimeWithWorkers]](None)
+              case false => F.pure(none[RuntimeWithWorkers])
             }
           }
         } yield runtime
