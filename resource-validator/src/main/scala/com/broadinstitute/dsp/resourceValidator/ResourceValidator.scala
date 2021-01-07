@@ -24,7 +24,8 @@ object ResourceValidator {
                                             shouldCheckDeletedKubernetesCluster: Boolean,
                                             shouldCheckDeletedNodepool: Boolean,
                                             shouldCheckDeletedDisks: Boolean,
-                                            shouldCheckInitBuckets: Boolean)(
+                                            shouldCheckInitBuckets: Boolean,
+                                            shouldCheckDataprocWorkers: Boolean)(
     implicit T: Timer[F],
     C: ContextShift[F]
   ): Stream[F, Nothing] = {
@@ -74,6 +75,10 @@ object ResourceValidator {
         Stream.eval(InitBucketChecker.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
       else Stream.empty
 
+      workerProcess = if (shouldCheckAll || shouldCheckDataprocWorkers)
+        Stream.eval(DataprocWorkerChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+      else Stream.empty
+
       processes = Stream(
         deleteRuntimeCheckerProcess,
         errorRuntimeCheckerProcess,
@@ -83,10 +88,11 @@ object ResourceValidator {
         removeInitBuckets,
         removeKubernetesClusters,
         deleteKubernetesClusterCheckerProcess,
-        deleteNodepoolCheckerProcess
+        deleteNodepoolCheckerProcess,
+        workerProcess
       ).covary[F]
 
-      _ <- processes.parJoin(9) // Update this number as we add more streams
+      _ <- processes.parJoinUnbounded
     } yield ExitCode.Success
   }.drain
 

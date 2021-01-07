@@ -17,4 +17,7 @@ class FakeDbReader extends DbReader[IO] {
   override def getInitBucketsToDelete: Stream[IO, InitBucketToRemove] = Stream.empty
 
   override def getDeletedDisks: Stream[IO, Disk] = Stream.empty
+
+  override def getRuntimesWithWorkers: Stream[IO, RuntimeWithWorkers] = Stream.empty
+
 }

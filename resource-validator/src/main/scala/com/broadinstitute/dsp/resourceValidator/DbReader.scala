@@ -18,6 +18,8 @@ trait DbReader[F[_]] {
   def getInitBucketsToDelete: Stream[F, InitBucketToRemove]
   def getDeletedAndErroredKubernetesClusters: Stream[F, KubernetesCluster]
   def getDeletedAndErroredNodepools: Stream[F, Nodepool]
+  def getRuntimesWithWorkers: Stream[F, RuntimeWithWorkers]
+
 }
 
 object DbReader {
@@ -130,6 +132,14 @@ object DbReader {
          """
       .query[KubernetesClusterToRemove]
 
+  val dataprocClusterWithWorkersQuery =
+    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.numberOfWorkers, rt.numberOfPreemptibleWorkers
+          FROM CLUSTER AS c1
+          INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id
+          WHERE rt.cloudService="DATAPROC" AND NOT c1.status="DELETED"
+         """
+      .query[RuntimeWithWorkers]
+
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
 
     /**
@@ -170,6 +180,9 @@ object DbReader {
 
     override def getDeletedAndErroredNodepools: Stream[F, Nodepool] =
       deletedAndErroredNodepoolQuery.stream.transact(xa)
+
+    override def getRuntimesWithWorkers: Stream[F, RuntimeWithWorkers] =
+      dataprocClusterWithWorkersQuery.stream.transact(xa)
   }
 }
 

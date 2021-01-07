@@ -53,7 +53,15 @@ final case class Runtime(id: Long,
                          cloudService: CloudService,
                          status: String) {
   // this is the format we'll output in report, which can be easily consumed by scripts if necessary
-  override def toString: String = s"$id,${googleProject.value},${runtimeName},${cloudService},$status"
+  override def toString: String = s"$id,${googleProject.value},$runtimeName,$cloudService,$status"
+}
+
+final case class WorkerCount(num: Int) extends AnyVal
+final case class WorkerConfig(numberOfWorkers: Option[Int], numberOfPreemptibleWorkers: Option[Int])
+final case class RuntimeWithWorkers(r: Runtime, workerConfig: WorkerConfig) {
+  override def toString: String =
+    s"Runtime details: ${r.toString}. Worker details: primary: ${workerConfig.numberOfWorkers.getOrElse(0)}, secondary: ${workerConfig.numberOfPreemptibleWorkers
+      .getOrElse(0)}"
 }
 final case class RuntimeCheckerDeps[F[_]](computeService: GoogleComputeService[F],
                                           dataprocService: GoogleDataprocService[F],
