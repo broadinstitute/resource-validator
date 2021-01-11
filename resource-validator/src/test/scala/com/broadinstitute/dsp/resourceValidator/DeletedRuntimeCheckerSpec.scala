@@ -8,7 +8,11 @@ import com.broadinstitute.dsp.resourceValidator.InitDependenciesHelper.initRunti
 import com.google.cloud.compute.v1.{Instance, Operation}
 import com.google.cloud.dataproc.v1.{Cluster, ClusterOperationMetadata}
 import fs2.Stream
-import org.broadinstitute.dsde.workbench.google2.mock.{BaseFakeGoogleDataprocService, FakeGoogleComputeService}
+import org.broadinstitute.dsde.workbench.google2.mock.{
+  BaseFakeGoogleDataprocService,
+  FakeGoogleBillingInterpreter,
+  FakeGoogleComputeService
+}
 import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName, RegionName, ZoneName}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
@@ -29,12 +33,13 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
     val runtimeCheckerDeps =
       initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
+    val billingDeps = BillingDeps(runtimeCheckerDeps, FakeGoogleBillingInterpreter)
 
     forAll { (runtime: Runtime, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
         override def getDeletedRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
-      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
+      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, billingDeps)
       val res = deletedRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe None
     }
@@ -73,10 +78,45 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
       val runtimeCheckerDeps =
         initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
+      val billingDeps = BillingDeps(runtimeCheckerDeps, FakeGoogleBillingInterpreter)
 
-      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
+      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, billingDeps)
       val res = deletedRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe Some(runtime)
+    }
+  }
+
+  it should "return None if a dataproc cluster exists in google but has billing disabled and it is not a dry run" in {
+    forAll { (runtime: Runtime) =>
+      val dbReader = new FakeDbReader {
+        override def getDeletedRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
+      }
+
+      val dataprocService = new BaseFakeGoogleDataprocService {
+        override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
+          implicit ev: Ask[IO, TraceId]
+        ): IO[Option[Cluster]] = {
+          val cluster = Cluster.newBuilder().build()
+          IO.pure(Some(cluster))
+        }
+
+        override def deleteCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
+          implicit ev: Ask[IO, TraceId]
+        ): IO[Option[ClusterOperationMetadata]] =
+          IO.pure(None)
+      }
+
+      val runtimeCheckerDeps =
+        initRuntimeCheckerDeps(googleDataprocService = dataprocService)
+      val billingService = new FakeGoogleBillingInterpreter {
+        override def isBillingEnabled(project: GoogleProject)(implicit ev: Ask[IO, TraceId]): IO[Boolean] =
+          IO.pure(false)
+      }
+      val billingDeps = BillingDeps(runtimeCheckerDeps, billingService)
+
+      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, billingDeps)
+      val res = deletedRuntimeChecker.checkResource(runtime, false)
+      res.unsafeRunSync() shouldBe None
     }
   }
 }

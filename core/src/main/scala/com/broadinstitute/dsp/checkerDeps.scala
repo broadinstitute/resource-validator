@@ -9,6 +9,7 @@ import io.chrisdavenport.log4cats.StructuredLogger
 import org.broadinstitute.dsde.workbench.google2.util.RetryPredicates
 import org.broadinstitute.dsde.workbench.google2.{
   GKEService,
+  GoogleBillingService,
   GoogleComputeService,
   GoogleDataprocService,
   GoogleDiskService,
@@ -76,3 +77,5 @@ final case class NodepoolCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F],
 final case class DiskCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], googleDiskService: GoogleDiskService[F])
 
 final case class RuntimeCheckerConfig(pathToCredential: Path, reportDestinationBucket: GcsBucketName)
+
+final case class BillingDeps[F[_]](runtimeCheckerDeps: RuntimeCheckerDeps[F], billingService: GoogleBillingService[F])
