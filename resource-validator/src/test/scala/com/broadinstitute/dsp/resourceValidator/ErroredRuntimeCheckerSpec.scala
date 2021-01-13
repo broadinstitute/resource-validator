@@ -7,14 +7,20 @@ import com.broadinstitute.dsp.Generators._
 import com.broadinstitute.dsp.resourceValidator.InitDependenciesHelper._
 import com.google.cloud.compute.v1.{Instance, Operation}
 import com.google.cloud.dataproc.v1.ClusterStatus.State
-import com.google.cloud.dataproc.v1.{Cluster, ClusterOperationMetadata, ClusterStatus}
+import com.google.cloud.dataproc.v1.{Cluster, ClusterStatus}
 import fs2.Stream
 import org.broadinstitute.dsde.workbench.google2.mock.{
   BaseFakeGoogleDataprocService,
   FakeGoogleBillingInterpreter,
   FakeGoogleComputeService
 }
-import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName, RegionName, ZoneName}
+import org.broadinstitute.dsde.workbench.google2.{
+  DataprocClusterName,
+  DataprocOperation,
+  InstanceName,
+  RegionName,
+  ZoneName
+}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.scalatest.flatspec.AnyFlatSpec
@@ -73,7 +79,7 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
         override def deleteCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
           implicit ev: Ask[IO, TraceId]
-        ): IO[Option[ClusterOperationMetadata]] =
+        ): IO[Option[DataprocOperation]] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called")) else IO.pure(None)
       }
 
@@ -102,7 +108,7 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
         override def deleteCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
           implicit ev: Ask[IO, TraceId]
-        ): IO[Option[ClusterOperationMetadata]] =
+        ): IO[Option[DataprocOperation]] =
           IO.raiseError(fail("this shouldn't be called"))
       }
 
