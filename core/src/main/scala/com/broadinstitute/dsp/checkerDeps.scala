@@ -40,8 +40,7 @@ object RuntimeCheckerDeps {
                                                               scopedCredential,
                                                               blocker,
                                                               regionName,
-                                                              blockerBound,
-                                                              RetryPredicates.standardRetryConfig)
+                                                              blockerBound)
     } yield {
       val checkRunnerDeps = CheckRunnerDeps(config.reportDestinationBucket, storageService, metrics)
       RuntimeCheckerDeps(computeService, dataprocService, checkRunnerDeps)
