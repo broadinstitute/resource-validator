@@ -34,37 +34,38 @@ object ErroredRuntimeChecker {
         for {
           clusterOpt <- deps.runtimeCheckerDeps.dataprocService
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
-          isBillingEnabled <- deps.billingService.isBillingEnabled(runtime.googleProject)
           r <- clusterOpt.flatTraverse[F, Runtime] { cluster =>
-            if (cluster.getStatus.getState.name.toUpperCase == "ERROR")
-              logger
-                .warn(s"${runtime} still exists in Google in Error state. User might want to delete the runtime.")
-                .as(none[Runtime])
-            else {
-              if (isDryRun)
+            for {
+              isBillingEnabled <- deps.billingService.isBillingEnabled(runtime.googleProject)
+              r <- if (cluster.getStatus.getState.name.toUpperCase == "ERROR")
                 logger
-                  .warn(
-                    s"${runtime} still exists in ${cluster.getStatus.getState.name} status. It needs to be deleted. isBillingEnabled: $isBillingEnabled. Project: ${runtime.googleProject}"
-                  )
-                  .as(Some(runtime))
-              else
-                isBillingEnabled match {
-                  case true =>
-                    logger.warn(
-                      s"${runtime} still exists in ${cluster.getStatus.getState.name} status with billing enabled. Going to delete it."
-                    ) >> deps.runtimeCheckerDeps.dataprocService
-                      .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
-                      .void
-                      .as(Some(runtime))
-                  case false =>
-                    logger
-                      .warn(
-                        s"${runtime} still exists with an anomaly, but cannot delete it because billing is disabled."
-                      )
-                      .as(none[Runtime])
-                }
-
-            }
+                  .warn(s"${runtime} still exists in Google in Error state. User might want to delete the runtime.")
+                  .as(none[Runtime])
+              else {
+                if (isDryRun)
+                  logger
+                    .warn(
+                      s"${runtime} still exists in ${cluster.getStatus.getState.name} status. It needs to be deleted. isBillingEnabled: $isBillingEnabled. Project: ${runtime.googleProject}"
+                    )
+                    .as(Option(runtime))
+                else
+                  isBillingEnabled match {
+                    case true =>
+                      logger.warn(
+                        s"${runtime} still exists in ${cluster.getStatus.getState.name} status with billing enabled. Going to delete it."
+                      ) >> deps.runtimeCheckerDeps.dataprocService
+                        .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
+                        .void
+                        .as(Option(runtime))
+                    case false =>
+                      logger
+                        .warn(
+                          s"${runtime} still exists with an anomaly, but cannot delete it because billing is disabled."
+                        )
+                        .as(none[Runtime])
+                  }
+              }
+            } yield r
           }
         } yield r
 
