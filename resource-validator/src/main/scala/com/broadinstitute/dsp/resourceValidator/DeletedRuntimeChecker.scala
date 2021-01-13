@@ -39,26 +39,27 @@ object DeletedRuntimeChecker {
         for {
           clusterOpt <- deps.runtimeCheckerDeps.dataprocService
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
-          isBillingEnabled <- deps.billingService.isBillingEnabled(runtime.googleProject)
           r <- clusterOpt.flatTraverse { _ =>
-            if (isDryRun)
-              logger
-                .warn(
-                  s"$runtime still exists in Google. It needs to be deleted. isBillingEnabled: $isBillingEnabled. Project: ${runtime.googleProject}"
-                )
-                .as(Option(runtime))
-            else
-              isBillingEnabled match {
-                case true =>
-                  logger.warn(s"$runtime still exists in Google and billing is enabled. Going to delete it.") >> deps.runtimeCheckerDeps.dataprocService
-                    .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
-                    .as(Option(runtime))
-                case false =>
-                  logger
-                    .warn(s"$runtime still exists with an anomaly, but cannot delete it because billing is disabled.")
-                    .as(none[Runtime])
-              }
-
+            for {
+              isBillingEnabled <- deps.billingService.isBillingEnabled(runtime.googleProject)
+              r <- if (isDryRun)
+                logger
+                  .warn(
+                    s"$runtime still exists in Google. It needs to be deleted. isBillingEnabled: $isBillingEnabled. Project: ${runtime.googleProject}"
+                  )
+                  .as(Option(runtime))
+              else
+                isBillingEnabled match {
+                  case true =>
+                    logger.warn(s"$runtime still exists in Google and billing is enabled. Going to delete it.") >> deps.runtimeCheckerDeps.dataprocService
+                      .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
+                      .as(Option(runtime))
+                  case false =>
+                    logger
+                      .warn(s"$runtime still exists with an anomaly, but cannot delete it because billing is disabled.")
+                      .as(none[Runtime])
+                }
+            } yield r
           }
         } yield r
 
