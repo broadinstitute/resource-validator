@@ -39,13 +39,12 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
     val runtimeCheckerDeps =
       initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
-    val billingDeps = BillingDeps(runtimeCheckerDeps, FakeGoogleBillingInterpreter)
 
     forAll { (runtime: Runtime, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
         override def getDeletedRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
-      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, billingDeps)
+      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
       val res = deletedRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe None
     }
@@ -84,9 +83,8 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
       val runtimeCheckerDeps =
         initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
-      val billingDeps = BillingDeps(runtimeCheckerDeps, FakeGoogleBillingInterpreter)
 
-      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, billingDeps)
+      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
       val res = deletedRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe Some(runtime)
     }
@@ -118,9 +116,8 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
         override def isBillingEnabled(project: GoogleProject)(implicit ev: Ask[IO, TraceId]): IO[Boolean] =
           IO.pure(false)
       }
-      val billingDeps = BillingDeps(runtimeCheckerDeps, billingService)
 
-      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, billingDeps)
+      val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
       val res = deletedRuntimeChecker.checkResource(runtime, false)
       res.unsafeRunSync() shouldBe None
     }

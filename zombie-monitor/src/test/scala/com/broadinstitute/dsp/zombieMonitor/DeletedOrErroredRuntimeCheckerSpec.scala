@@ -10,12 +10,14 @@ import com.google.cloud.dataproc.v1.{Cluster, ClusterStatus}
 import fs2.Stream
 import org.broadinstitute.dsde.workbench.google2.mock.{
   BaseFakeGoogleDataprocService,
+  FakeGoogleBillingInterpreter,
   FakeGoogleComputeService,
   FakeGoogleDataprocService,
   FakeGoogleStorageInterpreter
 }
 import org.broadinstitute.dsde.workbench.google2.{
   DataprocClusterName,
+  GoogleBillingService,
   GoogleComputeService,
   GoogleDataprocService,
   GoogleStorageService,
@@ -113,17 +115,54 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
     }
   }
 
+  it should "mark cluster as Deleted if billing is disabled" in {
+    forAll { (rt: Runtime, dryRun: Boolean) =>
+      val runtime = rt.copy(cloudService = CloudService.Dataproc)
+      val dbReader = new FakeDbReader {
+        override def getRuntimeCandidate: Stream[IO, Runtime] =
+          Stream.emit(runtime)
+        override def updateRuntimeStatus(id: Long, status: String): IO[Unit] =
+          IO.raiseError(fail("this shouldn't be called"))
+
+        override def markRuntimeDeleted(id: Long): IO[Unit] =
+          if (dryRun) IO.raiseError(fail("this shouldn't be called in dryRun mode"))
+          else IO.unit
+
+        override def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): IO[Unit] =
+          if (dryRun) IO.raiseError(fail("this shouldn't be called in dryRun mode"))
+          else IO(errorCode shouldBe (Some(3)))
+      }
+      val dataprocService = new BaseFakeGoogleDataprocService {
+        override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
+          implicit ev: Ask[IO, TraceId]
+        ): IO[Option[Cluster]] = IO.pure(
+          Some(Cluster.newBuilder().setStatus(ClusterStatus.newBuilder().setState(State.ERROR).build()).build())
+        )
+      }
+      val billingService = new FakeGoogleBillingInterpreter {
+        override def isBillingEnabled(project: GoogleProject)(implicit ev: Ask[IO, TraceId]): IO[Boolean] =
+          IO.pure((false))
+      }
+      val deps = initRuntimeCheckerDeps(googleDataprocService = dataprocService, googleBillingService = billingService)
+      val checker = DeletedOrErroredRuntimeChecker.impl(dbReader, deps)
+      val res = checker.checkResource(runtime, dryRun)
+      res.unsafeRunSync() shouldBe Some(runtime)
+    }
+  }
+
   def initRuntimeCheckerDeps(
     googleComputeService: GoogleComputeService[IO] = FakeGoogleComputeService,
     googleDataprocService: GoogleDataprocService[IO] = FakeGoogleDataprocService,
-    googleStorageService: GoogleStorageService[IO] = FakeGoogleStorageInterpreter
+    googleStorageService: GoogleStorageService[IO] = FakeGoogleStorageInterpreter,
+    googleBillingService: GoogleBillingService[IO] = FakeGoogleBillingInterpreter
   ): RuntimeCheckerDeps[IO] = {
     val config = Config.appConfig.toOption.get
 
     RuntimeCheckerDeps(
       googleComputeService,
       googleDataprocService,
-      CheckRunnerDeps(config.reportDestinationBucket, googleStorageService, FakeOpenTelemetryMetricsInterpreter)
+      CheckRunnerDeps(config.reportDestinationBucket, googleStorageService, FakeOpenTelemetryMetricsInterpreter),
+      googleBillingService
     )
   }
 }

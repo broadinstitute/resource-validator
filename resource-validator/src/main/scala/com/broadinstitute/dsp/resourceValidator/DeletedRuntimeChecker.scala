@@ -13,14 +13,14 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 object DeletedRuntimeChecker {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
-    deps: BillingDeps[F]
+    deps: RuntimeCheckerDeps[F]
   )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, Runtime] =
     new CheckRunner[F, Runtime] {
       override def appName: String = resourceValidator.appName
 
       override def configs = CheckRunnerConfigs(s"deleted-runtime", shouldAlert = true)
 
-      override def dependencies: CheckRunnerDeps[F] = deps.runtimeCheckerDeps.checkRunnerDeps
+      override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
       override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getDeletedRuntimes
 
@@ -37,7 +37,7 @@ object DeletedRuntimeChecker {
         implicit ev: Ask[F, TraceId]
       ): F[Option[Runtime]] =
         for {
-          clusterOpt <- deps.runtimeCheckerDeps.dataprocService
+          clusterOpt <- deps.dataprocService
             .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
           r <- clusterOpt.flatTraverse { _ =>
             for {
@@ -51,7 +51,7 @@ object DeletedRuntimeChecker {
               else
                 isBillingEnabled match {
                   case true =>
-                    logger.warn(s"$runtime still exists in Google and billing is enabled. Going to delete it.") >> deps.runtimeCheckerDeps.dataprocService
+                    logger.warn(s"$runtime still exists in Google and billing is enabled. Going to delete it.") >> deps.dataprocService
                       .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
                       .as(Option(runtime))
                   case false =>
@@ -67,14 +67,14 @@ object DeletedRuntimeChecker {
 
       private def checkGceRuntime(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
         for {
-          runtimeOpt <- deps.runtimeCheckerDeps.computeService
+          runtimeOpt <- deps.computeService
             .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
           _ <- runtimeOpt.traverse_ { _ =>
             if (isDryRun)
               logger.warn(s"${runtime} still exists in Google. It needs to be deleted")
             else
               logger.warn(s"${runtime} still exists in Google. Going to delete") >>
-                deps.runtimeCheckerDeps.computeService
+                deps.computeService
                   .deleteInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
                   .void
           }
