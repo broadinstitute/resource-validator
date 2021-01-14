@@ -41,9 +41,10 @@ object RuntimeCheckerDeps {
                                                               blocker,
                                                               regionName,
                                                               blockerBound)
+      billingService <- GoogleBillingService.fromCredential(scopedCredential, blocker, blockerBound)
     } yield {
       val checkRunnerDeps = CheckRunnerDeps(config.reportDestinationBucket, storageService, metrics)
-      RuntimeCheckerDeps(computeService, dataprocService, checkRunnerDeps)
+      RuntimeCheckerDeps(computeService, dataprocService, checkRunnerDeps, billingService)
     }
 }
 
@@ -65,7 +66,8 @@ final case class RuntimeWithWorkers(r: Runtime, workerConfig: WorkerConfig) {
 }
 final case class RuntimeCheckerDeps[F[_]](computeService: GoogleComputeService[F],
                                           dataprocService: GoogleDataprocService[F],
-                                          checkRunnerDeps: CheckRunnerDeps[F])
+                                          checkRunnerDeps: CheckRunnerDeps[F],
+                                          billingService: GoogleBillingService[F])
 
 final case class KubernetesClusterCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], gkeService: GKEService[F])
 
@@ -76,5 +78,3 @@ final case class NodepoolCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F],
 final case class DiskCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], googleDiskService: GoogleDiskService[F])
 
 final case class RuntimeCheckerConfig(pathToCredential: Path, reportDestinationBucket: GcsBucketName)
-
-final case class BillingDeps[F[_]](runtimeCheckerDeps: RuntimeCheckerDeps[F], billingService: GoogleBillingService[F])

@@ -9,11 +9,7 @@ import com.google.cloud.compute.v1.{Instance, Operation}
 import com.google.cloud.dataproc.v1.ClusterStatus.State
 import com.google.cloud.dataproc.v1.{Cluster, ClusterStatus}
 import fs2.Stream
-import org.broadinstitute.dsde.workbench.google2.mock.{
-  BaseFakeGoogleDataprocService,
-  FakeGoogleBillingInterpreter,
-  FakeGoogleComputeService
-}
+import org.broadinstitute.dsde.workbench.google2.mock.{BaseFakeGoogleDataprocService, FakeGoogleComputeService}
 import org.broadinstitute.dsde.workbench.google2.{
   DataprocClusterName,
   DataprocOperation,
@@ -40,13 +36,12 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
     val runtimeCheckerDeps =
       initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
-    val billingDeps = BillingDeps(runtimeCheckerDeps, FakeGoogleBillingInterpreter)
 
     forAll { (runtime: Runtime, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
         override def getErroredRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
-      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, billingDeps)
+      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
       val res = erroredRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe None
     }
@@ -85,9 +80,8 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
       val runtimeCheckerDeps =
         initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
-      val billingDeps = BillingDeps(runtimeCheckerDeps, FakeGoogleBillingInterpreter)
 
-      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, billingDeps)
+      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
       val res = erroredRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe Some(runtime)
     }
@@ -115,9 +109,8 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
       val rt = runtime.copy(cloudService = CloudService.Dataproc)
       val runtimeCheckerDeps =
         initRuntimeCheckerDeps(googleDataprocService = dataprocService)
-      val billingDeps = BillingDeps(runtimeCheckerDeps, FakeGoogleBillingInterpreter)
 
-      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, billingDeps)
+      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
 
       val res = erroredRuntimeChecker.checkResource(rt, false)
       res.unsafeRunSync() shouldBe None

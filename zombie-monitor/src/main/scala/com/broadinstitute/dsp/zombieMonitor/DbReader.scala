@@ -67,7 +67,7 @@ object DbReader {
 
   def markRuntimeDeletedQuery(id: Long) =
     sql"""
-           update CLUSTER set status = "Deleted", destroyedDate = now() where id = $id
+           update CLUSTER set status = "Deleted", destroyedDate = now(), deletedFrom = "zombie-cron-job" where id = $id
            """.update
 
   def updateRuntimeStatusQuery(id: Long, status: String) =

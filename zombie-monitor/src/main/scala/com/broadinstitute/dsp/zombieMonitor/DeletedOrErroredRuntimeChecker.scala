@@ -52,7 +52,7 @@ object DeletedOrErroredRuntimeChecker {
                      runtime.id,
                      None,
                      s"""
-                        |Runtime(${runtime.runtimeName}) was deleted from Google. Make sure billing still enabled for ${runtime.googleProject.value} project.
+                        |Runtime(${runtime.runtimeName}) was deleted from Google.
                         |""".stripMargin
                    )
                  } yield ()
@@ -62,18 +62,31 @@ object DeletedOrErroredRuntimeChecker {
                 (if (isDryRun) F.unit
                  else {
                    for {
+                     isBillingEnabled <- deps.billingService.isBillingEnabled(runtime.googleProject)
                      _ <- dbReader.updateRuntimeStatus(runtime.id, "Error")
-                     _ <- dbReader.insertClusterError(
-                       runtime.id,
-                       Some(cluster.getStatus.getState.getNumber),
-                       s"""
-                          |Unrecoverable ERROR state for Spark Cloud Environment: ${cluster.getStatus.getDetail}
-                          |
-                          |Please Delete and Recreate your Cloud environment. If you have important data you’d like to retrieve
-                          |from your Cloud environment prior to deleting, try to access the machine via notebook or terminal.
-                          |If you can't connect to the cluster, please contact customer support and we can help you move your data.
-                          |""".stripMargin
-                     )
+                     // If billing is enabled, then cluster may indeed be in a `Error` mode that we can still ssh to
+                     // master instance to move data if necessary.
+                     // If billing is disabled, we update error info to billing disabled
+                     _ <- if (isBillingEnabled)
+                       dbReader.insertClusterError(
+                         runtime.id,
+                         Some(cluster.getStatus.getState.getNumber),
+                         s"""
+                            |Unrecoverable ERROR state for Spark Cloud Environment: ${cluster.getStatus.getDetail}
+                            |
+                            |Please Delete and Recreate your Cloud environment. If you have important data you’d like to retrieve
+                            |from your Cloud environment prior to deleting, try to access the machine via notebook or terminal.
+                            |If you can't connect to the cluster, please contact customer support and we can help you move your data.
+                            |""".stripMargin
+                       )
+                     else
+                       dbReader.insertClusterError(
+                         runtime.id,
+                         Some(cluster.getStatus.getState.getNumber),
+                         s"""
+                            |Billing is disabled for this project
+                            |""".stripMargin
+                       )
                    } yield ()
                  }).as(Some(runtime))
               } else F.pure(none[Runtime])
