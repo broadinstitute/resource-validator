@@ -59,8 +59,8 @@ object ErroredRuntimeChecker {
                         .as(Option(runtime))
                     case false =>
                       logger
-                        .warn(
-                          s"${runtime} still exists with an anomaly, but cannot delete it because billing is disabled."
+                        .info(
+                          s"$runtime has been reported from getCluster, but billing is disabled so cannot perform any actions"
                         )
                         .as(none[Runtime])
                   }
