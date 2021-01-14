@@ -110,12 +110,12 @@ class DeletedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
           IO.pure(None)
       }
 
-      val runtimeCheckerDeps =
-        initRuntimeCheckerDeps(googleDataprocService = dataprocService)
       val billingService = new FakeGoogleBillingInterpreter {
         override def isBillingEnabled(project: GoogleProject)(implicit ev: Ask[IO, TraceId]): IO[Boolean] =
           IO.pure(false)
       }
+      val runtimeCheckerDeps =
+        initRuntimeCheckerDeps(googleDataprocService = dataprocService, googleBillingService = billingService)
 
       val deletedRuntimeChecker = DeletedRuntimeChecker.impl(dbReader, runtimeCheckerDeps)
       val res = deletedRuntimeChecker.checkResource(runtime, false)

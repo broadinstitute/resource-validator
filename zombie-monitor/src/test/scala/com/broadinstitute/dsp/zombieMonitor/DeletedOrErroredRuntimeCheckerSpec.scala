@@ -122,15 +122,15 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
         override def getRuntimeCandidate: Stream[IO, Runtime] =
           Stream.emit(runtime)
         override def updateRuntimeStatus(id: Long, status: String): IO[Unit] =
-          IO.raiseError(fail("this shouldn't be called"))
-
-        override def markRuntimeDeleted(id: Long): IO[Unit] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called in dryRun mode"))
           else IO.unit
 
+        override def markRuntimeDeleted(id: Long): IO[Unit] =
+          IO.raiseError(fail("this shouldn't be called in dryRun mode"))
+
         override def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): IO[Unit] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called in dryRun mode"))
-          else IO(errorCode shouldBe (Some(3)))
+          else IO(errorMessage shouldBe ("\nBilling is disabled for this project\n"))
       }
       val dataprocService = new BaseFakeGoogleDataprocService {
         override def getCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(

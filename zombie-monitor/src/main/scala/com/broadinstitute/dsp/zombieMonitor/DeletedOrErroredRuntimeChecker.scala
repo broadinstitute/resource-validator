@@ -63,12 +63,12 @@ object DeletedOrErroredRuntimeChecker {
                  else {
                    for {
                      isBillingEnabled <- deps.billingService.isBillingEnabled(runtime.googleProject)
+                     _ <- dbReader.updateRuntimeStatus(runtime.id, "Error")
                      // If billing is enabled, then cluster may indeed be in a `Error` mode that we can still ssh to
                      // master instance to move data if necessary.
-                     // If billing is disabled, then we consider the cluster as `Deleted` because the cluster is `Deleted`
-                     // from google side (with no billing enabled, Google can't charge user for keeping the cluster).
+                     // If billing is disabled, we update error info to billing disabled
                      _ <- if (isBillingEnabled)
-                       dbReader.updateRuntimeStatus(runtime.id, "Error") >> dbReader.insertClusterError(
+                       dbReader.insertClusterError(
                          runtime.id,
                          Some(cluster.getStatus.getState.getNumber),
                          s"""
@@ -80,7 +80,7 @@ object DeletedOrErroredRuntimeChecker {
                             |""".stripMargin
                        )
                      else
-                       dbReader.markRuntimeDeleted(runtime.id) >> dbReader.insertClusterError(
+                       dbReader.insertClusterError(
                          runtime.id,
                          Some(cluster.getStatus.getState.getNumber),
                          s"""
