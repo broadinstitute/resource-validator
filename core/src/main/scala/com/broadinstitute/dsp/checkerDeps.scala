@@ -9,6 +9,7 @@ import io.chrisdavenport.log4cats.StructuredLogger
 import org.broadinstitute.dsde.workbench.google2.util.RetryPredicates
 import org.broadinstitute.dsde.workbench.google2.{
   GKEService,
+  GoogleBillingService,
   GoogleComputeService,
   GoogleDataprocService,
   GoogleDiskService,
@@ -39,8 +40,7 @@ object RuntimeCheckerDeps {
                                                               scopedCredential,
                                                               blocker,
                                                               regionName,
-                                                              blockerBound,
-                                                              RetryPredicates.standardRetryConfig)
+                                                              blockerBound)
     } yield {
       val checkRunnerDeps = CheckRunnerDeps(config.reportDestinationBucket, storageService, metrics)
       RuntimeCheckerDeps(computeService, dataprocService, checkRunnerDeps)
@@ -76,3 +76,5 @@ final case class NodepoolCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F],
 final case class DiskCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], googleDiskService: GoogleDiskService[F])
 
 final case class RuntimeCheckerConfig(pathToCredential: Path, reportDestinationBucket: GcsBucketName)
+
+final case class BillingDeps[F[_]](runtimeCheckerDeps: RuntimeCheckerDeps[F], billingService: GoogleBillingService[F])

@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   val logbackVersion = "1.2.3"
-  val workbenchGoogle2Version = "0.18-c9edd8e"
+  val workbenchGoogle2Version = "0.19-bc594f9"
   val doobieVersion = "0.9.4"
   val openTelemetryVersion = "0.1-e66171c"
 
@@ -23,9 +23,11 @@ object Dependencies {
     "com.google.cloud" % "google-cloud-dataproc" % "0.122.1",
     "com.google.cloud" % "google-cloud-compute" % "0.118.0-alpha",
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2Version,
+    "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2Version,
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2Version % Test classifier "tests",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % Test,
-    "org.scalatestplus" %% "mockito-3-3" % "3.2.0.0" % Test // https://github.com/scalatest/scalatestplus-selenium
+    "org.scalatestplus" %% "mockito-3-3" % "3.2.0.0" % Test, // https://github.com/scalatest/scalatestplus-selenium
+    "ca.mrvisser" %% "sealerate" % "0.0.6"
   )
 
   val resourceValidator = core

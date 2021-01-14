@@ -7,10 +7,20 @@ import com.broadinstitute.dsp.Generators._
 import com.broadinstitute.dsp.resourceValidator.InitDependenciesHelper._
 import com.google.cloud.compute.v1.{Instance, Operation}
 import com.google.cloud.dataproc.v1.ClusterStatus.State
-import com.google.cloud.dataproc.v1.{Cluster, ClusterOperationMetadata, ClusterStatus}
+import com.google.cloud.dataproc.v1.{Cluster, ClusterStatus}
 import fs2.Stream
-import org.broadinstitute.dsde.workbench.google2.mock.{BaseFakeGoogleDataprocService, FakeGoogleComputeService}
-import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName, RegionName, ZoneName}
+import org.broadinstitute.dsde.workbench.google2.mock.{
+  BaseFakeGoogleDataprocService,
+  FakeGoogleBillingInterpreter,
+  FakeGoogleComputeService
+}
+import org.broadinstitute.dsde.workbench.google2.{
+  DataprocClusterName,
+  DataprocOperation,
+  InstanceName,
+  RegionName,
+  ZoneName
+}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.scalatest.flatspec.AnyFlatSpec
@@ -30,12 +40,13 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
     val runtimeCheckerDeps =
       initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
+    val billingDeps = BillingDeps(runtimeCheckerDeps, FakeGoogleBillingInterpreter)
 
     forAll { (runtime: Runtime, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
         override def getErroredRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
-      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
+      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, billingDeps)
       val res = erroredRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe None
     }
@@ -68,21 +79,22 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
         override def deleteCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
           implicit ev: Ask[IO, TraceId]
-        ): IO[Option[ClusterOperationMetadata]] =
+        ): IO[Option[DataprocOperation]] =
           if (dryRun) IO.raiseError(fail("this shouldn't be called")) else IO.pure(None)
       }
 
       val runtimeCheckerDeps =
         initRuntimeCheckerDeps(googleComputeService = computeService, googleDataprocService = dataprocService)
+      val billingDeps = BillingDeps(runtimeCheckerDeps, FakeGoogleBillingInterpreter)
 
-      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
+      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, billingDeps)
       val res = erroredRuntimeChecker.checkResource(runtime, dryRun)
       res.unsafeRunSync() shouldBe Some(runtime)
     }
   }
 
-  it should "return None if dataproc cluster still exists in Google in Error status" in {
-    forAll { (runtime: Runtime, dryRun: Boolean) =>
+  it should "return None if dataproc cluster still exists in Google in Error status and it is not a dry run" in {
+    forAll { (runtime: Runtime) =>
       val dbReader = new FakeDbReader {
         override def getErroredRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
@@ -96,16 +108,18 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
 
         override def deleteCluster(project: GoogleProject, region: RegionName, clusterName: DataprocClusterName)(
           implicit ev: Ask[IO, TraceId]
-        ): IO[Option[ClusterOperationMetadata]] =
+        ): IO[Option[DataprocOperation]] =
           IO.raiseError(fail("this shouldn't be called"))
       }
 
       val rt = runtime.copy(cloudService = CloudService.Dataproc)
       val runtimeCheckerDeps =
         initRuntimeCheckerDeps(googleDataprocService = dataprocService)
+      val billingDeps = BillingDeps(runtimeCheckerDeps, FakeGoogleBillingInterpreter)
 
-      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, runtimeCheckerDeps)
-      val res = erroredRuntimeChecker.checkResource(rt, dryRun)
+      val erroredRuntimeChecker = ErroredRuntimeChecker.iml(dbReader, billingDeps)
+
+      val res = erroredRuntimeChecker.checkResource(rt, false)
       res.unsafeRunSync() shouldBe None
     }
   }

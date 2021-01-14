@@ -4,6 +4,7 @@ package resourceValidator
 import cats.effect.IO
 import cats.implicits._
 import com.monovore.decline.{CommandApp, _}
+
 import scala.concurrent.ExecutionContext.global
 
 object Main
