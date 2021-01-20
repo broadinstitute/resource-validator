@@ -2,9 +2,9 @@ import sbt._
 
 object Dependencies {
   val logbackVersion = "1.2.3"
-  val workbenchGoogle2Version = "0.19-bc594f9"
-  val doobieVersion = "0.9.4"
-  val openTelemetryVersion = "0.1-e66171c"
+  val workbenchGoogle2Version = "0.19-f0578d6"
+  val doobieVersion = "0.10.0"
+  val openTelemetryVersion = "0.1-f0578d6"
 
   val core = Seq(
     "net.logstash.logback" % "logstash-logback-encoder" % "6.2",
@@ -15,18 +15,15 @@ object Dependencies {
     "org.tpolecat" %% "doobie-scalatest" % doobieVersion % Test,
     "com.github.pureconfig" %% "pureconfig" % "0.13.0",
     "mysql" % "mysql-connector-java" % "8.0.18",
-    "org.scalatest" %% "scalatest" % "3.2.0" % Test,
+    "org.scalatest" %% "scalatest" % "3.2.3" % Test,
     "com.monovore" %% "decline" % "1.0.0",
-    "co.fs2" %% "fs2-io" % "2.4.2",
     "org.broadinstitute.dsde.workbench" %% "workbench-opentelemetry" % openTelemetryVersion,
     "org.broadinstitute.dsde.workbench" %% "workbench-opentelemetry" % openTelemetryVersion % Test classifier "tests",
-    "com.google.cloud" % "google-cloud-dataproc" % "0.122.1",
-    "com.google.cloud" % "google-cloud-compute" % "0.118.0-alpha",
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2Version,
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2Version,
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2Version % Test classifier "tests",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % Test,
-    "org.scalatestplus" %% "mockito-3-3" % "3.2.0.0" % Test, // https://github.com/scalatest/scalatestplus-selenium
+    "org.scalatestplus" %% "mockito-3-4" % "3.2.3.0" % Test, // https://github.com/scalatest/scalatestplus-selenium
     "ca.mrvisser" %% "sealerate" % "0.0.6"
   )
 
