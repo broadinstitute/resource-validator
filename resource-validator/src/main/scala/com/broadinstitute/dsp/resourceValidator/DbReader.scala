@@ -27,13 +27,16 @@ object DbReader {
 
   val deletedDisksQuery =
     sql"""
-           select pd1.id, pd1.googleProject, pd1.name from PERSISTENT_DISK as pd1 where pd1.status="Deleted" and
-           NOT EXISTS
-           (
-             SELECT *
-             FROM PERSISTENT_DISK pd2
-             WHERE pd1.googleProject = pd2.googleProject and pd1.name = pd2.name and pd2.status != "Deleted"
-          )
+           select pd1.id, pd1.googleProject, pd1.name 
+           FROM PERSISTENT_DISK AS pd1 
+           WHERE pd1.status="Deleted" AND
+             pd1.destroyedDate > now() - INTERVAL 90 DAY AND
+             NOT EXISTS
+             (
+               SELECT *
+               FROM PERSISTENT_DISK pd2
+               WHERE pd1.googleProject = pd2.googleProject and pd1.name = pd2.name and pd2.status != "Deleted"
+              )
         """.query[Disk]
 
   val initBucketsToDeleteQuery =
@@ -44,14 +47,16 @@ object DbReader {
     sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
-          WHERE c1.status = "Deleted" AND
-          NOT EXISTS (
-            SELECT *
-            FROM CLUSTER AS c2
-            WHERE
-              c2.googleProject = c1.googleProject AND
-              c2.clusterName = c1.clusterName AND
-              (c2.status = "Stopped" OR c2.status = "Running")
+          WHERE 
+            c1.status = "Deleted" AND
+            c1.destroyedDate > now() - INTERVAL 90 DAY AND
+            NOT EXISTS (
+              SELECT *
+              FROM CLUSTER AS c2
+              WHERE
+                c2.googleProject = c1.googleProject AND
+                c2.clusterName = c1.clusterName AND
+                (c2.status = "Stopped" OR c2.status = "Running")
           )"""
       .query[Runtime]
 
