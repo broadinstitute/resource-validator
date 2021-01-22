@@ -18,7 +18,7 @@ object NodepoolRemover {
   )(implicit F: Concurrent[F], timer: Timer[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, Nodepool] =
     new CheckRunner[F, Nodepool] {
       override def appName: String = resourceValidator.appName
-      override def configs = CheckRunnerConfigs(s"remove-kubernetes-nodepools", shouldAlert = true)
+      override def configs = CheckRunnerConfigs(s"remove-kubernetes-nodepools", shouldAlert = false)
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
       override def resourceToScan: fs2.Stream[F, Nodepool] = dbReader.getNodepoolsToDelete
 

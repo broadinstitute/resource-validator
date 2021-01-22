@@ -59,7 +59,7 @@ final case class Nodepool(nodepoolId: Long,
                           clusterName: KubernetesClusterName,
                           googleProject: GoogleProject,
                           location: Location) {
-  override def toString: String = s"${googleProject}/${nodepoolName}"
+  override def toString: String = s"$googleProject/${nodepoolName.value}"
 }
 
 final case class DeleteNodepoolMeesage(nodepoolId: Long, googleProject: GoogleProject, traceId: Option[TraceId]) {

@@ -104,12 +104,12 @@ object DbReader {
   //    1. destroyedDate for deleted apps
   //    2. createdDate for error'ed apps
   // Note that we explicitly check nodepools with 5/11 of statuses that exist.
-  // The statuses we exclude are PROVISIONING, STOPPING, DELETED, PRECREATING, PREDELETING, PREDELETING
+  // The statuses we exclude are PROVISIONING, STOPPING, DELETED, PRECREATING, PREDELETING, and PREDELETING
   //    - We exclude all -ING statuses because they are transitionary, and the purpose of this is not to handle timeouts
   //    - Unclaimed we exclude because we never want to clean up batch created nodepools
   // We are excluding default nodepools, as these should remain for the lifetime of the cluster
   // TODO: Read the grace period (hardcoded to '1 HOUR' below) from config
-  val applessNodepools =
+  val applessNodepoolQuery =
     sql"""SELECT np.id, np.nodepoolName, kc.clusterName, kc.googleProject, kc.location
          FROM NODEPOOL AS np
          INNER JOIN KUBERNETES_CLUSTER AS kc
@@ -225,7 +225,7 @@ object DbReader {
       dataprocClusterWithWorkersQuery.stream.transact(xa)
 
     override def getNodepoolsToDelete: Stream[F, Nodepool] =
-      applessNodepools.stream.transact(xa)
+      applessNodepoolQuery.stream.transact(xa)
 
   }
 }
