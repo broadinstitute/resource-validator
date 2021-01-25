@@ -6,6 +6,7 @@ import doobie._
 import doobie.implicits._
 import fs2.Stream
 import DbReaderImplicits._
+import com.broadinstitute.dsp.RemovableNodepoolStatus
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 trait DbReader[F[_]] {
@@ -28,8 +29,8 @@ object DbReader {
 
   val deletedDisksQuery =
     sql"""
-           select pd1.id, pd1.googleProject, pd1.name 
-           FROM PERSISTENT_DISK AS pd1 
+           select pd1.id, pd1.googleProject, pd1.name
+           FROM PERSISTENT_DISK AS pd1
            WHERE pd1.status="Deleted" AND
              pd1.destroyedDate > now() - INTERVAL 90 DAY AND
              NOT EXISTS
@@ -48,7 +49,7 @@ object DbReader {
     sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
-          WHERE 
+          WHERE
             c1.status = "Deleted" AND
             c1.destroyedDate > now() - INTERVAL 90 DAY AND
             NOT EXISTS (
@@ -116,7 +117,7 @@ object DbReader {
          ON np.clusterId = kc.id
          WHERE
             (
-                np.status IN ("STATUS_UNSPECIFIED", "RUNNING", "RECONCILING", "ERROR", "RUNNING_WITH_ERROR")
+                np.status IN ${RemovableNodepoolStatus.queryString}
                 AND np.isDefault = 0
                 AND NOT EXISTS
                 (

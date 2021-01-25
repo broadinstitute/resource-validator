@@ -66,28 +66,30 @@ final case class DeleteNodepoolMeesage(nodepoolId: Long, googleProject: GooglePr
   val messageType: String = "deleteNodepool"
 }
 
-sealed abstract class RemovableStatus extends Product with Serializable {
+sealed abstract class RemovableNodepoolStatus extends Product with Serializable {
   def asString: String
 }
-object RemovableStatus {
-  final case object StatusUnspecified extends RemovableStatus {
+object RemovableNodepoolStatus {
+  final case object StatusUnspecified extends RemovableNodepoolStatus {
     override def asString: String = "STATUS_UNSPECIFIED"
   }
-  final case object Running extends RemovableStatus {
+  final case object Running extends RemovableNodepoolStatus {
     override def asString: String = "RUNNING"
   }
-  final case object Reconciling extends RemovableStatus {
+  final case object Reconciling extends RemovableNodepoolStatus {
     override def asString: String = "RECONCILING"
   }
-  final case object Error extends RemovableStatus {
+  final case object Error extends RemovableNodepoolStatus {
     override def asString: String = "ERROR"
   }
-  final case object RunningWithError extends RemovableStatus {
+  final case object RunningWithError extends RemovableNodepoolStatus {
     override def asString: String = "RUNNING_WITH_ERROR"
   }
-  val removableStatuses = sealerate.values[RemovableStatus]
-  val stringToStatus: Map[String, RemovableStatus] =
-    sealerate.collect[RemovableStatus].map(a => (a.asString, a)).toMap
+  val removableStatuses = sealerate.values[RemovableNodepoolStatus]
+  val stringToStatus: Map[String, RemovableNodepoolStatus] =
+    sealerate.collect[RemovableNodepoolStatus].map(a => (a.asString, a)).toMap
+
+  val queryString =  "(\"STATUS_UNSPECIFIED\", \"RUNNING\", \"RECONCILING\", \"ERROR\", \"RUNNING_WITH_ERROR\")"//stringToStatus.keys.map(x => s"""\"$x\"""").toList.toString.replace("List","")
 }
 
 object JsonCodec {

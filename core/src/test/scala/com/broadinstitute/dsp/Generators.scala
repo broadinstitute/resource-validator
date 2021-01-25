@@ -59,8 +59,8 @@ object Generators {
     num2 <- Gen.chooseNum(1, 100)
   } yield RuntimeWithWorkers(runtime, WorkerConfig(Some(num1), Some(num2)))
 
-  val genRemovableNodepoolStatus: Gen[RemovableStatus] = for {
-    status <- Gen.oneOf(RemovableStatus.removableStatuses)
+  val genRemovableNodepoolStatus: Gen[RemovableNodepoolStatus] = for {
+    status <- Gen.oneOf(RemovableNodepoolStatus.removableStatuses)
   } yield status
 
   implicit val arbRuntime: Arbitrary[Runtime] = Arbitrary(genRuntime)
@@ -69,7 +69,7 @@ object Generators {
   implicit val arbInitBucket: Arbitrary[InitBucketToRemove] = Arbitrary(genInitBucket)
   implicit val arbKubernetesClusterId: Arbitrary[KubernetesClusterId] = Arbitrary(genKubernetesClusterId)
   implicit val arbK8sClusterToScan: Arbitrary[K8sClusterToScan] = Arbitrary(genK8sClusterToScan)
-  implicit val arbRemovableNodepoolStatus: Arbitrary[RemovableStatus] = Arbitrary(genRemovableNodepoolStatus)
+  implicit val arbRemovableNodepoolStatus: Arbitrary[RemovableNodepoolStatus] = Arbitrary(genRemovableNodepoolStatus)
   implicit val arbNodepoolToScan: Arbitrary[NodepoolToScan] = Arbitrary(genNodepoolToScan)
   implicit val arbKubernetesClusterToRemove: Arbitrary[KubernetesClusterToRemove] = Arbitrary(
     genKubernetesClusterToRemove
