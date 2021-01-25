@@ -88,8 +88,6 @@ object RemovableNodepoolStatus {
   val removableStatuses = sealerate.values[RemovableNodepoolStatus]
   val stringToStatus: Map[String, RemovableNodepoolStatus] =
     sealerate.collect[RemovableNodepoolStatus].map(a => (a.asString, a)).toMap
-
-  val queryString =  "(\"STATUS_UNSPECIFIED\", \"RUNNING\", \"RECONCILING\", \"ERROR\", \"RUNNING_WITH_ERROR\")"//stringToStatus.keys.map(x => s"""\"$x\"""").toList.toString.replace("List","")
 }
 
 object JsonCodec {

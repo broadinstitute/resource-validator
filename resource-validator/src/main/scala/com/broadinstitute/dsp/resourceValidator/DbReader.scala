@@ -6,7 +6,7 @@ import doobie._
 import doobie.implicits._
 import fs2.Stream
 import DbReaderImplicits._
-import com.broadinstitute.dsp.RemovableNodepoolStatus
+//import com.broadinstitute.dsp.RemovableNodepoolStatus
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 trait DbReader[F[_]] {
@@ -117,7 +117,7 @@ object DbReader {
          ON np.clusterId = kc.id
          WHERE
             (
-                np.status IN ${RemovableNodepoolStatus.queryString}
+                np.status IN ("STATUS_UNSPECIFIED", "RUNNING", "RECONCILING", "ERROR", "RUNNING_WITH_ERROR")
                 AND np.isDefault = 0
                 AND NOT EXISTS
                 (

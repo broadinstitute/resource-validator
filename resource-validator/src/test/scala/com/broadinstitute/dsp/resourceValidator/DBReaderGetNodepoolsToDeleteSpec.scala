@@ -18,7 +18,7 @@ import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
 import org.scalatest.flatspec.AnyFlatSpec
 import RemovableNodepoolStatus.removableStatuses
-//import org.scalatest.DoNotDiscover
+import org.scalatest.DoNotDiscover
 
 /**
  * Not running these tests in CI yet since we'll need to set up mysql container and Leonardo tables in CI. Punt for now
@@ -28,7 +28,7 @@ import RemovableNodepoolStatus.removableStatuses
  *   * Run a database unit test in leonardo
  *   * Run this spec
  */
-//@DoNotDiscover
+@DoNotDiscover
 class DBReaderGetNodepoolsToDeleteSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val config = ConfigSpec.config.database
   val transactor = yoloTransactor
