@@ -8,7 +8,6 @@ import cats.implicits._
 import io.circe.Encoder
 import cats.mtl.Ask
 import io.chrisdavenport.log4cats.Logger
-import org.broadinstitute.dsde.workbench.google2.GooglePublisher
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
 import org.broadinstitute.dsde.workbench.google2.JsonCodec.{googleProjectEncoder, traceIdEncoder}
@@ -23,7 +22,7 @@ object KubernetesClusterRemover {
 
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
-    deps: KubernetesClusterRemoverDeps[F]
+    deps: LeoPublisherDeps[F]
   )(implicit F: Concurrent[F],
     timer: Timer[F],
     logger: Logger[F],
@@ -53,5 +52,3 @@ object KubernetesClusterRemover {
 final case class DeleteKubernetesClusterMessage(clusterId: Long, project: GoogleProject, traceId: TraceId) {
   val messageType: String = "deleteKubernetesCluster"
 }
-
-final case class KubernetesClusterRemoverDeps[F[_]](publisher: GooglePublisher[F], checkRunnerDeps: CheckRunnerDeps[F])

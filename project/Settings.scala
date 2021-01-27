@@ -71,7 +71,7 @@ object Settings {
     addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
     // Docker settings
     maintainer := "workbench-interactive-analysis@broadinstitute.org",
-    dockerBaseImage := "oracle/graalvm-ce:20.3.0-java11",
+    dockerBaseImage := "ghcr.io/graalvm/graalvm-ce:20.3.1",
     dockerRepository := Some("us.gcr.io"),
     scalacOptions ++= commonCompilerSettings,
     // assembly merge

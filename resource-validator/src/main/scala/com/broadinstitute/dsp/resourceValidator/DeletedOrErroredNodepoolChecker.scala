@@ -5,19 +5,14 @@ import java.util.concurrent.TimeUnit
 
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
-import io.circe.Encoder
 import cats.mtl.Ask
 import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.GKEModels.{KubernetesClusterId, NodepoolId}
 import org.broadinstitute.dsde.workbench.model.TraceId
-import org.broadinstitute.dsde.workbench.model.google.GoogleProject
-import org.broadinstitute.dsde.workbench.google2.JsonCodec.{googleProjectEncoder, traceIdEncoder}
+
+import JsonCodec._
 
 object DeletedOrErroredNodepoolChecker {
-  implicit val deleteNodepoolMessageEncoder: Encoder[DeleteNodepoolMeesage] =
-    Encoder.forProduct4("messageType", "nodepoolId", "googleProject", "traceId")(x =>
-      (x.messageType, x.nodepoolId, x.googleProject, x.traceId)
-    )
 
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
@@ -58,8 +53,4 @@ object DeletedOrErroredNodepoolChecker {
           }
         } yield nodepoolOpt.fold(none[Nodepool])(_ => Some(nodepool))
     }
-}
-
-final case class DeleteNodepoolMeesage(nodepoolId: Long, googleProject: GoogleProject, traceId: Option[TraceId]) {
-  val messageType: String = "deleteNodepool"
 }
