@@ -52,7 +52,7 @@ object ZombieMonitor {
                          deleteRuntimeCheckerProcess,
                          deletek8sClusterCheckerProcess,
                          deleteOrErroredNodepoolCheckerProcess).covary[F]
-      _ <- processes.parJoin(2)
+      _ <- processes.parJoin(4)
     } yield ExitCode.Success
   }.drain
 

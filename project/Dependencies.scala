@@ -2,9 +2,9 @@ import sbt._
 
 object Dependencies {
   val logbackVersion = "1.2.3"
-  val workbenchGoogle2Version = "0.19-f0578d6"
+  val workbenchGoogle2Version = "0.19-1aba7fd"
   val doobieVersion = "0.10.0"
-  val openTelemetryVersion = "0.1-f0578d6"
+  val openTelemetryVersion = "0.1-1aba7fd"
 
   val core = Seq(
     "net.logstash.logback" % "logstash-logback-encoder" % "6.2",
@@ -13,7 +13,7 @@ object Dependencies {
     "org.tpolecat" %% "doobie-core" % doobieVersion,
     "org.tpolecat" %% "doobie-hikari" % doobieVersion,
     "org.tpolecat" %% "doobie-scalatest" % doobieVersion % Test,
-    "com.github.pureconfig" %% "pureconfig" % "0.13.0",
+    "com.github.pureconfig" %% "pureconfig" % "0.14.0",
     "mysql" % "mysql-connector-java" % "8.0.18",
     "org.scalatest" %% "scalatest" % "3.2.3" % Test,
     "com.monovore" %% "decline" % "1.0.0",

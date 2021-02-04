@@ -97,7 +97,7 @@ object ResourceValidator {
         workerProcess
       ).covary[F]
 
-      _ <- processes.parJoinUnbounded
+      _ <- processes.parJoin(9)
     } yield ExitCode.Success
   }.drain
 
