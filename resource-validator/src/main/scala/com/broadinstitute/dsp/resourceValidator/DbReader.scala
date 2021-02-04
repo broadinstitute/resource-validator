@@ -32,7 +32,7 @@ object DbReader {
            select pd1.id, pd1.googleProject, pd1.name
            FROM PERSISTENT_DISK AS pd1
            WHERE pd1.status="Deleted" AND
-             pd1.destroyedDate > now() - INTERVAL 90 DAY AND
+             pd1.destroyedDate > now() - INTERVAL 30 DAY AND
              NOT EXISTS
              (
                SELECT *
@@ -51,7 +51,7 @@ object DbReader {
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
           WHERE
             c1.status = "Deleted" AND
-            c1.destroyedDate > now() - INTERVAL 90 DAY AND
+            c1.destroyedDate > now() - INTERVAL 30 DAY AND
             NOT EXISTS (
               SELECT *
               FROM CLUSTER AS c2
