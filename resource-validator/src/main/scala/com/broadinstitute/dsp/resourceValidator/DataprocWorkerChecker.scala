@@ -40,7 +40,10 @@ object DataprocWorkerChecker {
             .getCluster(runtime.r.googleProject, regionName, DataprocClusterName(runtime.r.runtimeName))
           runtime <- clusterOpt.flatTraverse { c =>
             val doesPrimaryWorkerMatch =
-              runtime.workerConfig.numberOfWorkers.getOrElse(0) == c.getConfig.getWorkerConfig.getNumInstances
+              if (c.getConfig.getWorkerConfig.getNumInstances == 0)
+                true //pre-emptible workers can disappear, which isn't an anomaly if it doesn't match what we have in Leo DB
+              else
+                runtime.workerConfig.numberOfWorkers.getOrElse(0) == c.getConfig.getWorkerConfig.getNumInstances
             val doesSecondaryWorkerMatch =
               runtime.workerConfig.numberOfPreemptibleWorkers
                 .getOrElse(0) == c.getConfig.getSecondaryWorkerConfig.getNumInstances
@@ -70,7 +73,7 @@ object DataprocWorkerChecker {
                         .void
                         .handleErrorWith {
                           case e: com.google.api.gax.rpc.ApiException =>
-                            logger.warn(
+                            logger.warn(e)(
                               s"${runtime} has an anomaly with the number of workers in google, and the resize failed."
                             ) >> deps.checkRunnerDeps.metrics.incrementCounter(s"$appName/$checkType/failure")
                         } >>
