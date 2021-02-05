@@ -192,7 +192,7 @@ class DataprocWorkerCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
     }
   }
 
-  it should "return None if cluster in google secondary worker numbers don't match the db" in {
+  it should "return None if preemptible worker numbers don't match when a cluster is stopped in Google and has zero preemptibles" in {
     forAll { (runtime: RuntimeWithWorkers, dryRun: Boolean) =>
       val sourceRuntime = runtime.copy(r = runtime.r.copy(status = "Stopped"),
                                        workerConfig = WorkerConfig(runtime.workerConfig.numberOfWorkers, Some(4)))
