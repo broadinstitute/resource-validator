@@ -40,13 +40,14 @@ object DataprocWorkerChecker {
             .getCluster(runtime.r.googleProject, regionName, DataprocClusterName(runtime.r.runtimeName))
           runtime <- clusterOpt.flatTraverse { c =>
             val doesPrimaryWorkerMatch =
-              if (c.getConfig.getWorkerConfig.getNumInstances == 0)
+              runtime.workerConfig.numberOfWorkers.getOrElse(0) == c.getConfig.getWorkerConfig.getNumInstances
+            val doesSecondaryWorkerMatch =
+              if (c.getConfig.getSecondaryWorkerConfig.getNumInstances == 0 && runtime.r.status.toLowerCase == "stopped")
                 true //pre-emptible workers can disappear, which isn't an anomaly if it doesn't match what we have in Leo DB
               else
-                runtime.workerConfig.numberOfWorkers.getOrElse(0) == c.getConfig.getWorkerConfig.getNumInstances
-            val doesSecondaryWorkerMatch =
-              runtime.workerConfig.numberOfPreemptibleWorkers
-                .getOrElse(0) == c.getConfig.getSecondaryWorkerConfig.getNumInstances
+                runtime.workerConfig.numberOfPreemptibleWorkers
+                  .getOrElse(0) == c.getConfig.getSecondaryWorkerConfig.getNumInstances
+
             val isAnomalyDetected = !(doesPrimaryWorkerMatch && doesSecondaryWorkerMatch)
 
             isAnomalyDetected match {
