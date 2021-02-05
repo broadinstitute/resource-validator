@@ -42,8 +42,12 @@ object DataprocWorkerChecker {
             val doesPrimaryWorkerMatch =
               runtime.workerConfig.numberOfWorkers.getOrElse(0) == c.getConfig.getWorkerConfig.getNumInstances
             val doesSecondaryWorkerMatch =
-              runtime.workerConfig.numberOfPreemptibleWorkers
-                .getOrElse(0) == c.getConfig.getSecondaryWorkerConfig.getNumInstances
+              if (c.getConfig.getSecondaryWorkerConfig.getNumInstances == 0 && runtime.r.status.toLowerCase == "stopped")
+                true // We remove preemptibles before stopping clusters. Therefore, we don't consider this case an anomaly.
+              else
+                runtime.workerConfig.numberOfPreemptibleWorkers
+                  .getOrElse(0) == c.getConfig.getSecondaryWorkerConfig.getNumInstances
+
             val isAnomalyDetected = !(doesPrimaryWorkerMatch && doesSecondaryWorkerMatch)
 
             isAnomalyDetected match {
@@ -70,7 +74,7 @@ object DataprocWorkerChecker {
                         .void
                         .handleErrorWith {
                           case e: com.google.api.gax.rpc.ApiException =>
-                            logger.warn(
+                            logger.warn(e)(
                               s"${runtime} has an anomaly with the number of workers in google, and the resize failed."
                             ) >> deps.checkRunnerDeps.metrics.incrementCounter(s"$appName/$checkType/failure")
                         } >>
