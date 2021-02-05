@@ -43,7 +43,7 @@ object DataprocWorkerChecker {
               runtime.workerConfig.numberOfWorkers.getOrElse(0) == c.getConfig.getWorkerConfig.getNumInstances
             val doesSecondaryWorkerMatch =
               if (c.getConfig.getSecondaryWorkerConfig.getNumInstances == 0 && runtime.r.status.toLowerCase == "stopped")
-                true //pre-emptible workers can disappear, which isn't an anomaly if it doesn't match what we have in Leo DB
+                true // We remove preemptibles before stopping clusters. Therefore, we don't consider this case an anomaly.
               else
                 runtime.workerConfig.numberOfPreemptibleWorkers
                   .getOrElse(0) == c.getConfig.getSecondaryWorkerConfig.getNumInstances
