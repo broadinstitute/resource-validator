@@ -33,7 +33,7 @@ object DeletedKubernetesClusterChecker {
           _ <- if (isDryRun) F.unit
           else
             clusterOpt match {
-              case None    => dbReader.updateK8sClusterStatus(cluster.id)
+              case None    => dbReader.markK8sClusterDeleted(cluster.id); dbReader.unlinkPDFromK8sCluster(cluster.id)
               case Some(_) => F.unit
             }
         } yield clusterOpt.fold[Option[K8sClusterToScan]](Some(cluster))(_ => none[K8sClusterToScan])

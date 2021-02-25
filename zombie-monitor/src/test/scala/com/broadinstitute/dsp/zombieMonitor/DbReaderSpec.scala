@@ -10,7 +10,7 @@ import doobie.scalatest.IOChecker
 import org.broadinstitute.dsde.workbench.google2.DiskName
 import org.broadinstitute.dsde.workbench.google2.GKEModels.{KubernetesClusterId, KubernetesClusterName}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
-import org.scalatest.DoNotDiscover
+//import org.scalatest.DoNotDiscover
 import org.scalatest.flatspec.AnyFlatSpec
 import doobie.implicits._
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
@@ -24,7 +24,7 @@ import java.time.Instant
  *   * Run a database unit test in leonardo
  *   * Run this spec
  */
-@DoNotDiscover
+//@DoNotDiscover
 final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val databaseConfig = ConfigSpec.config.database
   val transactor = yoloTransactor
@@ -152,7 +152,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
         val dbReader = DbReader.impl(xa)
         for {
           id <- insertK8sCluster(cluster)
-          _ <- dbReader.updateK8sClusterStatus(id)
+          _ <- dbReader.markK8sClusterDeleted(id)
           status <- getK8sClusterStatus(id)
         } yield status shouldBe ("DELETED")
       }
@@ -250,4 +250,23 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
       res.unsafeRunSync()
     }
   }
+
+  it should "unlink k8s cluster from PD properly" in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+        for {
+          diskId <- insertDisk(disk)
+          clusterId <- insertK8sCluster(cluster)
+          nodepoolId <- insertNodepool(clusterId, "nodepool1", false)
+          namespaceId <- insertNamespace(clusterId, NamespaceName("ns1"))
+          id <- insertApp(nodepoolId, namespaceId, "app1", diskId)
+          _ <- dbReader.unlinkPDFromK8sCluster(id)
+          pdId <- getPdIdFromK8sCluster(id)
+        } yield pdId == null
+      }
+      res.unsafeRunSync()
+    }
+  }
+
 }

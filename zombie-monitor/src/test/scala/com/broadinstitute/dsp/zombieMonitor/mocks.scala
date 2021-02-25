@@ -11,11 +11,14 @@ class FakeDbReader extends DbReader[IO] {
   override def getRuntimeCandidate: Stream[IO, dsp.Runtime] = Stream.empty
   override def getk8sNodepoolsToDeleteCandidate: Stream[IO, NodepoolToScan] = Stream.empty
   override def updateDiskStatus(id: Long): IO[Unit] = IO.unit
-  override def updateK8sClusterStatus(id: Long): IO[Unit] = IO.unit
+  override def markK8sClusterDeleted(id: Long): IO[Unit] = IO.unit
   override def updateNodepoolAndAppStatus(id: Long, status: String): IO[Unit] = IO.unit
   override def markRuntimeDeleted(id: Long): IO[Unit] = IO.unit
   override def updateRuntimeStatus(id: Long, status: String): IO[Unit] = IO.unit
   override def markNodepoolAndAppDeleted(nodepoolId: Long): IO[Unit] = IO.unit
   override def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): IO[Unit] = IO.unit
   override def updateRuntimeDeletedFrom(runtimeId: Long, deletedFrom: String): IO[Unit] = IO.unit
+  override def unlinkPDFromK8sCluster(id: Long): IO[Unit] = IO.unit
+  override def unlinkPDFromRuntime(id: Long): IO[Unit] = IO.unit
+
 }

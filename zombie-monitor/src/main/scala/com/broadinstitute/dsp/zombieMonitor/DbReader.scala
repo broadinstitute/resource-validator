@@ -17,11 +17,13 @@ trait DbReader[F[_]] {
   def updateDiskStatus(id: Long): F[Unit]
   def markRuntimeDeleted(id: Long): F[Unit]
   def updateRuntimeStatus(id: Long, status: String): F[Unit]
-  def updateK8sClusterStatus(id: Long): F[Unit]
+  def markK8sClusterDeleted(id: Long): F[Unit]
   def markNodepoolAndAppDeleted(nodepoolId: Long): F[Unit]
   def updateNodepoolAndAppStatus(nodepoolId: Long, status: String): F[Unit]
   def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): F[Unit]
   def updateRuntimeDeletedFrom(runtimeId: Long, deletedFrom: String): F[Unit]
+  def unlinkPDFromRuntime(id: Long): F[Unit]
+  def unlinkPDFromK8sCluster(id: Long): F[Unit]
 }
 
 object DbReader {
@@ -34,8 +36,8 @@ object DbReader {
   // We only check runtimes that have been created for more than 1 hour because a newly "Creating" runtime may not exist in Google yet
   val activeRuntimeQuery =
     sql"""
-         SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status FROM CLUSTER AS c1 
-         INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id 
+         SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status FROM CLUSTER AS c1
+         INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id
          WHERE c1.status!="Deleted" AND c1.status!="Error" AND createdDate < now() - INTERVAL 1 HOUR
         """.query[Runtime]
 
@@ -55,9 +57,14 @@ object DbReader {
            update PERSISTENT_DISK set status = "Deleted", destroyedDate = now() where id = $id
            """.update
 
-  def updateK8sClusterStatusQuery(id: Int) =
+  def markK8sClusterDeletedQuery(id: Int) =
     sql"""
            update KUBERNETES_CLUSTER set status = "DELETED", destroyedDate = now() where id = $id
+           """.update
+
+  def unlinkPDFromK8sClusterQuery(id: Long) =
+    sql"""
+           update APP set diskId = NULL where id = $id;
            """.update
 
   def markNodepoolDeletedQuery(id: Long) =
@@ -68,6 +75,11 @@ object DbReader {
   def markRuntimeDeletedQuery(id: Long) =
     sql"""
            update CLUSTER set status = "Deleted", destroyedDate = now(), deletedFrom = "zombie-cron-job" where id = $id
+           """.update
+
+  def unlinkPDFromRuntimeQuery(id: Long) =
+    sql"""
+           update RUNTIME_CONFIG set persistentDiskId = NULL where id = $id;
            """.update
 
   def updateRuntimeStatusQuery(id: Long, status: String) =
@@ -114,8 +126,8 @@ object DbReader {
     override def updateDiskStatus(id: Long): F[Unit] =
       updateDiskStatusQuery(id.toInt).run.transact(xa).void
 
-    override def updateK8sClusterStatus(id: Long): F[Unit] =
-      updateK8sClusterStatusQuery(id.toInt).run.transact(xa).void
+    override def markK8sClusterDeleted(id: Long): F[Unit] =
+      markK8sClusterDeletedQuery(id.toInt).run.transact(xa).void
 
     override def getk8sNodepoolsToDeleteCandidate: Stream[F, NodepoolToScan] =
       activeNodepoolsQuery.stream.transact(xa)
@@ -146,5 +158,12 @@ object DbReader {
 
     override def updateRuntimeDeletedFrom(runtimeId: Long, deletedFrom: String): F[Unit] =
       updateRuntimeDeletedFromQuery(runtimeId, deletedFrom).run.transact(xa).void
+
+    override def unlinkPDFromRuntime(id: Long): F[Unit] =
+      unlinkPDFromRuntimeQuery(id).run.transact(xa).void
+
+    override def unlinkPDFromK8sCluster(id: Long): F[Unit] =
+      unlinkPDFromK8sClusterQuery(id).run.transact(xa).void
+
   }
 }
