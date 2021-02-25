@@ -101,7 +101,7 @@ object DeletedOrErroredRuntimeChecker {
           _ <- if (isDryRun) F.unit
           else
             runtimeOpt match {
-              case None    => dbReader.markRuntimeDeleted(runtime.id); dbReader.unlinkPDFromRuntime(runtime.id)
+              case None    => dbReader.markRuntimeDeleted(runtime.id) >> dbReader.unlinkPDFromRuntime(runtime.id)
               case Some(_) => F.unit
             }
         } yield runtimeOpt.fold[Option[Runtime]](Some(runtime))(_ => none[Runtime])

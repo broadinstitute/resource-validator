@@ -263,7 +263,24 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           id <- insertApp(nodepoolId, namespaceId, "app1", diskId)
           _ <- dbReader.unlinkPDFromK8sCluster(id)
           pdId <- getPdIdFromK8sCluster(id)
-        } yield pdId == null
+        } yield {
+          pdId shouldBe None
+        }
+      }
+      res.unsafeRunSync()
+    }
+  }
+
+  it should "unlink runtime from PD properly" in {
+    forAll { (runtime: Runtime, cloudService: CloudService) =>
+      val res = transactorResource.use { implicit xa =>
+        val dbReader = DbReader.impl(xa)
+        for {
+          runtimeConfigId <- insertRuntimeConfig(cloudService)
+          id <- insertRuntime(runtime, runtimeConfigId)
+          _ <- dbReader.unlinkPDFromRuntime(id)
+          pdId <- getPdIdFromRuntimeConfig(runtimeConfigId)
+        } yield pdId shouldBe None
       }
       res.unsafeRunSync()
     }
