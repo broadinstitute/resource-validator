@@ -118,28 +118,6 @@ object DBTestHelper {
          )
          """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
 
-  def insertRuntimeConfigWithDisk(cloudService: CloudService,
-                                  diskId: Long)(implicit xa: HikariTransactor[IO]): IO[Long] =
-    sql"""INSERT INTO RUNTIME_CONFIG
-         (cloudService,
-          machineType,
-          diskSize,
-          numberOfWorkers,
-          dateAccessed,
-          bootDiskSize,
-          persistentDiskId
-         )
-         VALUES (
-         ${cloudService},
-         "n1-standard-4",
-         100,
-         0,
-         now(),
-         30,
-         ${diskId}
-         )
-         """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
-
   def insertNamespace(clusterId: Long, namespaceName: NamespaceName)(
     implicit xa: HikariTransactor[IO]
   ): IO[Long] =

@@ -10,7 +10,7 @@ import doobie.scalatest.IOChecker
 import org.broadinstitute.dsde.workbench.google2.DiskName
 import org.broadinstitute.dsde.workbench.google2.GKEModels.{KubernetesClusterId, KubernetesClusterName}
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
-//import org.scalatest.DoNotDiscover
+import org.scalatest.DoNotDiscover
 import org.scalatest.flatspec.AnyFlatSpec
 import doobie.implicits._
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
@@ -24,7 +24,7 @@ import java.time.Instant
  *   * Run a database unit test in leonardo
  *   * Run this spec
  */
-//@DoNotDiscover
+@DoNotDiscover
 final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val databaseConfig = ConfigSpec.config.database
   val transactor = yoloTransactor
