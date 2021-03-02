@@ -79,7 +79,13 @@ object DbReader {
 
   def unlinkPDFromRuntimeQuery(id: Long) =
     sql"""
-           update RUNTIME_CONFIG set persistentDiskId = NULL where id = $id
+ UPDATE
+  RUNTIME_CONFIG
+  INNER JOIN RUNTIME_CONFIG ON RUNTIME_CONFIG.id = CLUSTER.runtimeConfigId
+SET
+  RUNTIME_CONFIG.persistentDiskId = NULL,
+WHERE
+  CLUSTER.id = $id
            """.update
 
   def updateRuntimeStatusQuery(id: Long, status: String) =
