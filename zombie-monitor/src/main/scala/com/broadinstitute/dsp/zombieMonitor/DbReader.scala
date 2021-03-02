@@ -81,9 +81,9 @@ object DbReader {
     sql"""
  UPDATE
   RUNTIME_CONFIG
-  INNER JOIN RUNTIME_CONFIG ON RUNTIME_CONFIG.id = CLUSTER.runtimeConfigId
+  INNER JOIN CLUSTER ON RUNTIME_CONFIG.id = CLUSTER.runtimeConfigId
 SET
-  RUNTIME_CONFIG.persistentDiskId = NULL,
+  persistentDiskId = NULL
 WHERE
   CLUSTER.id = $id
            """.update
