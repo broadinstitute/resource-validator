@@ -64,7 +64,11 @@ object DbReader {
 
   def unlinkPDFromK8sClusterQuery(id: Long) =
     sql"""
-           update APP set diskId = NULL where id = $id;
+          UPDATE NODEPOOL
+          INNER JOIN KUBERNETES_CLUSTER ON KUBERNETES_CLUSTER.id = NODEPOOL.clusterId
+          INNER JOIN APP ON APP.nodepoolId = NODEPOOL.id
+          SET diskId = NULL
+          where KUBERNETES_CLUSTER.id = $id
            """.update
 
   def markNodepoolDeletedQuery(id: Long) =
@@ -79,13 +83,10 @@ object DbReader {
 
   def unlinkPDFromRuntimeQuery(id: Long) =
     sql"""
- UPDATE
-  RUNTIME_CONFIG
-  INNER JOIN CLUSTER ON RUNTIME_CONFIG.id = CLUSTER.runtimeConfigId
-SET
-  persistentDiskId = NULL
-WHERE
-  CLUSTER.id = $id
+        UPDATE RUNTIME_CONFIG
+        INNER JOIN CLUSTER ON RUNTIME_CONFIG.id = CLUSTER.runtimeConfigId
+        SET persistentDiskId = NULL
+        WHERE CLUSTER.id = $id
            """.update
 
   def updateRuntimeStatusQuery(id: Long, status: String) =
