@@ -222,7 +222,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
     }
   }
 
-  it should "update runtime status properly" in {
+  it should "update runtime status and unlink PD properly" in {
     forAll { (runtime: Runtime, cloudService: CloudService) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
@@ -232,8 +232,10 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           runtimeId <- insertRuntime(runtime, runtimeConfigId)
           _ <- dbReader.markRuntimeDeleted(runtimeId)
           status <- getRuntimeStatus(runtimeId)
+          pdId <- getPdIdFromRuntimeConfig(runtimeConfigId)
         } yield {
           status shouldBe ("Deleted")
+          pdId shouldBe None
         }
       }
       res.unsafeRunSync()
@@ -254,21 +256,6 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           error.errorCode shouldBe Some(1)
           error.errorMessage shouldBe ("cluster error")
         }
-      }
-      res.unsafeRunSync()
-    }
-  }
-
-  it should "unlink runtime from PD properly" in {
-    forAll { (runtime: Runtime, cloudService: CloudService) =>
-      val res = transactorResource.use { implicit xa =>
-        val dbReader = DbReader.impl(xa)
-        for {
-          runtimeConfigId <- insertRuntimeConfig(cloudService)
-          id <- insertRuntime(runtime, runtimeConfigId)
-          _ <- dbReader.unlinkPDFromRuntime(id)
-          pdId <- getPdIdFromRuntimeConfig(runtimeConfigId)
-        } yield pdId shouldBe None
       }
       res.unsafeRunSync()
     }

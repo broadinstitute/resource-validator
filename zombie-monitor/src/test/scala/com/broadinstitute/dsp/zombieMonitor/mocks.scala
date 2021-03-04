@@ -18,6 +18,5 @@ class FakeDbReader extends DbReader[IO] {
   override def markNodepoolAndAppDeleted(nodepoolId: Long): IO[Unit] = IO.unit
   override def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): IO[Unit] = IO.unit
   override def updateRuntimeDeletedFrom(runtimeId: Long, deletedFrom: String): IO[Unit] = IO.unit
-  override def unlinkPDFromRuntime(id: Long): IO[Unit] = IO.unit
 
 }

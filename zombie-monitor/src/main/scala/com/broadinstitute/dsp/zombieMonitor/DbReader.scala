@@ -22,7 +22,6 @@ trait DbReader[F[_]] {
   def updateNodepoolAndAppStatus(nodepoolId: Long, status: String): F[Unit]
   def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): F[Unit]
   def updateRuntimeDeletedFrom(runtimeId: Long, deletedFrom: String): F[Unit]
-  def unlinkPDFromRuntime(id: Long): F[Unit]
 }
 
 object DbReader {
@@ -71,15 +70,10 @@ object DbReader {
 
   def markRuntimeDeletedQuery(id: Long) =
     sql"""
-           update CLUSTER set status = "Deleted", destroyedDate = now(), deletedFrom = "zombie-cron-job" where id = $id
-           """.update
-
-  def unlinkPDFromRuntimeQuery(id: Long) =
-    sql"""
-        UPDATE RUNTIME_CONFIG
-        INNER JOIN CLUSTER ON RUNTIME_CONFIG.id = CLUSTER.runtimeConfigId
-        SET persistentDiskId = NULL
-        WHERE CLUSTER.id = $id
+           update RUNTIME_CONFIG
+            INNER JOIN CLUSTER ON RUNTIME_CONFIG.id = CLUSTER.runtimeConfigId
+           set CLUSTER.status = "Deleted", CLUSTER.destroyedDate = now(), CLUSTER.deletedFrom = "zombie-cron-job", persistentDiskId = NULL
+           where CLUSTER.id = $id
            """.update
 
   def updateRuntimeStatusQuery(id: Long, status: String) =
@@ -158,9 +152,5 @@ object DbReader {
 
     override def updateRuntimeDeletedFrom(runtimeId: Long, deletedFrom: String): F[Unit] =
       updateRuntimeDeletedFromQuery(runtimeId, deletedFrom).run.transact(xa).void
-
-    override def unlinkPDFromRuntime(id: Long): F[Unit] =
-      unlinkPDFromRuntimeQuery(id).run.transact(xa).void
-
   }
 }

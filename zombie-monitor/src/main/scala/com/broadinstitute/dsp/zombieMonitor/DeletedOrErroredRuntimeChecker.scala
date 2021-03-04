@@ -48,7 +48,6 @@ object DeletedOrErroredRuntimeChecker {
                else {
                  for {
                    _ <- dbReader.markRuntimeDeleted(runtime.id)
-                   _ <- dbReader.unlinkPDFromRuntime(runtime.id)
                    _ <- dbReader.insertClusterError(
                      runtime.id,
                      None,
@@ -101,7 +100,7 @@ object DeletedOrErroredRuntimeChecker {
           _ <- if (isDryRun) F.unit
           else
             runtimeOpt match {
-              case None    => dbReader.markRuntimeDeleted(runtime.id) >> dbReader.unlinkPDFromRuntime(runtime.id)
+              case None    => dbReader.markRuntimeDeleted(runtime.id)
               case Some(_) => F.unit
             }
         } yield runtimeOpt.fold[Option[Runtime]](Some(runtime))(_ => none[Runtime])
