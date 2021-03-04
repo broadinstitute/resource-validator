@@ -146,15 +146,23 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
     }
   }
 
-  it should "update k8s cluster properly" in {
-    forAll { (cluster: KubernetesClusterId) =>
+  it should "update k8s cluster and unlink PD properly" in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
         for {
-          id <- insertK8sCluster(cluster)
-          _ <- dbReader.markK8sClusterDeleted(id)
-          status <- getK8sClusterStatus(id)
-        } yield status shouldBe ("DELETED")
+          diskId <- insertDisk(disk)
+          clusterId <- insertK8sCluster(cluster)
+          nodepoolId <- insertNodepool(clusterId, "nodepool1", false)
+          namespaceId <- insertNamespace(clusterId, NamespaceName("ns1"))
+          id <- insertApp(nodepoolId, namespaceId, "app1", diskId)
+          _ <- dbReader.markK8sClusterDeleted(clusterId)
+          status <- getK8sClusterStatus(clusterId)
+          pdId <- getPdIdFromK8sCluster(id)
+        } yield {
+          status shouldBe ("DELETED")
+          pdId shouldBe None
+        }
       }
       res.unsafeRunSync()
     }
@@ -245,26 +253,6 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
         } yield {
           error.errorCode shouldBe Some(1)
           error.errorMessage shouldBe ("cluster error")
-        }
-      }
-      res.unsafeRunSync()
-    }
-  }
-
-  it should "unlink k8s cluster from PD properly" in {
-    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
-      val res = transactorResource.use { implicit xa =>
-        val dbReader = DbReader.impl(xa)
-        for {
-          diskId <- insertDisk(disk)
-          clusterId <- insertK8sCluster(cluster)
-          nodepoolId <- insertNodepool(clusterId, "nodepool1", false)
-          namespaceId <- insertNamespace(clusterId, NamespaceName("ns1"))
-          id <- insertApp(nodepoolId, namespaceId, "app1", diskId)
-          _ <- dbReader.unlinkPDFromK8sCluster(id)
-          pdId <- getPdIdFromK8sCluster(id)
-        } yield {
-          pdId shouldBe None
         }
       }
       res.unsafeRunSync()

@@ -23,7 +23,6 @@ trait DbReader[F[_]] {
   def insertClusterError(clusterId: Long, errorCode: Option[Int], errorMessage: String): F[Unit]
   def updateRuntimeDeletedFrom(runtimeId: Long, deletedFrom: String): F[Unit]
   def unlinkPDFromRuntime(id: Long): F[Unit]
-  def unlinkPDFromK8sCluster(id: Long): F[Unit]
 }
 
 object DbReader {
@@ -59,17 +58,11 @@ object DbReader {
 
   def markK8sClusterDeletedQuery(id: Int) =
     sql"""
-           update KUBERNETES_CLUSTER set status = "DELETED", destroyedDate = now() where id = $id
-           """.update
-
-  def unlinkPDFromK8sClusterQuery(id: Long) =
-    sql"""
           UPDATE NODEPOOL
           INNER JOIN KUBERNETES_CLUSTER ON KUBERNETES_CLUSTER.id = NODEPOOL.clusterId
           INNER JOIN APP ON APP.nodepoolId = NODEPOOL.id
-          SET diskId = NULL
-          where KUBERNETES_CLUSTER.id = $id
-           """.update
+          SET diskId = NULL, KUBERNETES_CLUSTER.status = "DELETED", KUBERNETES_CLUSTER.destroyedDate = now()
+          where KUBERNETES_CLUSTER.id = $id           """.update
 
   def markNodepoolDeletedQuery(id: Long) =
     sql"""
@@ -168,9 +161,6 @@ object DbReader {
 
     override def unlinkPDFromRuntime(id: Long): F[Unit] =
       unlinkPDFromRuntimeQuery(id).run.transact(xa).void
-
-    override def unlinkPDFromK8sCluster(id: Long): F[Unit] =
-      unlinkPDFromK8sClusterQuery(id).run.transact(xa).void
 
   }
 }
