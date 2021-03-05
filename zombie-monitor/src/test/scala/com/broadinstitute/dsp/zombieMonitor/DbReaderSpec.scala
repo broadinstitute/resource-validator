@@ -146,15 +146,23 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
     }
   }
 
-  it should "update k8s cluster properly" in {
-    forAll { (cluster: KubernetesClusterId) =>
+  it should "update k8s cluster and unlink PD properly" in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
         for {
-          id <- insertK8sCluster(cluster)
-          _ <- dbReader.updateK8sClusterStatus(id)
-          status <- getK8sClusterStatus(id)
-        } yield status shouldBe ("DELETED")
+          diskId <- insertDisk(disk)
+          clusterId <- insertK8sCluster(cluster)
+          nodepoolId <- insertNodepool(clusterId, "nodepool1", false)
+          namespaceId <- insertNamespace(clusterId, NamespaceName("ns1"))
+          id <- insertApp(nodepoolId, namespaceId, "app1", diskId)
+          _ <- dbReader.markK8sClusterDeleted(clusterId)
+          status <- getK8sClusterStatus(clusterId)
+          pdId <- getPdIdFromK8sCluster(id)
+        } yield {
+          status shouldBe ("DELETED")
+          pdId shouldBe None
+        }
       }
       res.unsafeRunSync()
     }
@@ -214,7 +222,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
     }
   }
 
-  it should "update runtime status properly" in {
+  it should "update runtime status and unlink PD properly" in {
     forAll { (runtime: Runtime, cloudService: CloudService) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
@@ -224,8 +232,10 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           runtimeId <- insertRuntime(runtime, runtimeConfigId)
           _ <- dbReader.markRuntimeDeleted(runtimeId)
           status <- getRuntimeStatus(runtimeId)
+          pdId <- getPdIdFromRuntimeConfig(runtimeConfigId)
         } yield {
           status shouldBe ("Deleted")
+          pdId shouldBe None
         }
       }
       res.unsafeRunSync()
@@ -250,4 +260,5 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
       res.unsafeRunSync()
     }
   }
+
 }

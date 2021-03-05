@@ -58,54 +58,52 @@ object DBTestHelper {
     implicit xa: HikariTransactor[IO]
   ): IO[Long] =
     sql"""INSERT INTO CLUSTER
-         (clusterName, 
-         googleProject, 
-         operationName, 
-         status, 
-         hostIp, 
-         createdDate, 
-         destroyedDate, 
-         initBucket, 
-         creator, 
-         serviceAccount, 
-         stagingBucket, 
-         dateAccessed, 
-         autopauseThreshold, 
-         defaultClientId, 
-         stopAfterCreation, 
-         kernelFoundBusyDate, 
-         welderEnabled, 
-         internalId, 
-         runtimeConfigId, 
+         (clusterName,
+         googleProject,
+         operationName,
+         status,
+         hostIp,
+         createdDate,
+         destroyedDate,
+         initBucket,
+         creator,
+         serviceAccount,
+         stagingBucket,
+         dateAccessed,
+         autopauseThreshold,
+         defaultClientId,
+         kernelFoundBusyDate,
+         welderEnabled,
+         internalId,
+         runtimeConfigId,
          googleId)
          VALUES (
-         ${runtime.runtimeName}, 
-         ${runtime.googleProject}, 
-         "op1", 
-         ${runtime.status}, 
-         "fakeIp", 
-         $createdDate, 
-         now(), 
-         "gs://initBucket", 
-         "fake@broadinstitute.org", 
-         "pet@broadinstitute.org", 
-         "stagingBucket", 
-         now(), 
-         30, 
-         "clientId", 
-         false, 
-         now(), 
-         true, 
-         "internalId", 
-         $runtimeConfigId, 
+         ${runtime.runtimeName},
+         ${runtime.googleProject},
+         "op1",
+         ${runtime.status},
+         "fakeIp",
+         $createdDate,
+         now(),
+         "gs://initBucket",
+         "fake@broadinstitute.org",
+         "pet@broadinstitute.org",
+         "stagingBucket",
+         now(),
+         30,
+         "clientId",
+         now(),
+         true,
+         "internalId",
+         $runtimeConfigId,
          ${UUID.randomUUID().toString})
          """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
 
   def insertRuntimeConfig(cloudService: CloudService)(implicit xa: HikariTransactor[IO]): IO[Long] =
     sql"""INSERT INTO RUNTIME_CONFIG
-         (cloudService, 
-          machineType, 
-          diskSize, 
+         (cloudService,
+          machineType,
+          diskSize,
           numberOfWorkers,
           dateAccessed,
           bootDiskSize
@@ -176,6 +174,16 @@ object DBTestHelper {
     sql"""
          SELECT clusterName FROM KUBERNETES_CLUSTER where id = ${id}
          """.query[String].unique.transact(xa)
+
+  def getPdIdFromRuntimeConfig(id: Long)(implicit xa: HikariTransactor[IO]): IO[Option[Long]] =
+    sql"""
+         SELECT persistentDiskId FROM RUNTIME_CONFIG where id = ${id}
+         """.query[Option[Long]].unique.transact(xa)
+
+  def getPdIdFromK8sCluster(id: Long)(implicit xa: HikariTransactor[IO]): IO[Option[Long]] =
+    sql"""
+         SELECT diskId FROM APP where id = ${id}
+         """.query[Option[Long]].unique.transact(xa)
 
   def getNodepoolName(id: Long)(implicit xa: HikariTransactor[IO]): IO[String] =
     sql"""
