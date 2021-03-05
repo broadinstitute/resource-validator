@@ -50,14 +50,22 @@ e.g. `sbt "resourceValidator/run --dryRun --all"`
 
 ## Contributing
 
-Currently, `com.broadinstitute.dsp.zombieMonitor.DbReaderSpec` and `com.broadinstitute.dsp.resourceValidator.DbReaderSpec` are not run in CI, hence make sure you run them manually before merging any PRs.
+1. Run these unit tests locally before making a PR:
+- `com.broadinstitute.dsp.zombieMonitor.DbReaderSpec` 
+- `com.broadinstitute.dsp.resourceValidator.DbReaderSpec`
 
-Once a PR is merged, a PR will be automatically created in [terra-helm](https://github.com/broadinstitute/terra-helm). 
+   These are not run in CI, so you have to make sure you run them manually before merging any PRs. Instructions on running these can be found in the respective `DbReaderSpec` files.
 
-Get this PR merged (you can merge it yourself) and another automatic commit will bump leonardo's chart version. This will trigger another automatic commit 
-in [terra-helmfile](https://github.com/broadinstitute/terra-helmfile), note this commit will only auto bump `dev` and `perf`, and will be auto-merged.
+2. Once your PR is approved you can merge it and a new PR will be automatically created in [terra-helm](https://github.com/broadinstitute/terra-helm). 
 
-Once the terra-helmfile PR is auto-merged, go to [argo](https://ap-argocd.dsp-devops.broadinstitute.org/applications) (you need to be on VPN to access argo), and click `SYNC APPS` button on the left upper corner for dev and perf leonardo deploys (select `PRUNE` option as well).
-this will sync leonardo's deployment to match [terra-helmfile](https://github.com/broadinstitute/terra-helmfile) repo.
-the chartVersion bump and sync for other environments will happen automatically when there is a Terra monolith release.
+3. Get this terra-helm PR merged (you can merge it yourself) and another automatic commit will bump leonardo's chart version. This will trigger another automatic commit 
+in [terra-helmfile](https://github.com/broadinstitute/terra-helmfile). Note that this commit will only auto-bump `dev` and `perf`, and will be auto-merged.
+
+4. Once the terra-helmfile PR is auto-merged, go to [argo](https://ap-argocd.dsp-devops.broadinstitute.org/applications) (you need to be on VPN to access argo), and click the `SYNC APPS` button on the left upper corner. Select these boxes to sync:
+ - `leonardo dev` 
+ - `leonardo perf`
+ - `prune`
+    
+    This will sync leonardo's deployment to match [terra-helmfile](https://github.com/broadinstitute/terra-helmfile) repo.
+    the chartVersion bump and sync for other environments will happen automatically when there is a Terra monolith release.
 
