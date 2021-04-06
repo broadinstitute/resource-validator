@@ -89,8 +89,8 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
   }
 
   it should "report a runtime if it still exists in google in ERROR and is active in leonardo DB" in {
-    forAll { (rt: Runtime, dryRun: Boolean) =>
-      val runtime = rt.copy(cloudService = CloudService.Dataproc)
+    implicit val arbA = arbDataprocRuntime
+    forAll { (runtime: Runtime.Dataproc, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
         override def getRuntimeCandidate: Stream[IO, Runtime] =
           Stream.emit(runtime)
@@ -116,8 +116,8 @@ class DeletedOrErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSu
   }
 
   it should "mark cluster as Deleted if billing is disabled" in {
-    forAll { (rt: Runtime, dryRun: Boolean) =>
-      val runtime = rt.copy(cloudService = CloudService.Dataproc)
+    implicit val arbA = arbDataprocRuntime
+    forAll { (runtime: Runtime.Dataproc, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
         override def getRuntimeCandidate: Stream[IO, Runtime] =
           Stream.emit(runtime)

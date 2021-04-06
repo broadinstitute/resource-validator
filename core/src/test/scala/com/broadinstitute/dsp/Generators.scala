@@ -12,7 +12,22 @@ object Generators {
     project <- genGoogleProject
     runtimeName <- Gen.uuid.map(_.toString)
     status <- Gen.oneOf("Running", "Creating", "Deleted", "Error")
-  } yield Runtime(id, project, runtimeName, cloudService, status)
+  } yield {
+    cloudService match {
+      case CloudService.Dataproc =>
+        Runtime.Dataproc(id, project, runtimeName, cloudService, status, DBTestHelper.regionName)
+      case CloudService.Gce =>
+        Runtime.Gce(id, project, runtimeName, cloudService, status, DBTestHelper.zoneName)
+    }
+  }
+  val genDataprocRuntime: Gen[Runtime.Dataproc] = for {
+    id <- Gen.chooseNum(0, 100)
+    project <- genGoogleProject
+    runtimeName <- Gen.uuid.map(_.toString)
+    status <- Gen.oneOf("Running", "Creating", "Deleted", "Error")
+  } yield {
+    Runtime.Dataproc(id, project, runtimeName, CloudService.Dataproc, status, DBTestHelper.regionName)
+  }
   val genDisk: Gen[Disk] = for {
     id <- Gen.chooseNum(0, 100)
     project <- genGoogleProject
@@ -54,7 +69,7 @@ object Generators {
   } yield KubernetesClusterToRemove(id, googleProject)
 
   val genRuntimeWithWorkers: Gen[RuntimeWithWorkers] = for {
-    runtime <- genRuntime
+    runtime <- genDataprocRuntime
     num1 <- Gen.chooseNum(1, 100)
     num2 <- Gen.chooseNum(1, 100)
   } yield RuntimeWithWorkers(runtime, WorkerConfig(Some(num1), Some(num2)))
@@ -63,6 +78,7 @@ object Generators {
     status <- Gen.oneOf(RemovableNodepoolStatus.removableStatuses)
   } yield status
 
+  val arbDataprocRuntime: Arbitrary[Runtime.Dataproc] = Arbitrary(genDataprocRuntime)
   implicit val arbRuntime: Arbitrary[Runtime] = Arbitrary(genRuntime)
   implicit val arbCloudService: Arbitrary[CloudService] = Arbitrary(genCloudService)
   implicit val arbDisk: Arbitrary[Disk] = Arbitrary(genDisk)

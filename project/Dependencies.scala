@@ -2,8 +2,8 @@ import sbt._
 
 object Dependencies {
   val logbackVersion = "1.2.3"
-  val workbenchGoogle2Version = "0.19-1aba7fd"
-  val doobieVersion = "0.10.0"
+  val workbenchGoogle2Version = "0.20-cba9b6c"
+  val doobieVersion = "0.12.1"
   val openTelemetryVersion = "0.1-1aba7fd"
 
   val core = Seq(
@@ -13,10 +13,12 @@ object Dependencies {
     "org.tpolecat" %% "doobie-core" % doobieVersion,
     "org.tpolecat" %% "doobie-hikari" % doobieVersion,
     "org.tpolecat" %% "doobie-scalatest" % doobieVersion % Test,
-    "com.github.pureconfig" %% "pureconfig" % "0.14.0",
+    "com.github.pureconfig" %% "pureconfig" % "0.14.1",
     "mysql" % "mysql-connector-java" % "8.0.18",
     "org.scalatest" %% "scalatest" % "3.2.3" % Test,
     "com.monovore" %% "decline" % "1.0.0",
+    "com.github.julien-truffaut" %% "monocle-core" % "3.0.0-M4",
+    "com.github.julien-truffaut" %% "monocle-macro" % "3.0.0-M4",
     "org.broadinstitute.dsde.workbench" %% "workbench-opentelemetry" % openTelemetryVersion,
     "org.broadinstitute.dsde.workbench" %% "workbench-opentelemetry" % openTelemetryVersion % Test classifier "tests",
     "org.broadinstitute.dsde.workbench" %% "workbench-google2" % workbenchGoogle2Version,

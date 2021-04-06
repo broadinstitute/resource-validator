@@ -4,9 +4,9 @@ package resourceValidator
 import java.util.concurrent.TimeUnit
 
 import cats.effect.{Concurrent, Timer}
-import cats.implicits._
+import cats.syntax.all._
 import cats.mtl.Ask
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.GKEModels.{KubernetesClusterId, NodepoolId}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
