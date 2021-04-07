@@ -65,7 +65,7 @@ object Settings {
   private lazy val commonSettings = List(
     organization := "com.broadinstitute.dsp",
     version := "0.0.1-SNAPSHOT",
-    scalaVersion := "2.13.4",
+    scalaVersion := "2.13.5",
     resolvers ++= commonResolvers,
     addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
     addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
