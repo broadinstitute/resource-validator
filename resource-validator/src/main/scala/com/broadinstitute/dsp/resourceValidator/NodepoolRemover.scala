@@ -24,15 +24,16 @@ object NodepoolRemover {
 
       // TODO: This check is to be moved to a new project (a.k.a. 'janitor)
       // https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes
-      override def checkResource(n: Nodepool, isDryRun: Boolean)(
-        implicit ev: Ask[F, TraceId]
+      override def checkResource(n: Nodepool, isDryRun: Boolean)(implicit
+        ev: Ask[F, TraceId]
       ): F[Option[Nodepool]] =
         for {
           ctx <- ev.ask
-          _ <- if (!isDryRun) {
-            val msg = DeleteNodepoolMeesage(n.nodepoolId, n.googleProject, Some(ctx))
-            deps.publisher.publishOne(msg)
-          } else F.unit
+          _ <-
+            if (!isDryRun) {
+              val msg = DeleteNodepoolMeesage(n.nodepoolId, n.googleProject, Some(ctx))
+              deps.publisher.publishOne(msg)
+            } else F.unit
         } yield Some(n)
     }
 }

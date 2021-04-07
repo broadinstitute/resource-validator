@@ -62,9 +62,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           runtimeConfigId <- insertRuntimeConfig(runtime.cloudService)
           id <- insertRuntime(runtime, runtimeConfigId, oldTimeStamp)
           runtimes <- dbReader.getRuntimeCandidate.compile.toList
-        } yield {
-          runtimes should contain theSameElementsAs List(runtime.copy(id = id))
-        }
+        } yield runtimes should contain theSameElementsAs List(runtime.copy(id = id))
       }
       res.unsafeRunSync()
     }
@@ -80,9 +78,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           runtimeConfigId <- insertRuntimeConfig(runtime.cloudService)
           _ <- insertRuntime(runtime, runtimeConfigId, Instant.ofEpochMilli(now))
           runtimes <- dbReader.getRuntimeCandidate.compile.toList
-        } yield {
-          runtimes shouldBe List.empty
-        }
+        } yield runtimes shouldBe List.empty
       }
       res.unsafeRunSync()
     }
@@ -101,9 +97,9 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           _ <- insertDisk(creatingDisk, "Creating")
           _ <- insertDisk(readyDisk)
           d <- dbReader.getDisksToDeleteCandidate.compile.toList
-        } yield {
-          d.map(_.copy(id = 0L)) should contain theSameElementsAs List(creatingDisk, readyDisk).map(_.copy(id = 0L))
-        }
+        } yield d.map(_.copy(id = 0L)) should contain theSameElementsAs List(creatingDisk, readyDisk).map(
+          _.copy(id = 0L)
+        )
       }
       res.unsafeRunSync()
     }
@@ -124,9 +120,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           _ <- insertK8sCluster(precreatingCluster, "PRECREATING")
           _ <- insertK8sCluster(runningCluster, "RUNNING")
           d <- dbReader.getk8sClustersToDeleteCandidate.compile.toList
-        } yield {
-          d.map(_.kubernetesClusterId) should contain theSameElementsAs List(precreatingCluster, runningCluster)
-        }
+        } yield d.map(_.kubernetesClusterId) should contain theSameElementsAs List(precreatingCluster, runningCluster)
       }
       res.unsafeRunSync()
     }
@@ -140,7 +134,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           id <- insertDisk(disk)
           _ <- dbReader.updateDiskStatus(id)
           status <- getDiskStatus(id)
-        } yield status shouldBe ("Deleted")
+        } yield status shouldBe "Deleted"
       }
       res.unsafeRunSync()
     }
@@ -160,7 +154,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           status <- getK8sClusterStatus(clusterId)
           pdId <- getPdIdFromK8sCluster(id)
         } yield {
-          status shouldBe ("DELETED")
+          status shouldBe "DELETED"
           pdId shouldBe None
         }
       }
@@ -176,7 +170,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           nodepoolId <- insertNodepool(clusterId, "nodepool1", false)
           _ <- DbReader.updateNodepoolStatus(nodepoolId, "ERROR").run.transact(xa)
           status <- getNodepoolStatus(nodepoolId)
-        } yield status shouldBe ("ERROR")
+        } yield status shouldBe "ERROR"
       }
       res.unsafeRunSync()
     }
@@ -193,7 +187,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           appId <- insertApp(nodepoolId, namespaceId, "app1", diskId)
           _ <- DbReader.updateAppStatusForNodepoolId(nodepoolId, "DELETED").run.transact(xa)
           status <- getAppStatus(appId)
-        } yield status shouldBe ("DELETED")
+        } yield status shouldBe "DELETED"
       }
       res.unsafeRunSync()
     }
@@ -214,8 +208,8 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           appStatus <- getAppStatus(appId)
           nodepoolStatus <- getNodepoolStatus(nodepoolId)
         } yield {
-          appStatus shouldBe ("DELETED")
-          nodepoolStatus shouldBe ("DELETED")
+          appStatus shouldBe "DELETED"
+          nodepoolStatus shouldBe "DELETED"
         }
       }
       res.unsafeRunSync()
@@ -234,7 +228,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           status <- getRuntimeStatus(runtimeId)
           pdId <- getPdIdFromRuntimeConfig(runtimeConfigId)
         } yield {
-          status shouldBe ("Deleted")
+          status shouldBe "Deleted"
           pdId shouldBe None
         }
       }
@@ -254,7 +248,7 @@ final class DbReaderSpec extends AnyFlatSpec with CronJobsTestSuite with IOCheck
           error <- getRuntimeError(runtimeId)
         } yield {
           error.errorCode shouldBe Some(1)
-          error.errorMessage shouldBe ("cluster error")
+          error.errorMessage shouldBe "cluster error"
         }
       }
       res.unsafeRunSync()

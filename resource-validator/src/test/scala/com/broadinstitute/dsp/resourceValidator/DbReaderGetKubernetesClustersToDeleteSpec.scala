@@ -50,7 +50,8 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
                          diskId,
                          "DELETED",
                          createdDateWithinGracePeriod,
-                         destroyedDateBeyondGracePeriod)
+                         destroyedDateBeyondGracePeriod
+          )
 
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
@@ -76,7 +77,8 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
                          diskId,
                          "ERROR",
                          createdDateBeyondGracePeriod,
-                         destroyedDateWithinGracePeriod)
+                         destroyedDateWithinGracePeriod
+          )
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
       }
@@ -116,7 +118,8 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
                          diskId,
                          "ERROR",
                          createdDateBeyondGracePeriod,
-                         destroyedDateBeyondGracePeriod)
+                         destroyedDateBeyondGracePeriod
+          )
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove shouldBe List.empty
       }
@@ -141,7 +144,8 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
                          diskId,
                          "RUNNING",
                          createdDateBeyondGracePeriod,
-                         destroyedDateBeyondGracePeriod)
+                         destroyedDateBeyondGracePeriod
+          )
 
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove shouldBe List.empty
@@ -167,7 +171,8 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
                          diskId,
                          "DELETED",
                          createdDateBeyondGracePeriod,
-                         destroyedDateWithinGracePeriod)
+                         destroyedDateWithinGracePeriod
+          )
 
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove shouldBe List.empty
@@ -193,7 +198,8 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
                          diskId,
                          "ERROR",
                          createdDateWithinGracePeriod,
-                         destroyedDateBeyondGracePeriod)
+                         destroyedDateBeyondGracePeriod
+          )
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove shouldBe List.empty
       }

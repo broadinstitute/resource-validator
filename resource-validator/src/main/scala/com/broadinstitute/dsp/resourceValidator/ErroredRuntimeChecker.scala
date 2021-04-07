@@ -21,8 +21,8 @@ object ErroredRuntimeChecker {
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
       override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getErroredRuntimes
 
-      override def checkResource(runtime: Runtime, isDryRun: Boolean)(
-        implicit ev: Ask[F, TraceId]
+      override def checkResource(runtime: Runtime, isDryRun: Boolean)(implicit
+        ev: Ask[F, TraceId]
       ): F[Option[Runtime]] = runtime.cloudService match {
         case Dataproc =>
           checkDataprocCluster(runtime, isDryRun)
@@ -37,34 +37,35 @@ object ErroredRuntimeChecker {
           r <- clusterOpt.flatTraverse[F, Runtime] { cluster =>
             for {
               isBillingEnabled <- deps.billingService.isBillingEnabled(runtime.googleProject)
-              r <- if (cluster.getStatus.getState.name.toUpperCase == "ERROR")
-                logger
-                  .warn(s"${runtime} still exists in Google in Error state. User might want to delete the runtime.")
-                  .as(none[Runtime])
-              else {
-                if (isDryRun)
+              r <-
+                if (cluster.getStatus.getState.name.toUpperCase == "ERROR")
                   logger
-                    .warn(
-                      s"${runtime} still exists in ${cluster.getStatus.getState.name} status. It needs to be deleted. isBillingEnabled: $isBillingEnabled. Project: ${runtime.googleProject}"
-                    )
-                    .as(Option(runtime))
-                else
-                  isBillingEnabled match {
-                    case true =>
-                      logger.warn(
-                        s"${runtime} still exists in ${cluster.getStatus.getState.name} status with billing enabled. Going to delete it."
-                      ) >> deps.dataprocService
-                        .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
-                        .void
-                        .as(Option(runtime))
-                    case false =>
-                      logger
-                        .info(
-                          s"$runtime has been reported from getCluster, but billing is disabled so cannot perform any actions"
-                        )
-                        .as(none[Runtime])
-                  }
-              }
+                    .warn(s"${runtime} still exists in Google in Error state. User might want to delete the runtime.")
+                    .as(none[Runtime])
+                else {
+                  if (isDryRun)
+                    logger
+                      .warn(
+                        s"${runtime} still exists in ${cluster.getStatus.getState.name} status. It needs to be deleted. isBillingEnabled: $isBillingEnabled. Project: ${runtime.googleProject}"
+                      )
+                      .as(Option(runtime))
+                  else
+                    isBillingEnabled match {
+                      case true =>
+                        logger.warn(
+                          s"${runtime} still exists in ${cluster.getStatus.getState.name} status with billing enabled. Going to delete it."
+                        ) >> deps.dataprocService
+                          .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
+                          .void
+                          .as(Option(runtime))
+                      case false =>
+                        logger
+                          .info(
+                            s"$runtime has been reported from getCluster, but billing is disabled so cannot perform any actions"
+                          )
+                          .as(none[Runtime])
+                    }
+                }
             } yield r
           }
         } yield r

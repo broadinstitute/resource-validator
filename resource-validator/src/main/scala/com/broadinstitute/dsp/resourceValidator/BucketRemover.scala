@@ -15,10 +15,12 @@ object BucketRemover {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: CheckRunnerDeps[F]
-  )(implicit F: Concurrent[F],
+  )(implicit
+    F: Concurrent[F],
     timer: Timer[F],
     logger: Logger[F],
-    ev: Ask[F, TraceId]): CheckRunner[F, BucketToRemove] =
+    ev: Ask[F, TraceId]
+  ): CheckRunner[F, BucketToRemove] =
     new CheckRunner[F, BucketToRemove] {
       override def appName: String = resourceValidator.appName
       override def configs = CheckRunnerConfigs("remove-staging-buckets", false)
@@ -27,8 +29,8 @@ object BucketRemover {
 
       // We're ignoring isDryRun flag here since we do want to delete these staging buckets
       // We can improve this by checking if the bucket exists first, but it doesn't hurt to blindly issue deleting bucket
-      override def checkResource(a: BucketToRemove, isDryRun: Boolean)(
-        implicit ev: Ask[F, TraceId]
+      override def checkResource(a: BucketToRemove, isDryRun: Boolean)(implicit
+        ev: Ask[F, TraceId]
       ): F[Option[BucketToRemove]] =
         a.bucket
           .flatTraverse { b =>
@@ -47,4 +49,5 @@ object BucketRemover {
 }
 
 final case class BucketRemoverDeps[F[_]](reportDestinationBucket: GcsBucketName,
-                                         storageService: GoogleStorageService[F])
+                                         storageService: GoogleStorageService[F]
+)

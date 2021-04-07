@@ -24,8 +24,9 @@ object StoppedRuntimeChecker {
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
       override def resourceToScan: fs2.Stream[F, Runtime] = dbReader.getStoppedRuntimes
 
-      override def checkResource(runtime: Runtime,
-                                 isDryRun: Boolean)(implicit ev: Ask[F, TraceId]): F[Option[Runtime]] =
+      override def checkResource(runtime: Runtime, isDryRun: Boolean)(implicit
+        ev: Ask[F, TraceId]
+      ): F[Option[Runtime]] =
         runtime.cloudService match {
           case Dataproc =>
             checkDataprocCluster(runtime, isDryRun)
@@ -33,8 +34,8 @@ object StoppedRuntimeChecker {
             checkGceRuntime(runtime, isDryRun)
         }
 
-      private def checkGceRuntime(runtime: Runtime, isDryRun: Boolean)(
-        implicit ev: Ask[F, TraceId]
+      private def checkGceRuntime(runtime: Runtime, isDryRun: Boolean)(implicit
+        ev: Ask[F, TraceId]
       ): F[Option[Runtime]] =
         for {
           runtimeOpt <- deps.computeService
@@ -55,8 +56,8 @@ object StoppedRuntimeChecker {
           }
         } yield runningRuntimeOpt
 
-      private def checkDataprocCluster(runtime: Runtime, isDryRun: Boolean)(
-        implicit ev: Ask[F, TraceId]
+      private def checkDataprocCluster(runtime: Runtime, isDryRun: Boolean)(implicit
+        ev: Ask[F, TraceId]
       ): F[Option[Runtime]] = {
         val clusterName = DataprocClusterName(runtime.runtimeName)
         val project = runtime.googleProject
@@ -71,19 +72,22 @@ object StoppedRuntimeChecker {
                 // possible to stop Dataproc clusters otherwise. Therefore here, we are also checking that there is
                 // at least one underlying instance that is RUNNING.
                 runningInstanceExists <- containsRunningInstance(project, zoneName, regionName, clusterName)
-                rt <- if (runningInstanceExists) {
-                  if (isDryRun)
-                    logger
-                      .warn(s"Cluster (${runtime}) has running instance(s). It needs to be stopped.")
-                      .as(Option(runtime))
-                  else
-                    logger.warn(s"Cluster (${runtime}) has running instances(s). Going to stop it.") >> deps.dataprocService
-                    // In contrast to in Leo, we're not setting the shutdown script metadata before stopping the instance
-                    // in order to keep things simple since our main goal here is to prevent unintended cost to users.
-                      .stopCluster(project, regionName, clusterName, metadata = None)
-                      .void
-                      .as(Option(runtime))
-                } else F.pure(none[Runtime])
+                rt <-
+                  if (runningInstanceExists) {
+                    if (isDryRun)
+                      logger
+                        .warn(s"Cluster (${runtime}) has running instance(s). It needs to be stopped.")
+                        .as(Option(runtime))
+                    else
+                      logger.warn(
+                        s"Cluster (${runtime}) has running instances(s). Going to stop it."
+                      ) >> deps.dataprocService
+                        // In contrast to in Leo, we're not setting the shutdown script metadata before stopping the instance
+                        // in order to keep things simple since our main goal here is to prevent unintended cost to users.
+                        .stopCluster(project, regionName, clusterName, metadata = None)
+                        .void
+                        .as(Option(runtime))
+                  } else F.pure(none[Runtime])
               } yield rt
             } else F.pure(none[Runtime])
           }
@@ -93,7 +97,8 @@ object StoppedRuntimeChecker {
       private def containsRunningInstance(project: GoogleProject,
                                           zone: ZoneName,
                                           region: RegionName,
-                                          cluster: DataprocClusterName): F[Boolean] =
+                                          cluster: DataprocClusterName
+      ): F[Boolean] =
         for {
           instances <- deps.dataprocService.getClusterInstances(project, region, cluster)
           doesThereExistARunningInstance <- Stream

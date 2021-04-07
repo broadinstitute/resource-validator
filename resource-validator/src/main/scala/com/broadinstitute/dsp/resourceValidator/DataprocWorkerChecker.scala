@@ -32,8 +32,8 @@ object DataprocWorkerChecker {
 
       override def resourceToScan: fs2.Stream[F, RuntimeWithWorkers] = dbReader.getRuntimesWithWorkers
 
-      override def checkResource(runtime: RuntimeWithWorkers, isDryRun: Boolean)(
-        implicit ev: Ask[F, TraceId]
+      override def checkResource(runtime: RuntimeWithWorkers, isDryRun: Boolean)(implicit
+        ev: Ask[F, TraceId]
       ): F[Option[RuntimeWithWorkers]] =
         for {
           clusterOpt <- deps.dataprocService
@@ -42,7 +42,9 @@ object DataprocWorkerChecker {
             val doesPrimaryWorkerMatch =
               runtime.workerConfig.numberOfWorkers.getOrElse(0) == c.getConfig.getWorkerConfig.getNumInstances
             val doesSecondaryWorkerMatch =
-              if (c.getConfig.getSecondaryWorkerConfig.getNumInstances == 0 && runtime.r.status.toLowerCase == "stopped")
+              if (
+                c.getConfig.getSecondaryWorkerConfig.getNumInstances == 0 && runtime.r.status.toLowerCase == "stopped"
+              )
                 true // We remove preemptibles before stopping clusters. Therefore, we don't consider this case an anomaly.
               else
                 runtime.workerConfig.numberOfPreemptibleWorkers
@@ -72,11 +74,10 @@ object DataprocWorkerChecker {
                           else Some(runtime.workerConfig.numberOfPreemptibleWorkers.getOrElse(0))
                         )
                         .void
-                        .handleErrorWith {
-                          case e: com.google.api.gax.rpc.ApiException =>
-                            logger.warn(e)(
-                              s"${runtime} has an anomaly with the number of workers in google, and the resize failed."
-                            ) >> deps.checkRunnerDeps.metrics.incrementCounter(s"$appName/$checkType/failure")
+                        .handleErrorWith { case e: com.google.api.gax.rpc.ApiException =>
+                          logger.warn(e)(
+                            s"${runtime} has an anomaly with the number of workers in google, and the resize failed."
+                          ) >> deps.checkRunnerDeps.metrics.incrementCounter(s"$appName/$checkType/failure")
                         } >>
                         logger
                           .warn(

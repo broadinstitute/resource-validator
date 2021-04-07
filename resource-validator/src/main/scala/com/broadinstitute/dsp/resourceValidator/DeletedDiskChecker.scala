@@ -19,14 +19,15 @@ object DeletedDiskChecker {
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
       override def resourceToScan: fs2.Stream[F, Disk] = dbReader.getDeletedDisks
 
-      override def checkResource(disk: Disk, isDryRun: Boolean)(
-        implicit ev: Ask[F, TraceId]
+      override def checkResource(disk: Disk, isDryRun: Boolean)(implicit
+        ev: Ask[F, TraceId]
       ): F[Option[Disk]] =
         for {
           diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, zoneName, disk.diskName)
-          _ <- if (!isDryRun) {
-            diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, disk.diskName))
-          } else F.pure(None)
+          _ <-
+            if (!isDryRun) {
+              diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, disk.diskName))
+            } else F.pure(None)
         } yield diskOpt.map(_ => disk)
     }
 }

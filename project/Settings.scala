@@ -94,8 +94,8 @@ object Settings {
       val universalMappings = (mappings in Universal).value
       val fatJar = (assembly in Compile).value
       // removing means filtering
-      val filtered = universalMappings filter {
-        case (_, name) => !name.endsWith(".jar")
+      val filtered = universalMappings filter { case (_, name) =>
+        !name.endsWith(".jar")
       }
       // add the fat jar
       filtered :+ (fatJar -> ("lib/" + fatJar.getName))
@@ -114,8 +114,8 @@ object Settings {
       val universalMappings = (mappings in Universal).value
       val fatJar = (assembly in Compile).value
       // removing means filtering
-      val filtered = universalMappings filter {
-        case (_, name) => !name.endsWith(".jar")
+      val filtered = universalMappings filter { case (_, name) =>
+        !name.endsWith(".jar")
       }
       // add the fat jar
       filtered :+ (fatJar -> ("lib/" + fatJar.getName))
@@ -134,8 +134,8 @@ object Settings {
       val universalMappings = (mappings in Universal).value
       val fatJar = (assembly in Compile).value
       // removing means filtering
-      val filtered = universalMappings filter {
-        case (_, name) => !name.endsWith(".jar")
+      val filtered = universalMappings filter { case (_, name) =>
+        !name.endsWith(".jar")
       }
       // add the fat jar
       filtered :+ (fatJar -> ("lib/" + fatJar.getName))
