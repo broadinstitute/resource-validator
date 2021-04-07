@@ -14,7 +14,7 @@ object Dependencies {
     "org.tpolecat" %% "doobie-hikari" % doobieVersion,
     "org.tpolecat" %% "doobie-scalatest" % doobieVersion % Test,
     "com.github.pureconfig" %% "pureconfig" % "0.14.0",
-    "mysql" % "mysql-connector-java" % "8.0.18",
+    "mysql" % "mysql-connector-java" % "8.0.23",
     "org.scalatest" %% "scalatest" % "3.2.3" % Test,
     "com.monovore" %% "decline" % "1.0.0",
     "org.broadinstitute.dsde.workbench" %% "workbench-opentelemetry" % openTelemetryVersion,
