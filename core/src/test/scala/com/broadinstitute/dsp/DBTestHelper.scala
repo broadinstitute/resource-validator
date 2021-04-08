@@ -30,7 +30,7 @@ object DBTestHelper {
                          databaseConfig: DatabaseConfig): Resource[IO, HikariTransactor[IO]] =
     for {
       xa <- DbTransactor.init[IO](databaseConfig)
-      _ <- Resource.liftF(truncateTables(xa))
+      _ <- Resource.eval(truncateTables(xa))
     } yield xa
 
   def insertDiskQuery(disk: Disk, status: String) =

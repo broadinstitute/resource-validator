@@ -106,7 +106,7 @@ object ResourceValidator {
   ): Resource[F, ResourcevalidatorServerDeps[F]] =
     for {
       blocker <- Blocker[F]
-      blockerBound <- Resource.liftF(Semaphore[F](250))
+      blockerBound <- Resource.eval(Semaphore[F](250))
       metrics <- OpenTelemetryMetrics.resource(appConfig.pathToCredential, "leonardo-cron-jobs", blocker)
       runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig.runtimeCheckerConfig, blocker, metrics, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)
