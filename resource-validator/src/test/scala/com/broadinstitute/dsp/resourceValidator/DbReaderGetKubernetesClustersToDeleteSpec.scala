@@ -198,8 +198,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
     }
   }
 
-  // The scenario below is to mimic a cluster with batch-pre-created nodepools, which we don't want to auto-delete
-  it should "NOT detect for removal: Kubernetes cluster with nodepools but no apps" taggedAs DbTest in {
+  it should "detect for removal: Kubernetes cluster with nodepools but no apps" taggedAs DbTest in {
     forAll { (cluster: KubernetesClusterId) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
@@ -210,7 +209,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
           _ <- insertNodepool(clusterId, "np", false)
 
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
-        } yield clustersToRemove.map(_.id) shouldBe List.empty
+        } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
       }
       res.unsafeRunSync()
     }
