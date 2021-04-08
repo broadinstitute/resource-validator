@@ -2,11 +2,10 @@ package com.broadinstitute.dsp
 package zombieMonitor
 
 import cats.effect.{Concurrent, Timer}
-import cats.implicits._
+import cats.syntax.all._
 import cats.mtl.Ask
-import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
@@ -28,19 +27,19 @@ object DeletedOrErroredRuntimeChecker {
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
 
       def checkResource(a: Runtime, isDryRun: Boolean)(implicit ev: Ask[F, TraceId]): F[Option[Runtime]] =
-        a.cloudService match {
-          case Dataproc =>
-            checkDataprocClusterStatus(a, isDryRun)
-          case Gce =>
-            checkGceRuntimeStatus(a, isDryRun)
+        a match {
+          case x: Runtime.Dataproc =>
+            checkDataprocClusterStatus(x, isDryRun)
+          case x: Runtime.Gce =>
+            checkGceRuntimeStatus(x, isDryRun)
         }
 
-      def checkDataprocClusterStatus(runtime: Runtime, isDryRun: Boolean)(
+      def checkDataprocClusterStatus(runtime: Runtime.Dataproc, isDryRun: Boolean)(
         implicit ev: Ask[F, TraceId]
       ): F[Option[Runtime]] =
         for {
           runtimeOpt <- deps.dataprocService
-            .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
+            .getCluster(runtime.googleProject, runtime.region, DataprocClusterName(runtime.runtimeName))
 
           res <- runtimeOpt match {
             case None =>
@@ -93,10 +92,10 @@ object DeletedOrErroredRuntimeChecker {
           }
         } yield res
 
-      def checkGceRuntimeStatus(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
+      def checkGceRuntimeStatus(runtime: Runtime.Gce, isDryRun: Boolean): F[Option[Runtime]] =
         for {
           runtimeOpt <- deps.computeService
-            .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
+            .getInstance(runtime.googleProject, runtime.zone, InstanceName(runtime.runtimeName))
           _ <- if (isDryRun) F.unit
           else
             runtimeOpt match {

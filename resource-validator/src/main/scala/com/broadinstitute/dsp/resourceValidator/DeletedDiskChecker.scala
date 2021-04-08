@@ -2,9 +2,9 @@ package com.broadinstitute.dsp
 package resourceValidator
 
 import cats.effect.{Concurrent, Timer}
-import cats.implicits._
+import cats.syntax.all._
 import cats.mtl.Ask
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 // Implements CheckRunner[F[_], A]
@@ -23,9 +23,11 @@ object DeletedDiskChecker {
         implicit ev: Ask[F, TraceId]
       ): F[Option[Disk]] =
         for {
-          diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, zoneName, disk.diskName)
+          diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, defaultZoneNameForDiskOnly, disk.diskName)
           _ <- if (!isDryRun) {
-            diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, disk.diskName))
+            diskOpt.traverse(_ =>
+              deps.googleDiskService.deleteDisk(disk.googleProject, defaultZoneNameForDiskOnly, disk.diskName)
+            )
           } else F.pure(None)
         } yield diskOpt.map(_ => disk)
     }

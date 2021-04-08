@@ -2,10 +2,9 @@ package com.broadinstitute.dsp
 package resourceValidator
 
 import cats.effect.{Concurrent, Timer}
-import cats.implicits._
+import cats.syntax.all._
 import cats.mtl.Ask
-import com.broadinstitute.dsp.CloudService.{Dataproc, Gce}
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.{DataprocClusterName, InstanceName}
 import org.broadinstitute.dsde.workbench.model.TraceId
 
@@ -26,19 +25,19 @@ object DeletedRuntimeChecker {
 
       override def checkResource(runtime: Runtime,
                                  isDryRun: Boolean)(implicit ev: Ask[F, TraceId]): F[Option[Runtime]] =
-        runtime.cloudService match {
-          case Dataproc =>
-            checkDataprocCluster(runtime, isDryRun)
-          case Gce =>
-            checkGceRuntime(runtime, isDryRun)
+        runtime match {
+          case x: Runtime.Dataproc =>
+            checkDataprocCluster(x, isDryRun)
+          case x: Runtime.Gce =>
+            checkGceRuntime(x, isDryRun)
         }
 
-      private def checkDataprocCluster(runtime: Runtime, isDryRun: Boolean)(
+      private def checkDataprocCluster(runtime: Runtime.Dataproc, isDryRun: Boolean)(
         implicit ev: Ask[F, TraceId]
       ): F[Option[Runtime]] =
         for {
           clusterOpt <- deps.dataprocService
-            .getCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
+            .getCluster(runtime.googleProject, runtime.region, DataprocClusterName(runtime.runtimeName))
           r <- clusterOpt.flatTraverse { _ =>
             for {
               isBillingEnabled <- deps.billingService.isBillingEnabled(runtime.googleProject)
@@ -47,35 +46,35 @@ object DeletedRuntimeChecker {
                   .warn(
                     s"$runtime still exists in Google. It needs to be deleted. isBillingEnabled: $isBillingEnabled. Project: ${runtime.googleProject}"
                   )
-                  .as(Option(runtime))
+                  .as(runtime.some)
               else
                 isBillingEnabled match {
                   case true =>
                     logger.warn(s"$runtime still exists in Google and billing is enabled. Going to delete it.") >> deps.dataprocService
-                      .deleteCluster(runtime.googleProject, regionName, DataprocClusterName(runtime.runtimeName))
-                      .as(Option(runtime))
+                      .deleteCluster(runtime.googleProject, runtime.region, DataprocClusterName(runtime.runtimeName))
+                      .as(runtime.some)
                   case false =>
                     logger
                       .info(
                         s"$runtime has been reported from getCluster, but billing is disabled so cannot perform any actions."
                       )
-                      .as(none[Runtime])
+                      .as(none[Runtime.Dataproc])
                 }
             } yield r
           }
         } yield r
 
-      private def checkGceRuntime(runtime: Runtime, isDryRun: Boolean): F[Option[Runtime]] =
+      private def checkGceRuntime(runtime: Runtime.Gce, isDryRun: Boolean): F[Option[Runtime]] =
         for {
           runtimeOpt <- deps.computeService
-            .getInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
+            .getInstance(runtime.googleProject, runtime.zone, InstanceName(runtime.runtimeName))
           _ <- runtimeOpt.traverse_ { _ =>
             if (isDryRun)
               logger.warn(s"${runtime} still exists in Google. It needs to be deleted")
             else
               logger.warn(s"${runtime} still exists in Google. Going to delete") >>
                 deps.computeService
-                  .deleteInstance(runtime.googleProject, zoneName, InstanceName(runtime.runtimeName))
+                  .deleteInstance(runtime.googleProject, runtime.zone, InstanceName(runtime.runtimeName))
                   .void
           }
         } yield runtimeOpt.fold(none[Runtime])(_ => Some(runtime))
