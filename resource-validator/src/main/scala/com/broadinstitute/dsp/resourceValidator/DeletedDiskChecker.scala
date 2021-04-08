@@ -5,6 +5,7 @@ import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import cats.mtl.Ask
 import io.chrisdavenport.log4cats.Logger
+import org.broadinstitute.dsde.workbench.google2.DiskName
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 // Implements CheckRunner[F[_], A]
@@ -25,6 +26,10 @@ object DeletedDiskChecker {
         for {
           diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, zoneName, disk.diskName)
           _ <- if (!isDryRun) {
+            if (disk.formattedBy.getOrElse(None) == "GALAXY") {
+              val postgresDiskName = DiskName(s"${disk.diskName}-gxy-postres-disk")
+              diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, postgresDiskName))
+            }
             diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, disk.diskName))
           } else F.pure(None)
         } yield diskOpt.map(_ => disk)
