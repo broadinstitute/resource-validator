@@ -3,7 +3,6 @@ package resourceValidator
 
 import cats.effect.IO
 import cats.mtl.Ask
-import com.broadinstitute.dsp.CloudService.Dataproc
 import com.broadinstitute.dsp.Generators._
 import com.broadinstitute.dsp.resourceValidator.InitDependenciesHelper._
 import com.google.cloud.compute.v1.{Instance, Operation}
@@ -105,11 +104,10 @@ final class StoppedRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite
   }
 
   it should "return None if Dataproc cluster is RUNNING but its instances are STOPPED" in {
-    forAll { (runtime: Runtime, dryRun: Boolean) =>
-      val dataprocRuntime = runtime.copy(cloudService = Dataproc)
-
+    implicit val arbA = arbDataprocRuntime
+    forAll { (runtime: Runtime.Dataproc, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {
-        override def getStoppedRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(dataprocRuntime)
+        override def getStoppedRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }
 
       val computeService = new FakeGoogleComputeService {

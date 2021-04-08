@@ -7,8 +7,8 @@ import cats.Parallel
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.Ask
 import fs2.Stream
-import io.chrisdavenport.log4cats.StructuredLogger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.StructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.broadinstitute.dsde.workbench.google2.{GoogleSubscriptionAdmin, GoogleTopicAdmin}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics

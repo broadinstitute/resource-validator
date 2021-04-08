@@ -2,10 +2,10 @@ package com.broadinstitute.dsp
 package zombieMonitor
 
 import cats.effect.{Concurrent, Timer}
-import cats.implicits._
+import cats.syntax.all._
 import cats.mtl.Ask
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 /**
@@ -26,14 +26,13 @@ object DeletedDiskChecker {
 
       def checkResource(disk: Disk, isDryRun: Boolean)(implicit ev: Ask[F, TraceId]): F[Option[Disk]] =
         for {
-          diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, zoneName, disk.diskName)
-          _ <-
-            if (isDryRun) F.unit
-            else
-              diskOpt match {
-                case None    => dbReader.updateDiskStatus(disk.id)
-                case Some(_) => F.unit
-              }
+          diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, defaultZoneNameForDiskOnly, disk.diskName)
+          _ <- if (isDryRun) F.unit
+          else
+            diskOpt match {
+              case None    => dbReader.updateDiskStatus(disk.id)
+              case Some(_) => F.unit
+            }
         } yield diskOpt.fold[Option[Disk]](Some(disk))(_ => none[Disk])
 
       override def appName: String = zombieMonitor.appName

@@ -3,7 +3,7 @@ package nuker
 
 import java.nio.file.Path
 
-import cats.implicits._
+import cats.syntax.all._
 import pureconfig._
 import pureconfig.generic.auto._
 import com.broadinstitute.dsp.ConfigImplicits._

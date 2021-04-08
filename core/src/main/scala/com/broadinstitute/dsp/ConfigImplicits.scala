@@ -2,7 +2,7 @@ package com.broadinstitute.dsp
 
 import java.nio.file.{Path, Paths}
 
-import cats.implicits._
+import cats.syntax.all._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 import pureconfig.ConfigReader
 import pureconfig.error.{ExceptionThrown, FailureReason}

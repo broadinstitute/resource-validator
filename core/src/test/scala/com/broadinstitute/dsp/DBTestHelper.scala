@@ -2,7 +2,6 @@ package com.broadinstitute.dsp
 
 import java.time.Instant
 import java.util.UUID
-
 import cats.effect.{ContextShift, IO, Resource}
 import doobie.hikari.HikariTransactor
 import doobie.implicits._
@@ -11,9 +10,13 @@ import doobie.Put
 import doobie.util.transactor.Transactor
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
+import org.broadinstitute.dsde.workbench.google2.{RegionName, ZoneName}
+import org.scalatest.Tag
 
 object DBTestHelper {
   implicit val cloudServicePut: Put[CloudService] = Put[String].contramap(cloudService => cloudService.asString)
+  val zoneName = ZoneName("us-central1-a")
+  val regionName = RegionName("us-central1")
 
   def yoloTransactor(implicit cs: ContextShift[IO], databaseConfig: DatabaseConfig): Transactor[IO] =
     Transactor.fromDriverManager[IO](
@@ -102,14 +105,18 @@ object DBTestHelper {
          ${UUID.randomUUID().toString})
          """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
 
-  def insertRuntimeConfig(cloudService: CloudService)(implicit xa: HikariTransactor[IO]): IO[Long] =
+  def insertRuntimeConfig(cloudService: CloudService)(implicit xa: HikariTransactor[IO]): IO[Long] = {
+    val zone = if (cloudService == CloudService.Gce) Some(zoneName.value) else None
+    val region = if (cloudService == CloudService.Dataproc) Some(regionName.value) else None
     sql"""INSERT INTO RUNTIME_CONFIG
          (cloudService,
           machineType,
           diskSize,
           numberOfWorkers,
           dateAccessed,
-          bootDiskSize
+          bootDiskSize,
+          zone,
+          region
          )
          VALUES (
          ${cloudService},
@@ -117,9 +124,12 @@ object DBTestHelper {
          100,
          0,
          now(),
-         30
+         30,
+         ${zone},
+         ${region}
          )
          """.update.withUniqueGeneratedKeys[Long]("id").transact(xa)
+  }
 
   def insertNamespace(clusterId: Long, namespaceName: NamespaceName)(implicit
     xa: HikariTransactor[IO]
@@ -211,3 +221,5 @@ object DBTestHelper {
 }
 
 final case class RuntimeError(errorCode: Option[Int], errorMessage: String)
+
+object DbTest extends Tag("cronJobs.dbTest")

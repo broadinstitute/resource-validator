@@ -2,8 +2,8 @@ package com.broadinstitute.dsp
 
 import cats.effect.{Blocker, ContextShift, IO, Timer}
 import cats.mtl.Ask
-import io.chrisdavenport.log4cats.StructuredLogger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.StructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.Configuration

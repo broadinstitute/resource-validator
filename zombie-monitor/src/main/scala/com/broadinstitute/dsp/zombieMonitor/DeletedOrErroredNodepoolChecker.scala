@@ -2,10 +2,10 @@ package com.broadinstitute.dsp
 package zombieMonitor
 
 import cats.effect.{Concurrent, Timer}
-import cats.implicits._
+import cats.syntax.all._
 import cats.mtl.Ask
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 /**

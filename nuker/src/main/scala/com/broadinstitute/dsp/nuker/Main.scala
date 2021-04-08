@@ -2,7 +2,7 @@ package com.broadinstitute.dsp
 package nuker
 
 import cats.effect.IO
-import cats.implicits._
+import cats.syntax.all._
 import com.monovore.decline.{CommandApp, _}
 import scala.concurrent.ExecutionContext.global
 

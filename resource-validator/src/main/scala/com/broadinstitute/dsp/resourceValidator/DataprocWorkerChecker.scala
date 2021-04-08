@@ -2,9 +2,8 @@ package com.broadinstitute.dsp.resourceValidator
 
 import cats.effect.{Concurrent, Timer}
 import cats.mtl.Ask
-import cats.implicits._
+import cats.syntax.all._
 import com.broadinstitute.dsp.{
-  regionName,
   resourceValidator,
   CheckRunner,
   CheckRunnerConfigs,
@@ -12,7 +11,7 @@ import com.broadinstitute.dsp.{
   RuntimeCheckerDeps,
   RuntimeWithWorkers
 }
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.DataprocClusterName
 import org.broadinstitute.dsde.workbench.model.TraceId
 
@@ -37,7 +36,7 @@ object DataprocWorkerChecker {
       ): F[Option[RuntimeWithWorkers]] =
         for {
           clusterOpt <- deps.dataprocService
-            .getCluster(runtime.r.googleProject, regionName, DataprocClusterName(runtime.r.runtimeName))
+            .getCluster(runtime.r.googleProject, runtime.r.region, DataprocClusterName(runtime.r.runtimeName))
           runtime <- clusterOpt.flatTraverse { c =>
             val doesPrimaryWorkerMatch =
               runtime.workerConfig.numberOfWorkers.getOrElse(0) == c.getConfig.getWorkerConfig.getNumInstances
@@ -67,7 +66,7 @@ object DataprocWorkerChecker {
                       deps.dataprocService
                         .resizeCluster(
                           runtime.r.googleProject,
-                          regionName,
+                          runtime.r.region,
                           DataprocClusterName(runtime.r.runtimeName),
                           if (doesPrimaryWorkerMatch) None else Some(runtime.workerConfig.numberOfWorkers.getOrElse(0)),
                           if (doesSecondaryWorkerMatch) None
