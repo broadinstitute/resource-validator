@@ -7,7 +7,7 @@ object Dependencies {
   val openTelemetryVersion = "0.1-cba9b6c"
 
   val core = Seq(
-    "net.logstash.logback" % "logstash-logback-encoder" % "6.2",
+    "net.logstash.logback" % "logstash-logback-encoder" % "6.6",
     "ch.qos.logback" % "logback-classic" % "1.2.3",
     "ch.qos.logback" % "logback-core" % "1.2.3",
     "org.tpolecat" %% "doobie-core" % doobieVersion,
