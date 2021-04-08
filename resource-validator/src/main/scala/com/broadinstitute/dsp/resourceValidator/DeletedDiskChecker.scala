@@ -23,11 +23,9 @@ object DeletedDiskChecker {
         implicit ev: Ask[F, TraceId]
       ): F[Option[Disk]] =
         for {
-          diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, defaultZoneNameForDiskOnly, disk.diskName)
+          diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, disk.zone, disk.diskName)
           _ <- if (!isDryRun) {
-            diskOpt.traverse(_ =>
-              deps.googleDiskService.deleteDisk(disk.googleProject, defaultZoneNameForDiskOnly, disk.diskName)
-            )
+            diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, disk.zone, disk.diskName))
           } else F.pure(None)
         } yield diskOpt.map(_ => disk)
     }

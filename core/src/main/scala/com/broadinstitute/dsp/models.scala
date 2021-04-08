@@ -2,7 +2,7 @@ package com.broadinstitute.dsp
 
 import ca.mrvisser.sealerate
 import io.circe.Encoder
-import org.broadinstitute.dsde.workbench.google2.{DiskName, Location}
+import org.broadinstitute.dsde.workbench.google2.{DiskName, Location, ZoneName}
 import org.broadinstitute.dsde.workbench.google2.GKEModels.{
   KubernetesClusterId,
   KubernetesClusterName,
@@ -24,7 +24,7 @@ object CloudService {
     override def asString: String = "DATAPROC"
   }
 }
-final case class Disk(id: Long, googleProject: GoogleProject, diskName: DiskName) {
+final case class Disk(id: Long, googleProject: GoogleProject, diskName: DiskName, zone: ZoneName) {
   override def toString: String = s"${id}/${googleProject.value},${diskName.value}"
 }
 
