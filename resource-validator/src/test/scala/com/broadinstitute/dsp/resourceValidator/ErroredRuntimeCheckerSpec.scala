@@ -88,7 +88,8 @@ class ErroredRuntimeCheckerSpec extends AnyFlatSpec with CronJobsTestSuite {
   }
 
   it should "return None if dataproc cluster still exists in Google in Error status and it is not a dry run" in {
-    forAll { (runtime: Runtime) =>
+    implicit val arbA = arbDataprocRuntime
+    forAll { (runtime: Runtime.Dataproc) =>
       val dbReader = new FakeDbReader {
         override def getErroredRuntimes: fs2.Stream[IO, Runtime] = Stream.emit(runtime)
       }

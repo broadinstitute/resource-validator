@@ -1,16 +1,43 @@
 package com.broadinstitute
 
-import java.nio.file.Path
-
 import cats.effect.{Resource, Sync, Timer}
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import org.broadinstitute.dsde.workbench.google2.{RegionName, ZoneName}
 
+import java.nio.file.Path
 import scala.jdk.CollectionConverters._
 
 package object dsp {
-  val zoneName = ZoneName("us-central1-a")
-  val regionName = RegionName("us-central1")
+  // TODO: remove all references to this after https://broadworkbench.atlassian.net/browse/IA-2640
+  val defaultZoneNameForDiskOnly = ZoneName("us-central1-a")
+
+  val supportedRegions = Set(
+    "northamerica-northeast1",
+    "southamerica-east1",
+    "us-central1",
+    "us-east1",
+    "us-east4",
+    "us-west1",
+    "us-west2",
+    "us-west3",
+    "us-west4",
+    "europe-central2",
+    "europe-north1",
+    "europe-west1",
+    "europe-west2",
+    "europe-west3",
+    "europe-west4",
+    "europe-west6",
+    "asia-east1",
+    "asia-east2",
+    "asia-northeast1",
+    "asia-northeast2",
+    "asia-northeast3",
+    "asia-south1",
+    "asia-southeast1",
+    "asia-southeast2",
+    "australia-southeast1"
+  ).map(s => RegionName(s))
 
   def initGoogleCredentials[F[_]: Sync: Timer](
     pathToCredential: Path
