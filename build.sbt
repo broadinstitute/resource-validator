@@ -2,7 +2,7 @@ lazy val root = project
   .in(file("."))
   .settings(
     name := "leonardo-cron-jobs",
-    skip in publish := true
+    publish / skip := true
   )
   .aggregate(core, resourceValidator, zombieMonitor)
 
@@ -26,4 +26,4 @@ lazy val cleanup = (project in file("nuker"))
   .enablePlugins(JavaAppPackaging)
   .dependsOn(core % "test->test;compile->compile")
 
-parallelExecution in Test := false
+Test / parallelExecution := false
