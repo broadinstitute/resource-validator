@@ -15,7 +15,7 @@ object Dependencies {
     "org.tpolecat" %% "doobie-scalatest" % doobieVersion % Test,
     "com.github.pureconfig" %% "pureconfig" % "0.14.1",
     "mysql" % "mysql-connector-java" % "8.0.18",
-    "org.scalatest" %% "scalatest" % "3.2.3" % Test,
+    "org.scalatest" %% "scalatest" % "3.2.7" % Test,
     "com.monovore" %% "decline" % "1.0.0",
     "com.github.julien-truffaut" %% "monocle-core" % "3.0.0-M4",
     "com.github.julien-truffaut" %% "monocle-macro" % "3.0.0-M4",
