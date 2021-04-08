@@ -46,7 +46,7 @@ object DbReader {
       .query[InitBucketToRemove]
 
   val deletedRuntimeQuery =
-    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status
+    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.zone, rt.region
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
           WHERE
@@ -63,7 +63,7 @@ object DbReader {
       .query[Runtime]
 
   val erroredRuntimeQuery =
-    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status
+    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.zone, rt.region
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
           WHERE
@@ -79,7 +79,7 @@ object DbReader {
       .query[Runtime]
 
   val stoppedRuntimeQuery =
-    sql"""SELECT DISTINCT c1.id, c1.googleProject, c1.clusterName, rt.cloudService, c1.status
+    sql"""SELECT DISTINCT c1.id, c1.googleProject, c1.clusterName, rt.cloudService, c1.status, rt.zone, rt.region
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
           WHERE
@@ -174,7 +174,7 @@ object DbReader {
       .query[KubernetesClusterToRemove]
 
   val dataprocClusterWithWorkersQuery =
-    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.numberOfWorkers, rt.numberOfPreemptibleWorkers
+    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.region, rt.numberOfWorkers, rt.numberOfPreemptibleWorkers
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id
           WHERE rt.cloudService="DATAPROC" AND NOT c1.status="DELETED"

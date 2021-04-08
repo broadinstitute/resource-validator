@@ -48,6 +48,12 @@ sbt <project>/run --help
 
 e.g. `sbt "resourceValidator/run --dryRun --all"`
 
+Run unit tests (excluding unit tests require database access):
+`testOnly -- -l cronJobs.dbTest`
+
+Run all unit tests require database access:
+`testOnly -- -n cronJobs.dbTest`
+
 ## Contributing
 
 1. Run these unit tests locally before making a PR:

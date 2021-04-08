@@ -25,3 +25,5 @@ lazy val cleanup = (project in file("nuker"))
   .settings(Settings.nukerSettings)
   .enablePlugins(JavaAppPackaging)
   .dependsOn(core % "test->test;compile->compile")
+
+parallelExecution in Test := false

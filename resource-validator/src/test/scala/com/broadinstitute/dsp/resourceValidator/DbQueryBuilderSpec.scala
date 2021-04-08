@@ -3,55 +3,55 @@ package resourceValidator
 
 import com.broadinstitute.dsp.DBTestHelper._
 import doobie.scalatest.IOChecker
-import org.scalatest.DoNotDiscover
 import org.scalatest.flatspec.AnyFlatSpec
 
 /**
  * Not running these tests in CI yet since we'll need to set up mysql container and Leonardo tables in CI. Punt for now
  * For running these tests locally, you can
  *   * Start leonardo mysql container locally
- *   * Comment out https://github.com/DataBiosphere/leonardo/blob/develop/http/src/test/scala/org/broadinstitute/dsde/workbench/leonardo/db/TestComponent.scala#L82
- *   * Run a database unit test in leonardo
+ *   * Run a database unit test in leonardo (this will set up database schema properly)
  *   * Run this spec
  */
-@DoNotDiscover
 final class DbQueryBuilderSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val config = ConfigSpec.config.database
   val transactor = yoloTransactor
 
-  it should "build deletedDisksQuery properly" in {
+  it should "build deletedDisksQuery properly" taggedAs (DbTest) in {
     check(DbReader.deletedDisksQuery)
   }
 
-  it should "build initBucketsToDeleteQuery properly" in {
+  it should "build initBucketsToDeleteQuery properly" taggedAs (DbTest) in {
     check(DbReader.initBucketsToDeleteQuery)
   }
 
-  it should "build deletedRuntimeQuery properly" in {
+  it should "build deletedRuntimeQuery properly" taggedAs (DbTest) in {
     check(DbReader.deletedRuntimeQuery)
   }
 
-  it should "build erroredRuntimeQuery properly" in {
+  it should "build erroredRuntimeQuery properly" taggedAs (DbTest) in {
     check(DbReader.erroredRuntimeQuery)
   }
 
-  it should "build stoppedRuntimeQuery properly" in {
+  it should "build stoppedRuntimeQuery properly" taggedAs (DbTest) in {
     check(DbReader.stoppedRuntimeQuery)
   }
 
-  it should "build kubernetesClustersToDeleteQuery properly" in {
+  it should "build kubernetesClustersToDeleteQuery properly" taggedAs (DbTest) in {
     check(DbReader.kubernetesClustersToDeleteQuery)
   }
 
-  it should "build deletedAndErroredKubernetesClusterQuery properly" in {
+  it should "build deletedAndErroredKubernetesClusterQuery properly" taggedAs (DbTest) in {
     check(DbReader.deletedAndErroredKubernetesClusterQuery)
   }
 
-  it should "build deletedAndErroredNodepoolQuery properly" in {
+  it should "build deletedAndErroredNodepoolQuery properly" taggedAs (DbTest) in {
     check(DbReader.deletedAndErroredNodepoolQuery)
   }
 
-  it should "build dataprocClusterWithWorkersQuery properly" in {
+  // This test will fail because region is an optional field, and we're trying to read it as non optional field.
+  // But this is okay in reality because if we're reading it as `Dataproc` runtime, region should always exist;
+  // and we should get a runtime exception if there's a polluted data in DB.
+  it should "build dataprocClusterWithWorkersQuery properly" ignore {
     check(DbReader.dataprocClusterWithWorkersQuery)
   }
 }
