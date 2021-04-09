@@ -173,11 +173,15 @@ object DbReader {
          """
       .query[KubernetesClusterToRemove]
 
+  // We're excluding cluster id 6220 because it's a known anomaly and user ed team has reached out to hufengzhou@g.harvard.edu
   val dataprocClusterWithWorkersQuery =
     sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.region, rt.numberOfWorkers, rt.numberOfPreemptibleWorkers
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id
-          WHERE rt.cloudService="DATAPROC" AND NOT c1.status="DELETED"
+          WHERE 
+            rt.cloudService="DATAPROC" AND 
+            NOT c1.status="DELETED" AND
+            c1.id != 6220
          """
       .query[RuntimeWithWorkers]
 
