@@ -28,7 +28,7 @@ object DbReader {
   implicit def apply[F[_]](implicit ev: DbReader[F]): DbReader[F] = ev
 
   val activeDisksQuery =
-    sql"""select id, googleProject, name from PERSISTENT_DISK where status != "Deleted" and status != "Error";
+    sql"""select id, googleProject, name, zone from PERSISTENT_DISK where status != "Deleted" and status != "Error";
         """.query[Disk]
 
   // We only check runtimes that have been created for more than 1 hour because a newly "Creating" runtime may not exist in Google yet

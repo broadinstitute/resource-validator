@@ -66,13 +66,13 @@ object Settings {
   private lazy val commonSettings = List(
     organization := "com.broadinstitute.dsp",
     version := "0.0.1-SNAPSHOT",
-    scalaVersion := "2.13.4",
+    scalaVersion := "2.13.5",
     resolvers ++= commonResolvers,
     addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
     addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
     // Docker settings
     maintainer := "workbench-interactive-analysis@broadinstitute.org",
-    dockerBaseImage := "ghcr.io/graalvm/graalvm-ce:20.3.1",
+    dockerBaseImage := "ghcr.io/graalvm/graalvm-ce:java11-21.0.0.2",
     dockerRepository := Some("us.gcr.io"),
     scalacOptions ++= commonCompilerSettings,
     // assembly merge

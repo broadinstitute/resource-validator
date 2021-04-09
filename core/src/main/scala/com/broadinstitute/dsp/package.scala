@@ -2,15 +2,12 @@ package com.broadinstitute
 
 import cats.effect.{Resource, Sync, Timer}
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
-import org.broadinstitute.dsde.workbench.google2.{RegionName, ZoneName}
+import org.broadinstitute.dsde.workbench.google2.RegionName
 
 import java.nio.file.Path
 import scala.jdk.CollectionConverters._
 
 package object dsp {
-  // TODO: remove all references to this after https://broadworkbench.atlassian.net/browse/IA-2640
-  val defaultZoneNameForDiskOnly = ZoneName("us-central1-a")
-
   val supportedRegions = Set(
     "northamerica-northeast1",
     "southamerica-east1",
