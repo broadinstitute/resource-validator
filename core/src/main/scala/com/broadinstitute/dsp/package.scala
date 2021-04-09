@@ -2,7 +2,7 @@ package com.broadinstitute
 
 import cats.effect.{Resource, Sync, Timer}
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
-import org.broadinstitute.dsde.workbench.google2.{RegionName, ZoneName}
+import org.broadinstitute.dsde.workbench.google2.RegionName
 
 import java.nio.file.Path
 import scala.jdk.CollectionConverters._
