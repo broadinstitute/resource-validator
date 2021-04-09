@@ -33,7 +33,9 @@ object Generators {
     project <- genGoogleProject
     diskName <- genDiskName
     zone <- genZoneName
-  } yield Disk(id, project, diskName, zone)
+  } yield {
+    Disk(id, project, diskName, zone)
+  }
 
   val genInitBucket: Gen[InitBucketToRemove] = for {
     project <- genGoogleProject

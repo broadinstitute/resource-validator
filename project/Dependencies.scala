@@ -2,9 +2,9 @@ import sbt._
 
 object Dependencies {
   val logbackVersion = "1.2.3"
-  val workbenchGoogle2Version = "0.20-cba9b6c"
+  val workbenchGoogle2Version = "0.20-52e271f"
   val doobieVersion = "0.12.1"
-  val openTelemetryVersion = "0.1-cba9b6c"
+  val openTelemetryVersion = "0.1-52e271f"
 
   val core = Seq(
     "net.logstash.logback" % "logstash-logback-encoder" % "6.6",

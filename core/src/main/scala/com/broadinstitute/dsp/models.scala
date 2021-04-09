@@ -25,7 +25,7 @@ object CloudService {
   }
 }
 final case class Disk(id: Long, googleProject: GoogleProject, diskName: DiskName, zone: ZoneName) {
-  override def toString: String = s"${id}/${googleProject.value},${diskName.value}"
+  override def toString: String = s"${id}/${googleProject.value},${diskName.value},${zone.value}"
 }
 
 //init buckets are different than staging buckets because we store them with gs://[GcsBucketName]/
