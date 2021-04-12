@@ -39,13 +39,13 @@ jobs:
         if: steps.resource-validator.outputs.changed == 'true'
         with:
           command: |
-            yq w -i charts/leonardo/values.yaml cronjob.imageTag "${{ steps.setHash.outputs.git_short_sha }}"
+            yq --tag '!!str' w -i charts/leonardo/values.yaml cronjob.imageTag "${{ steps.setHash.outputs.git_short_sha }}"
       - name: update zombie-monitor hash
         uses: databiosphere/github-actions/actions/yq@master
         if: steps.zombie-monitor.outputs.changed == 'true'
         with:
           command: |
-            yq w -i charts/leonardo/values.yaml zombieMonitorCron.imageTag "${{ steps.setHash.outputs.git_short_sha }}"
+            yq --tag '!!str' w -i charts/leonardo/values.yaml zombieMonitorCron.imageTag "${{ steps.setHash.outputs.git_short_sha }}"
       - name: Create Pull Request
         id: cpr
         uses: peter-evans/create-pull-request@v3
