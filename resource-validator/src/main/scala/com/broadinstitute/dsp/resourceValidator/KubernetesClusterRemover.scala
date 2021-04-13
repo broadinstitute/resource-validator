@@ -34,7 +34,7 @@ object KubernetesClusterRemover {
       override def resourceToScan: fs2.Stream[F, KubernetesClusterToRemove] = dbReader.getKubernetesClustersToDelete
 
       // TODO: This check is to be moved to a new project (a.k.a. 'janitor)
-      // https:x//broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes
+      // https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes
       override def checkResource(c: KubernetesClusterToRemove, isDryRun: Boolean)(
         implicit ev: Ask[F, TraceId]
       ): F[Option[KubernetesClusterToRemove]] =
