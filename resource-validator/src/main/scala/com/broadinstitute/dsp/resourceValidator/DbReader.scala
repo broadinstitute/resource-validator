@@ -145,7 +145,7 @@ object DbReader {
   // Return all non-deleted clusters with non-default nodepools that have apps that were all deleted
   // or errored outside the grace period (1 hour)
 
-  // We are including clusters with no nodepools and apps as well. 
+  // We are including clusters with no nodepools and apps as well.
 
   // We are calculating the grace period for cluster deletion assuming that the following are valid proxies for an app's last activity:
   //    1. destroyedDate for deleted apps
