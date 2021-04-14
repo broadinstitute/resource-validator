@@ -3,10 +3,10 @@ package resourceValidator
 
 import cats.Parallel
 import cats.effect.{Concurrent, Timer}
-import cats.implicits._
+import cats.syntax.all._
 import cats.mtl.Ask
-import io.chrisdavenport.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.DiskName
+import org.typelevel.log4cats.Logger
 import org.broadinstitute.dsde.workbench.model.TraceId
 
 // Implements CheckRunner[F[_], A]
@@ -25,17 +25,17 @@ object DeletedDiskChecker {
         implicit ev: Ask[F, TraceId]
       ): F[Option[Disk]] =
         for {
-          diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, zoneName, disk.diskName)
+          diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, disk.zone, disk.diskName)
           _ <- if (!isDryRun) {
             if (disk.formattedBy.getOrElse(None) == "GALAXY") {
               val releaseStringThing = disk.release.toString.split('-')(0)
               val postgresDiskName = DiskName(s"${releaseStringThing}-gxy-ns-postres-disk")
               diskOpt.traverse { _ =>
                 List(postgresDiskName, disk.diskName).parTraverse(dn =>
-                  deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, dn)
+                  deps.googleDiskService.deleteDisk(disk.googleProject, disk.zone, dn)
                 )
               }
-            } else diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, disk.diskName))
+            } else diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, disk.zone, disk.diskName))
           } else F.pure(None)
         } yield diskOpt.map(_ => disk)
     }

@@ -17,8 +17,8 @@ object Settings {
 
   private lazy val resourceValidatorDockerSettings = List(
     dockerUpdateLatest := true,
-    mainClass in Compile := Some("com.broadinstitute.dsp.resourceValidator.Main"),
-    packageName in Docker := "broad-dsp-gcr-public/resource-validator",
+    Compile / mainClass := Some("com.broadinstitute.dsp.resourceValidator.Main"),
+    Docker / packageName := "broad-dsp-gcr-public/resource-validator",
     dockerAlias := DockerAlias(
       Some("us.gcr.io"),
       None,
@@ -29,8 +29,8 @@ object Settings {
 
   private lazy val zombieMonitorDockerSettings = List(
     dockerUpdateLatest := true,
-    mainClass in Compile := Some("com.broadinstitute.dsp.zombieMonitor.Main"),
-    packageName in Docker := "broad-dsp-gcr-public/zombie-monitor",
+    Compile / mainClass := Some("com.broadinstitute.dsp.zombieMonitor.Main"),
+    Docker / packageName := "broad-dsp-gcr-public/zombie-monitor",
     dockerAlias := DockerAlias(
       Some("us.gcr.io"),
       None,
@@ -41,8 +41,8 @@ object Settings {
 
   private lazy val cleanupDockerSettings = List(
     dockerUpdateLatest := true,
-    mainClass in Compile := Some("com.broadinstitute.dsp.cleanup.Main"),
-    packageName in Docker := "broad-dsp-gcr-public/cleanup",
+    Compile / mainClass := Some("com.broadinstitute.dsp.cleanup.Main"),
+    Docker / packageName := "broad-dsp-gcr-public/cleanup",
     dockerAlias := DockerAlias(
       Some("us.gcr.io"),
       None,
@@ -59,24 +59,25 @@ object Settings {
     "-language:postfixOps",
     "-feature",
     "-Xfatal-warnings",
-    "-Ywarn-unused:imports"
+    "-Ywarn-unused:imports",
+    "-Ymacro-annotations"
   )
 
   private lazy val commonSettings = List(
     organization := "com.broadinstitute.dsp",
     version := "0.0.1-SNAPSHOT",
-    scalaVersion := "2.13.4",
+    scalaVersion := "2.13.5",
     resolvers ++= commonResolvers,
     addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3"),
     addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
     // Docker settings
     maintainer := "workbench-interactive-analysis@broadinstitute.org",
-    dockerBaseImage := "ghcr.io/graalvm/graalvm-ce:20.3.1",
+    dockerBaseImage := "ghcr.io/graalvm/graalvm-ce:java11-21.0.0.2",
     dockerRepository := Some("us.gcr.io"),
     scalacOptions ++= commonCompilerSettings,
     // assembly merge
-    assemblyMergeStrategy in assembly := Merging.customMergeStrategy((assemblyMergeStrategy in assembly).value),
-    test in assembly := {}
+    assembly / assemblyMergeStrategy := Merging.customMergeStrategy((assembly / assemblyMergeStrategy).value),
+    assembly / test := {}
   )
 
   lazy val coreSettings = commonSettings ++ List(
@@ -86,13 +87,13 @@ object Settings {
   lazy val resourceValidatorSettings = commonSettings ++ resourceValidatorDockerSettings ++ List(
     name := "resource-validator",
     libraryDependencies ++= Dependencies.resourceValidator,
-    assemblyJarName in assembly := "resource-validator-assembly.jar",
+    assembly / assemblyJarName := "resource-validator-assembly.jar",
     // removes all jar mappings in universal and appends the fat jar
     // This is needed to include `core` module in classpath
-    mappings in Universal := {
+    Universal / mappings := {
       // universalMappings: Seq[(File,String)]
-      val universalMappings = (mappings in Universal).value
-      val fatJar = (assembly in Compile).value
+      val universalMappings = (Universal / mappings).value
+      val fatJar = (Compile / assembly).value
       // removing means filtering
       val filtered = universalMappings filter {
         case (_, name) => !name.endsWith(".jar")
@@ -100,19 +101,19 @@ object Settings {
       // add the fat jar
       filtered :+ (fatJar -> ("lib/" + fatJar.getName))
     },
-    scriptClasspath := Seq((assemblyJarName in assembly).value)
+    scriptClasspath := Seq((assembly / assemblyJarName).value)
   )
 
   lazy val zombieMonitorSettings = commonSettings ++ zombieMonitorDockerSettings ++ List(
     name := "zombie-monitor",
     libraryDependencies ++= Dependencies.zombieMonitor,
-    assemblyJarName in assembly := "zombie-monitor-assembly.jar",
+    assembly / assemblyJarName := "zombie-monitor-assembly.jar",
     // removes all jar mappings in universal and appends the fat jar
     // This is needed to include `core` module in classpath
-    mappings in Universal := {
+    Universal / mappings := {
       // universalMappings: Seq[(File,String)]
-      val universalMappings = (mappings in Universal).value
-      val fatJar = (assembly in Compile).value
+      val universalMappings = (Universal / mappings).value
+      val fatJar = (Compile / assembly).value
       // removing means filtering
       val filtered = universalMappings filter {
         case (_, name) => !name.endsWith(".jar")
@@ -120,19 +121,19 @@ object Settings {
       // add the fat jar
       filtered :+ (fatJar -> ("lib/" + fatJar.getName))
     },
-    scriptClasspath := Seq((assemblyJarName in assembly).value)
+    scriptClasspath := Seq((assembly / assemblyJarName).value)
   )
 
   lazy val nukerSettings = commonSettings ++ cleanupDockerSettings ++ List(
     name := "nuker",
     libraryDependencies ++= Dependencies.cleanup,
-    assemblyJarName in assembly := "nuker-assembly.jar",
+    assembly / assemblyJarName := "nuker-assembly.jar",
     // removes all jar mappings in universal and appends the fat jar
     // This is needed to include `core` module in classpath
-    mappings in Universal := {
+    Universal / mappings := {
       // universalMappings: Seq[(File,String)]
-      val universalMappings = (mappings in Universal).value
-      val fatJar = (assembly in Compile).value
+      val universalMappings = (Universal / mappings).value
+      val fatJar = (Compile / assembly).value
       // removing means filtering
       val filtered = universalMappings filter {
         case (_, name) => !name.endsWith(".jar")
@@ -140,6 +141,6 @@ object Settings {
       // add the fat jar
       filtered :+ (fatJar -> ("lib/" + fatJar.getName))
     },
-    scriptClasspath := Seq((assemblyJarName in assembly).value)
+    scriptClasspath := Seq((assembly / assemblyJarName).value)
   )
 }

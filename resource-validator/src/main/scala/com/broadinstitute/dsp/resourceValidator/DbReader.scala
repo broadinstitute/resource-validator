@@ -29,7 +29,7 @@ object DbReader {
 
   val deletedDisksQuery =
     sql"""
-           select pd1.id, pd1.googleProject, pd1.name, pd1.formattedBy, pd1.release
+           select pd1.id, pd1.googleProject, pd1.name, pd1.zone, pd1.formattedBy, pd1.release
            FROM PERSISTENT_DISK AS pd1
            WHERE pd1.status="Deleted" AND
              NOT EXISTS
@@ -45,7 +45,7 @@ object DbReader {
       .query[InitBucketToRemove]
 
   val deletedRuntimeQuery =
-    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status
+    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.zone, rt.region
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
           WHERE
@@ -62,7 +62,7 @@ object DbReader {
       .query[Runtime]
 
   val erroredRuntimeQuery =
-    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status
+    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.zone, rt.region
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
           WHERE
@@ -78,7 +78,7 @@ object DbReader {
       .query[Runtime]
 
   val stoppedRuntimeQuery =
-    sql"""SELECT DISTINCT c1.id, c1.googleProject, c1.clusterName, rt.cloudService, c1.status
+    sql"""SELECT DISTINCT c1.id, c1.googleProject, c1.clusterName, rt.cloudService, c1.status, rt.zone, rt.region
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.runtimeConfigId = rt.id
           WHERE
@@ -172,11 +172,15 @@ object DbReader {
          """
       .query[KubernetesClusterToRemove]
 
+  // We're excluding cluster id 6220 because it's a known anomaly and user ed team has reached out to hufengzhou@g.harvard.edu
   val dataprocClusterWithWorkersQuery =
-    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.numberOfWorkers, rt.numberOfPreemptibleWorkers
+    sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.region, rt.numberOfWorkers, rt.numberOfPreemptibleWorkers
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id
-          WHERE rt.cloudService="DATAPROC" AND NOT c1.status="DELETED"
+          WHERE 
+            rt.cloudService="DATAPROC" AND 
+            NOT c1.status="DELETED" AND
+            c1.id != 6220
          """
       .query[RuntimeWithWorkers]
 

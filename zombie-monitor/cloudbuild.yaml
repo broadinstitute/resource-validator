@@ -2,7 +2,7 @@ steps:
   - name: 'gcr.io/$PROJECT_ID/scala-sbt'
     args:
       - |
-        test; zombieMonitor/docker:publishLocal
+        testOnly -- -l cronJobs.dbTest; zombieMonitor/docker:publishLocal
   - name: 'gcr.io/cloud-builders/docker'
     args: [ 'image', 'tag', 'us.gcr.io/broad-dsp-gcr-public/zombie-monitor:latest', 'us.gcr.io/broad-dsp-gcr-public/zombie-monitor:$SHORT_SHA']
 images: [

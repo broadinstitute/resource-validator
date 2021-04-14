@@ -7,8 +7,8 @@ import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCod
 import cats.mtl.Ask
 import com.google.pubsub.v1.ProjectTopicName
 import fs2.Stream
-import io.chrisdavenport.log4cats.StructuredLogger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.StructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.broadinstitute.dsde.workbench.google2.{GKEService, GoogleDiskService, GooglePublisher, PublisherConfig}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
@@ -106,7 +106,7 @@ object ResourceValidator {
   ): Resource[F, ResourcevalidatorServerDeps[F]] =
     for {
       blocker <- Blocker[F]
-      blockerBound <- Resource.liftF(Semaphore[F](250))
+      blockerBound <- Resource.eval(Semaphore[F](250))
       metrics <- OpenTelemetryMetrics.resource(appConfig.pathToCredential, "leonardo-cron-jobs", blocker)
       runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig.runtimeCheckerConfig, blocker, metrics, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)

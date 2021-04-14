@@ -1,11 +1,10 @@
 package com.broadinstitute.dsp
 
 import java.nio.file.Path
-
 import cats.Parallel
 import cats.effect.concurrent.Semaphore
 import cats.effect.{Blocker, Concurrent, ContextShift, Resource, Timer}
-import io.chrisdavenport.log4cats.StructuredLogger
+import org.typelevel.log4cats.StructuredLogger
 import org.broadinstitute.dsde.workbench.google2.util.RetryPredicates
 import org.broadinstitute.dsde.workbench.google2.{
   GKEService,
@@ -14,7 +13,9 @@ import org.broadinstitute.dsde.workbench.google2.{
   GoogleDataprocService,
   GoogleDiskService,
   GooglePublisher,
-  GoogleStorageService
+  GoogleStorageService,
+  RegionName,
+  ZoneName
 }
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
@@ -39,7 +40,7 @@ object RuntimeCheckerDeps {
       dataprocService <- GoogleDataprocService.fromCredential(computeService,
                                                               scopedCredential,
                                                               blocker,
-                                                              regionName,
+                                                              supportedRegions,
                                                               blockerBound)
       billingService <- GoogleBillingService.fromCredential(scopedCredential, blocker, blockerBound)
     } yield {
@@ -48,18 +49,51 @@ object RuntimeCheckerDeps {
     }
 }
 
-final case class Runtime(id: Long,
-                         googleProject: GoogleProject,
-                         runtimeName: String,
-                         cloudService: CloudService,
-                         status: String) {
-  // this is the format we'll output in report, which can be easily consumed by scripts if necessary
-  override def toString: String = s"$id,${googleProject.value},$runtimeName,$cloudService,$status"
+sealed abstract class Runtime {
+  def id: Long
+  def googleProject: GoogleProject
+  def runtimeName: String
+  def cloudService: CloudService
+  def status: String
+}
+
+object Runtime {
+  final case class Gce(id: Long,
+                       googleProject: GoogleProject,
+                       runtimeName: String,
+                       cloudService: CloudService,
+                       status: String,
+                       zone: ZoneName)
+      extends Runtime {
+    // this is the format we'll output in report, which can be easily consumed by scripts if necessary
+    override def toString: String = s"$id,${googleProject.value},$runtimeName,$cloudService,$status,${zone.value}"
+  }
+
+  final case class Dataproc(id: Long,
+                            googleProject: GoogleProject,
+                            runtimeName: String,
+                            cloudService: CloudService,
+                            status: String,
+                            region: RegionName)
+      extends Runtime {
+    // this is the format we'll output in report, which can be easily consumed by scripts if necessary
+    override def toString: String = s"$id,${googleProject.value},$runtimeName,$cloudService,$status,${region.value}"
+  }
+
+  def setStatus(runtime: Runtime, newStatus: String): Runtime = runtime match {
+    case x: Runtime.Dataproc => x.copy(status = newStatus)
+    case x: Runtime.Gce      => x.copy(status = newStatus)
+  }
+
+  def setId(runtime: Runtime, newId: Long): Runtime = runtime match {
+    case x: Runtime.Dataproc => x.copy(id = newId)
+    case x: Runtime.Gce      => x.copy(id = newId)
+  }
 }
 
 final case class WorkerCount(num: Int) extends AnyVal
 final case class WorkerConfig(numberOfWorkers: Option[Int], numberOfPreemptibleWorkers: Option[Int])
-final case class RuntimeWithWorkers(r: Runtime, workerConfig: WorkerConfig) {
+final case class RuntimeWithWorkers(r: Runtime.Dataproc, workerConfig: WorkerConfig) {
   override def toString: String =
     s"Runtime details: ${r.toString}. Worker details: primary: ${workerConfig.numberOfWorkers.getOrElse(0)}, secondary: ${workerConfig.numberOfPreemptibleWorkers
       .getOrElse(0)}"

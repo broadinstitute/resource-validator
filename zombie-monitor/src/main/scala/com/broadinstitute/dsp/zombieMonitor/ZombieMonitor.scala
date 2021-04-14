@@ -8,8 +8,8 @@ import cats.effect.concurrent.Semaphore
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.Ask
 import fs2.Stream
-import io.chrisdavenport.log4cats.StructuredLogger
-import io.chrisdavenport.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.StructuredLogger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.broadinstitute.dsde.workbench.google2.{GKEService, GoogleDiskService}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
@@ -61,7 +61,7 @@ object ZombieMonitor {
   ): Resource[F, ZombieMonitorDeps[F]] =
     for {
       blocker <- Blocker[F]
-      blockerBound <- Resource.liftF(Semaphore[F](250))
+      blockerBound <- Resource.eval(Semaphore[F](250))
       metrics <- OpenTelemetryMetrics.resource(appConfig.pathToCredential, "leonardo-cron-jobs", blocker)
       runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig.runtimeCheckerConfig, blocker, metrics, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)

@@ -8,18 +8,15 @@ import com.broadinstitute.dsp.Generators._
 import doobie.scalatest.IOChecker
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
-import org.scalatest.DoNotDiscover
 import org.scalatest.flatspec.AnyFlatSpec
 
 /**
  * Not running these tests in CI yet since we'll need to set up mysql container and Leonardo tables in CI. Punt for now
  * For running these tests locally, you can
  *   * Start leonardo mysql container locally
- *   * Comment out https://github.com/DataBiosphere/leonardo/blob/develop/http/src/test/scala/org/broadinstitute/dsde/workbench/leonardo/db/TestComponent.scala#L82
  *   * Run a database unit test in leonardo
  *   * Run this spec
  */
-@DoNotDiscover
 final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val config = ConfigSpec.config.database
   val transactor = yoloTransactor
@@ -33,7 +30,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
   val destroyedDateBeyondGracePeriod = now.minusSeconds(gracePeriod + 200)
   val destroyedDateWithinGracePeriod = now.minusSeconds(gracePeriod - 150)
 
-  it should "detect for removal: Kubernetes cluster in RUNNING status with app in DELETED status BEYOND grace period" in {
+  it should "detect for removal: Kubernetes cluster in RUNNING status with app in DELETED status BEYOND grace period" taggedAs DbTest in {
     forAll { (cluster: KubernetesClusterId, disk: Disk) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
@@ -59,7 +56,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
     }
   }
 
-  it should "detect for removal: Kubernetes cluster in RUNNING status with app in ERROR status BEYOND grace period" in {
+  it should "detect for removal: Kubernetes cluster in RUNNING status with app in ERROR status BEYOND grace period" taggedAs DbTest in {
     forAll { (cluster: KubernetesClusterId, disk: Disk) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
@@ -84,7 +81,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
     }
   }
 
-  it should "detect for removal: Kubernetes cluster in RUNNING status with only a default nodepool and no apps" in {
+  it should "detect for removal: Kubernetes cluster in RUNNING status with only a default nodepool and no apps" taggedAs DbTest in {
     forAll { (cluster: KubernetesClusterId) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
@@ -99,7 +96,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
     }
   }
 
-  it should "NOT detect for removal: Kubernetes cluster in DELETED status" in {
+  it should "NOT detect for removal: Kubernetes cluster in DELETED status" taggedAs DbTest in {
     forAll { (cluster: KubernetesClusterId, disk: Disk) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
@@ -124,7 +121,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
     }
   }
 
-  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in RUNNING status" in {
+  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in RUNNING status" taggedAs DbTest in {
     forAll { (cluster: KubernetesClusterId, disk: Disk) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
@@ -150,7 +147,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
     }
   }
 
-  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in DELETED status WITHIN grace period" in {
+  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in DELETED status WITHIN grace period" taggedAs DbTest in {
     forAll { (cluster: KubernetesClusterId, disk: Disk) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
@@ -176,7 +173,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
     }
   }
 
-  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in ERROR status WITHIN grace period" in {
+  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in ERROR status WITHIN grace period" taggedAs DbTest in {
     forAll { (cluster: KubernetesClusterId, disk: Disk) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
@@ -202,7 +199,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
   }
 
   // The scenario below is to mimic a cluster with batch-pre-created nodepools, which we don't want to auto-delete
-  it should "NOT detect for removal: Kubernetes cluster with nodepools but no apps" in {
+  it should "NOT detect for removal: Kubernetes cluster with nodepools but no apps" taggedAs DbTest in {
     forAll { (cluster: KubernetesClusterId) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)

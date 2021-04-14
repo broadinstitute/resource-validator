@@ -3,7 +3,7 @@ package zombieMonitor
 
 import java.nio.file.Path
 
-import cats.implicits._
+import cats.syntax.all._
 import org.broadinstitute.dsde.workbench.model.google.GcsBucketName
 import pureconfig._
 import pureconfig.generic.auto._

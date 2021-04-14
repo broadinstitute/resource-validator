@@ -7,7 +7,7 @@ import cats.effect.{Concurrent, Timer}
 import cats.mtl.Ask
 import com.google.pubsub.v1.{ProjectSubscriptionName, TopicName}
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.broadinstitute.dsde.workbench.google2.{GoogleSubscriptionAdmin, GoogleTopicAdmin}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject

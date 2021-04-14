@@ -4,9 +4,9 @@ package zombieMonitor
 import cats.effect.{Concurrent, Timer}
 import cats.mtl.Ask
 import fs2.Stream
-import io.chrisdavenport.log4cats.Logger
+import org.typelevel.log4cats.Logger
 import org.broadinstitute.dsde.workbench.model.TraceId
-import cats.implicits._
+import cats.syntax.all._
 
 /**
  * Similar to `DeletedDiskChecker`, but this process all non deleted k8s clusters and check if they still exists in google.
