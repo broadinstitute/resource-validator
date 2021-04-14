@@ -1,6 +1,7 @@
 package com.broadinstitute.dsp
 package resourceValidator
 
+import cats.Parallel
 import cats.effect.{Concurrent, Timer}
 import cats.implicits._
 import cats.mtl.Ask
@@ -10,7 +11,7 @@ import org.broadinstitute.dsde.workbench.model.TraceId
 
 // Implements CheckRunner[F[_], A]
 object DeletedDiskChecker {
-  def impl[F[_]: Timer](
+  def impl[F[_]: Timer: Parallel](
     dbReader: DbReader[F],
     deps: DiskCheckerDeps[F]
   )(implicit F: Concurrent[F], logger: Logger[F], ev: Ask[F, TraceId]): CheckRunner[F, Disk] =
@@ -27,10 +28,14 @@ object DeletedDiskChecker {
           diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, zoneName, disk.diskName)
           _ <- if (!isDryRun) {
             if (disk.formattedBy.getOrElse(None) == "GALAXY") {
-              val postgresDiskName = DiskName(s"${disk.diskName}-gxy-postres-disk")
-              diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, postgresDiskName))
-            }
-            diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, disk.diskName))
+              val releaseStringThing = disk.release.toString.split('-')(0)
+              val postgresDiskName = DiskName(s"${releaseStringThing}-gxy-ns-postres-disk")
+              diskOpt.traverse { _ =>
+                List(postgresDiskName, disk.diskName).parTraverse(dn =>
+                  deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, dn)
+                )
+              }
+            } else diskOpt.traverse(_ => deps.googleDiskService.deleteDisk(disk.googleProject, zoneName, disk.diskName))
           } else F.pure(None)
         } yield diskOpt.map(_ => disk)
     }
