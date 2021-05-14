@@ -29,7 +29,7 @@ object DeletedDiskChecker {
           _ <- if (!isDryRun) {
             if (disk.formattedBy.getOrElse(None) == "GALAXY") {
               val dataDiskName = disk.diskName
-              val postgresDiskName = DiskName(s"${dataDiskName}-gxy-ns-postres-disk")
+              val postgresDiskName = DiskName(s"${dataDiskName}-gxy-postres-disk")
               diskOpt.traverse { _ =>
                 List(postgresDiskName, disk.diskName).parTraverse(dn =>
                   deps.googleDiskService.deleteDisk(disk.googleProject, disk.zone, dn)
