@@ -17,10 +17,10 @@ This job detects and fixes anomalies by updating Google resources to match their
 This job detects and fixes anomalies by updating Leonardo database status of resources to match their status in Google.
 
 ## janitor
-This job removes prod resources when they are deemed unused in order to save users $$$.
+This job removes prod resources when they are deemed not utilized.
 
 ## nuker
-This job ...
+This job cleans up cloud resources created by Leonardo in dev/qa projects.
 
 # Running Locally
 

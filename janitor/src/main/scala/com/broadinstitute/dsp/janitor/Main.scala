@@ -1,5 +1,5 @@
 package com.broadinstitute.dsp
-package nuker
+package janitor
 
 import cats.effect.IO
 import cats.syntax.all._
@@ -8,8 +8,8 @@ import scala.concurrent.ExecutionContext.global
 
 object Main
     extends CommandApp(
-      name = "nuker",
-      header = "Clean up cloud resources created by Leonardo in dev/qa projects",
+      name = "janitor",
+      header = "Clean up prod resources deemed not utilized",
       version = "0.0.1",
       main = {
         implicit val cs = IO.contextShift(global)
@@ -21,7 +21,7 @@ object Main
           Opts.flag("deletePubsubTopics", "delete all fiab pubsub topics").orFalse
 
         (enableDryRun, shouldRunAll, shouldDeletePubsubTopics).mapN { (dryRun, runAll, deletePubsubTopics) =>
-          Nuker
+          Janitor
             .run[IO](dryRun, runAll, deletePubsubTopics)
             .compile
             .drain

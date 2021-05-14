@@ -39,6 +39,18 @@ object Settings {
     )
   )
 
+  private lazy val janitorDockerSettings = List(
+    dockerUpdateLatest := true,
+    Compile / mainClass := Some("com.broadinstitute.dsp.janitor.Main"),
+    Docker / packageName := "broad-dsp-gcr-public/janitor",
+    dockerAlias := DockerAlias(
+      Some("us.gcr.io"),
+      None,
+      "broad-dsp-gcr-public/janitor",
+      None
+    )
+  )
+
   private lazy val cleanupDockerSettings = List(
     dockerUpdateLatest := true,
     Compile / mainClass := Some("com.broadinstitute.dsp.cleanup.Main"),
@@ -108,6 +120,26 @@ object Settings {
     name := "zombie-monitor",
     libraryDependencies ++= Dependencies.zombieMonitor,
     assembly / assemblyJarName := "zombie-monitor-assembly.jar",
+    // removes all jar mappings in universal and appends the fat jar
+    // This is needed to include `core` module in classpath
+    Universal / mappings := {
+      // universalMappings: Seq[(File,String)]
+      val universalMappings = (Universal / mappings).value
+      val fatJar = (Compile / assembly).value
+      // removing means filtering
+      val filtered = universalMappings filter {
+        case (_, name) => !name.endsWith(".jar")
+      }
+      // add the fat jar
+      filtered :+ (fatJar -> ("lib/" + fatJar.getName))
+    },
+    scriptClasspath := Seq((assembly / assemblyJarName).value)
+  )
+
+  lazy val janitorSettings = commonSettings ++ janitorDockerSettings ++ List(
+    name := "janitor",
+    libraryDependencies ++= Dependencies.janitor,
+    assembly / assemblyJarName := "janitor-assembly.jar",
     // removes all jar mappings in universal and appends the fat jar
     // This is needed to include `core` module in classpath
     Universal / mappings := {
