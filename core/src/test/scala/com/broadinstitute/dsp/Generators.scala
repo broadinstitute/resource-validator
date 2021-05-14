@@ -34,7 +34,7 @@ object Generators {
     diskName <- genDiskName
     zone <- genZoneName
   } yield {
-    Disk(id, project, diskName, zone, formattedBy = None, release = None)
+    Disk(id, project, diskName, zone, formattedBy = None)
   }
 
   val genInitBucket: Gen[InitBucketToRemove] = for {

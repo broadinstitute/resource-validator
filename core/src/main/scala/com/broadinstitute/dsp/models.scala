@@ -27,9 +27,8 @@ object CloudService {
 final case class Disk(id: Long,
                       googleProject: GoogleProject,
                       diskName: DiskName,
-                      zone: ZoneName
-                      formattedBy: Option[String],
-                      release: Option[String]) {
+                      zone: ZoneName,
+                      formattedBy: Option[String]) {
   override def toString: String = s"${id}/${googleProject.value},${diskName.value},${zone.value}"
 }
 
