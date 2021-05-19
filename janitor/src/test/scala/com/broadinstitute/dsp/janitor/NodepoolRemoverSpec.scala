@@ -1,9 +1,9 @@
-package com.broadinstitute.dsp.janitor
+package com.broadinstitute.dsp
+package janitor
 
 import cats.effect.IO
 import cats.mtl.Ask
 import com.broadinstitute.dsp.Generators._
-import com.broadinstitute.dsp.{CheckRunnerDeps, CronJobsTestSuite, LeoPublisherDeps, Nodepool}
 import fs2.Stream
 import io.circe.Encoder
 import org.broadinstitute.dsde.workbench.google2.GooglePublisher

@@ -4,7 +4,6 @@ package janitor
 import com.broadinstitute.dsp.DBTestHelper.{insertApp, insertDisk, insertK8sCluster, insertNamespace, insertNodepool, transactorResource, yoloTransactor}
 import com.broadinstitute.dsp.Generators._
 import com.broadinstitute.dsp.RemovableNodepoolStatus.removableStatuses
-import com.broadinstitute.dsp.{CronJobsTestSuite, Disk, RemovableNodepoolStatus}
 import doobie.scalatest.IOChecker
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName

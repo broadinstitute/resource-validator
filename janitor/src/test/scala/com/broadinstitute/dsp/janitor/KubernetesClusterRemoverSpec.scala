@@ -4,7 +4,6 @@ package janitor
 import cats.effect.IO
 import cats.mtl.Ask
 import com.broadinstitute.dsp.Generators._
-import com.broadinstitute.dsp.{CheckRunnerDeps, CronJobsTestSuite, KubernetesClusterToRemove, LeoPublisherDeps}
 import fs2.Stream
 import io.circe.Encoder
 import org.broadinstitute.dsde.workbench.google2.GooglePublisher
