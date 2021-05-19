@@ -2,21 +2,24 @@ package com.broadinstitute.dsp
 package janitor
 
 import java.util.UUID
-
 import cats.Parallel
+import cats.effect.concurrent.Semaphore
 import cats.effect.{Blocker, Concurrent, ConcurrentEffect, ContextShift, ExitCode, Resource, Sync, Timer}
 import cats.mtl.Ask
+import com.google.pubsub.v1.ProjectTopicName
 import fs2.Stream
 import org.typelevel.log4cats.StructuredLogger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import org.broadinstitute.dsde.workbench.google2.{GoogleSubscriptionAdmin, GoogleTopicAdmin}
+import org.broadinstitute.dsde.workbench.google2.{GooglePublisher, PublisherConfig}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.openTelemetry.OpenTelemetryMetrics
 
 object Janitor {
   def run[F[_]: ConcurrentEffect: Parallel](isDryRun: Boolean,
-                                            shouldRunAll: Boolean,
-                                            shouldDeletePubsubTopics: Boolean)(
+                                            shouldCheckAll: Boolean,
+                                            shouldCheckKubernetesClustersToBeRemoved: Boolean,
+                                            shouldCheckNodepoolsToBeRemoved: Boolean,
+                                            shouldCheckStagingBucketsToBeRemoved: Boolean)(
     implicit timer: Timer[F],
     cs: ContextShift[F]
   ): Stream[F, Nothing] = {
@@ -26,18 +29,23 @@ object Janitor {
     for {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
-      deleteRuntimeCheckerProcess = if (shouldRunAll || shouldDeletePubsubTopics)
-        Stream.eval(
-          PubsubTopicAndSubscriptionCleaner(config.pubsubTopicCleaner,
-                                            deps.topicAdminClient,
-                                            deps.subscriptionClient,
-                                            deps.metrics)
-            .run(isDryRun)
-        )
+      checkRunnerDep = deps.runtimeCheckerDeps.checkRunnerDeps
+
+      removeKubernetesClusters = if (shouldCheckAll || shouldCheckKubernetesClustersToBeRemoved)
+        Stream.eval(KubernetesClusterRemover.impl(deps.dbReader, deps.leoPublisherDeps).run(isDryRun))
       else Stream.empty
 
-      processes = Stream(deleteRuntimeCheckerProcess).covary[F]
-      _ <- processes.parJoin(2)
+      removeNodepools = if (shouldCheckAll || shouldCheckNodepoolsToBeRemoved)
+        Stream.eval(NodepoolRemover.impl(deps.dbReader, deps.leoPublisherDeps).run(isDryRun))
+      else Stream.empty
+
+      removeStagingBuckets = if (shouldCheckAll || shouldCheckStagingBucketsToBeRemoved)
+        Stream.eval(StagingBucketRemover.impl(deps.dbReader, checkRunnerDep).run(isDryRun))
+      else Stream.empty
+
+      processes = Stream(removeKubernetesClusters, removeNodepools, removeStagingBuckets).covary[F]
+
+      _ <- processes.parJoin(3) // Number of checkers in 'processes'
     } yield ExitCode.Success
   }.drain
 
@@ -46,18 +54,26 @@ object Janitor {
   ): Resource[F, JanitorDeps[F]] =
     for {
       blocker <- Blocker[F]
+      blockerBound <- Resource.eval(Semaphore[F](250))
       metrics <- OpenTelemetryMetrics.resource(appConfig.pathToCredential, "leonardo-cron-jobs", blocker)
-      credential <- org.broadinstitute.dsde.workbench.google2.credentialResource[F](appConfig.pathToCredential.toString)
-      topicAdminClient <- GoogleTopicAdmin.fromServiceAccountCrendential(credential)
-      subscriptionClient <- GoogleSubscriptionAdmin.fromServiceAccountCrendential(credential)
+      runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig.runtimeCheckerConfig, blocker, metrics, blockerBound)
+      publisherConfig = PublisherConfig(
+        appConfig.pathToCredential.toString,
+        ProjectTopicName.of(appConfig.leonardoPubsub.googleProject.value, appConfig.leonardoPubsub.topicName)
+      )
+      googlePublisher <- GooglePublisher.resource[F](publisherConfig)
+      xa <- DbTransactor.init(appConfig.database)
     } yield {
-      JanitorDeps(blocker, metrics, topicAdminClient, subscriptionClient)
+      val checkRunnerDeps = runtimeCheckerDeps.checkRunnerDeps
+      val kubernetesClusterToRemoveDeps = LeoPublisherDeps(googlePublisher, checkRunnerDeps)
+      val dbReader = DbReader.impl(xa)
+      JanitorDeps(runtimeCheckerDeps, kubernetesClusterToRemoveDeps, dbReader, blocker)
     }
 }
 
 final case class JanitorDeps[F[_]](
-  blocker: Blocker,
-  metrics: OpenTelemetryMetrics[F],
-  topicAdminClient: GoogleTopicAdmin[F],
-  subscriptionClient: GoogleSubscriptionAdmin[F]
-)
+                                    runtimeCheckerDeps: RuntimeCheckerDeps[F],
+                                    leoPublisherDeps: LeoPublisherDeps[F],
+                                    dbReader: DbReader[F],
+                                    blocker: Blocker
+                                  )

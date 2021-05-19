@@ -16,13 +16,25 @@ object Main
         implicit val timer = IO.timer(global)
 
         val enableDryRun = Opts.flag("dryRun", "Default to true").orFalse.withDefault(true)
-        val shouldRunAll = Opts.flag("all", "run all checks").orFalse
-        val shouldDeletePubsubTopics =
-          Opts.flag("deletePubsubTopics", "delete all fiab pubsub topics").orFalse
+        val shouldCheckAll = Opts.flag("all", "run all checks").orFalse
 
-        (enableDryRun, shouldRunAll, shouldDeletePubsubTopics).mapN { (dryRun, runAll, deletePubsubTopics) =>
+        val shouldCheckKubernetesClustersToBeRemoved =
+          Opts.flag("checkKubernetesClustersToRemove", "check kubernetes clusters that should be removed").orFalse
+        val shouldCheckNodepoolsToBeRemoved =
+          Opts.flag("checkNodepoolsToRemove", "check nodepools that should be removed").orFalse
+        val shouldCheckStagingBucketsToBeRemoved =
+          Opts.flag("checkStagingBucketsToRemove", "check staging buckets that should be removed").orFalse
+
+        (enableDryRun, shouldCheckAll, shouldCheckKubernetesClustersToBeRemoved, shouldCheckNodepoolsToBeRemoved, shouldCheckStagingBucketsToBeRemoved).mapN {
+          (dryRun, checkAll, shouldCheckKubernetesClustersToBeRemoved, shouldCheckNodepoolsToBeRemoved, shouldCheckStagingBucketsToBeRemoved) =>
           Janitor
-            .run[IO](dryRun, runAll, deletePubsubTopics)
+            .run[IO](
+              isDryRun = dryRun,
+              shouldCheckAll = checkAll,
+              shouldCheckKubernetesClustersToBeRemoved = shouldCheckKubernetesClustersToBeRemoved,
+              shouldCheckNodepoolsToBeRemoved = shouldCheckNodepoolsToBeRemoved,
+              shouldCheckStagingBucketsToBeRemoved = shouldCheckStagingBucketsToBeRemoved
+            )
             .compile
             .drain
             .unsafeRunSync()

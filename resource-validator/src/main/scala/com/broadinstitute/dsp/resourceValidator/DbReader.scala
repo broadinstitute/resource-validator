@@ -6,7 +6,6 @@ import doobie._
 import doobie.implicits._
 import fs2.Stream
 import DbReaderImplicits._
-//import com.broadinstitute.dsp.RemovableNodepoolStatus
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 trait DbReader[F[_]] {
@@ -14,14 +13,10 @@ trait DbReader[F[_]] {
   def getDeletedRuntimes: Stream[F, Runtime]
   def getErroredRuntimes: Stream[F, Runtime]
   def getStoppedRuntimes: Stream[F, Runtime]
-  def getStagingBucketsToDelete: Stream[F, BucketToRemove]
-  def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove]
   def getInitBucketsToDelete: Stream[F, InitBucketToRemove]
   def getDeletedAndErroredKubernetesClusters: Stream[F, KubernetesCluster]
   def getDeletedAndErroredNodepools: Stream[F, Nodepool]
   def getRuntimesWithWorkers: Stream[F, RuntimeWithWorkers]
-  def getNodepoolsToDelete: Stream[F, Nodepool]
-
 }
 
 object DbReader {
@@ -29,7 +24,7 @@ object DbReader {
 
   val deletedDisksQuery =
     sql"""
-           select pd1.id, pd1.googleProject, pd1.name, pd1.zone
+           SELECT pd1.id, pd1.googleProject, pd1.name, pd1.zone
            FROM PERSISTENT_DISK AS pd1
            WHERE pd1.status="Deleted" AND
              pd1.destroyedDate > now() - INTERVAL 30 DAY AND
@@ -42,7 +37,7 @@ object DbReader {
         """.query[Disk]
 
   val initBucketsToDeleteQuery =
-    sql"""select googleProject, initBucket from CLUSTER WHERE status="Deleted";"""
+    sql"""SELECT googleProject, initBucket FROM CLUSTER WHERE status="Deleted";"""
       .query[InitBucketToRemove]
 
   val deletedRuntimeQuery =
@@ -101,39 +96,6 @@ object DbReader {
           """
       .query[KubernetesCluster]
 
-  // We are calculating the grace period for nodepool deletion assuming that the following are valid proxies for an app's last activity:
-  //    1. destroyedDate for deleted apps
-  //    2. createdDate for error'ed apps
-  // Note that we explicitly check nodepools with 5/11 of statuses that exist.
-  // The statuses we exclude are PROVISIONING, STOPPING, DELETED, PRECREATING, PREDELETING, and PREDELETING
-  //    - We exclude all -ING statuses because they are transitionary, and the purpose of this is not to handle timeouts
-  // We are excluding default nodepools, as these should remain for the lifetime of the cluster
-  // TODO: Read the grace period (hardcoded to '1 HOUR' below) from config
-  val applessNodepoolQuery =
-    sql"""SELECT np.id, np.nodepoolName, kc.clusterName, kc.googleProject, kc.location
-         FROM NODEPOOL AS np
-         INNER JOIN KUBERNETES_CLUSTER AS kc
-         ON np.clusterId = kc.id
-         WHERE
-            (
-                np.status IN ("STATUS_UNSPECIFIED", "RUNNING", "RECONCILING", "ERROR", "RUNNING_WITH_ERROR")
-                AND np.isDefault = 0
-                AND NOT EXISTS
-                (
-                    SELECT * FROM APP AS a
-                    WHERE np.id = a.nodepoolId
-                    AND
-                    (
-                        (a.status != "DELETED" AND a.status != "ERROR")
-                        OR (a.status = "DELETED" AND a.destroyedDate > now() - INTERVAL 1 HOUR)
-                        OR (a.status = "ERROR" AND a.createdDate > now() - INTERVAL 1 HOUR)
-                        OR (a.id IS NULL)
-                    )
-                )
-             )
-         """
-      .query[Nodepool]
-
   val deletedAndErroredNodepoolQuery =
     sql"""SELECT np. id, np.nodepoolName, kc.clusterName, kc.googleProject, kc.location
          FROM NODEPOOL AS np
@@ -142,44 +104,13 @@ object DbReader {
          """
       .query[Nodepool]
 
-  // Return all non-deleted clusters with non-default nodepools that have apps that were all deleted
-  // or errored outside the grace period (1 hour)
-
-  // We are including clusters with no nodepools and apps as well.
-
-  // We are calculating the grace period for cluster deletion assuming that the following are valid proxies for an app's last activity:
-  //    1. destroyedDate for deleted apps
-  //    2. createdDate for error'ed apps
-  // TODO: Read the grace period (hardcoded to '1 HOUR' below) from config
-  val kubernetesClustersToDeleteQuery =
-    sql"""
-            SELECT kc.id, kc.googleProject
-            FROM KUBERNETES_CLUSTER kc
-            WHERE
-              kc.status != "DELETED" AND
-              NOT EXISTS (
-                SELECT *
-                FROM NODEPOOL np
-                RIGHT JOIN APP a ON np.id = a.nodepoolId
-                WHERE
-                  kc.id = np.clusterId AND np.isDefault = 0 AND
-                  (
-                    (a.status != "DELETED" AND a.status != "ERROR") OR
-                    (a.status = "DELETED" AND a.destroyedDate > now() - INTERVAL 1 HOUR) OR
-                    (a.status = "ERROR" AND a.createdDate > now() - INTERVAL 1 HOUR) OR
-                    (a.id IS NULL)
-                  )
-              );
-         """
-      .query[KubernetesClusterToRemove]
-
   // We're excluding cluster id 6220 because it's a known anomaly and user ed team has reached out to hufengzhou@g.harvard.edu
   val dataprocClusterWithWorkersQuery =
     sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.region, rt.numberOfWorkers, rt.numberOfPreemptibleWorkers
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id
-          WHERE 
-            rt.cloudService="DATAPROC" AND 
+          WHERE
+            rt.cloudService="DATAPROC" AND
             NOT c1.status="DELETED" AND
             c1.id != 6220
          """
@@ -199,22 +130,9 @@ object DbReader {
     override def getStoppedRuntimes: Stream[F, Runtime] =
       stoppedRuntimeQuery.stream.transact(xa)
 
-    // When we delete runtimes, we keep their staging buckets for 10 days. Hence we're only deleting staging buckets whose
-    // runtimes have been deleted more than 15 days ago.
-    // Checker will blindly delete all buckets returned by this function. Since we've started running the cron job daily,
-    // We really only need to delete any new buckets; hence we're skipping buckets whose runtimes were deleted more than 20 days ago
-    override def getStagingBucketsToDelete: Stream[F, BucketToRemove] =
-      sql"""select googleProject, stagingBucket from CLUSTER WHERE status="Deleted" and destroyedDate < now() - interval 15 DAY and destroyedDate > now() - interval 20 DAY;"""
-        .query[BucketToRemove]
-        .stream
-        .transact(xa)
-
     override def getInitBucketsToDelete: Stream[F, InitBucketToRemove] =
       initBucketsToDeleteQuery.stream
         .transact(xa)
-
-    override def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove] =
-      kubernetesClustersToDeleteQuery.stream.transact(xa)
 
     // Same disk names might be re-used
     override def getDeletedDisks: Stream[F, Disk] =
@@ -228,10 +146,6 @@ object DbReader {
 
     override def getRuntimesWithWorkers: Stream[F, RuntimeWithWorkers] =
       dataprocClusterWithWorkersQuery.stream.transact(xa)
-
-    override def getNodepoolsToDelete: Stream[F, Nodepool] =
-      applessNodepoolQuery.stream.transact(xa)
-
   }
 }
 

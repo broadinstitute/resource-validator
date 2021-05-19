@@ -1,16 +1,16 @@
-package com.broadinstitute.dsp
-package resourceValidator
-
-import java.util.concurrent.TimeUnit
+package com.broadinstitute.dsp.janitor
 
 import cats.effect.{Concurrent, Timer}
-import cats.syntax.all._
-import io.circe.Encoder
 import cats.mtl.Ask
-import org.typelevel.log4cats.Logger
+import cats.syntax.all._
+import com.broadinstitute.dsp._
+import io.circe.Encoder
+import org.broadinstitute.dsde.workbench.google2.JsonCodec.{googleProjectEncoder, traceIdEncoder}
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GoogleProject
-import org.broadinstitute.dsde.workbench.google2.JsonCodec.{googleProjectEncoder, traceIdEncoder}
+import org.typelevel.log4cats.Logger
+
+import java.util.concurrent.TimeUnit
 
 // This file will likely be moved out of resource-validator later
 // See https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes?focusedCommentId=807632911#comment-807632911
@@ -28,7 +28,7 @@ object KubernetesClusterRemover {
     logger: Logger[F],
     ev: Ask[F, TraceId]): CheckRunner[F, KubernetesClusterToRemove] =
     new CheckRunner[F, KubernetesClusterToRemove] {
-      override def appName: String = resourceValidator.appName
+      override def appName: String = janitor.appName
       override def configs = CheckRunnerConfigs(s"remove-kubernetes-clusters", shouldAlert = true)
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
       override def resourceToScan: fs2.Stream[F, KubernetesClusterToRemove] = dbReader.getKubernetesClustersToDelete
