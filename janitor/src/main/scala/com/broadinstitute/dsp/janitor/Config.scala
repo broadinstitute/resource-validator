@@ -2,11 +2,12 @@ package com.broadinstitute.dsp
 package janitor
 
 import java.nio.file.Path
+
 import cats.syntax.all._
+import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 import pureconfig._
 import pureconfig.generic.auto._
 import com.broadinstitute.dsp.ConfigImplicits._
-import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 
 object Config {
   val appConfig = ConfigSource.default
