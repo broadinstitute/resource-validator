@@ -36,10 +36,6 @@ final class DbQueryBuilderSpec extends AnyFlatSpec with CronJobsTestSuite with I
     check(DbReader.stoppedRuntimeQuery)
   }
 
-  it should "build kubernetesClustersToDeleteQuery properly" taggedAs (DbTest) in {
-    check(DbReader.kubernetesClustersToDeleteQuery)
-  }
-
   it should "build deletedAndErroredKubernetesClusterQuery properly" taggedAs (DbTest) in {
     check(DbReader.deletedAndErroredKubernetesClusterQuery)
   }

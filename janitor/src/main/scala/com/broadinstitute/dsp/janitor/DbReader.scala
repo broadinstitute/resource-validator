@@ -29,23 +29,23 @@ object DbReader {
   // TODO: Read the grace period (hardcoded to '1 HOUR' below) from config
   val kubernetesClustersToDeleteQuery =
   sql"""
-        SELECT kc.id, kc.googleProject
-        FROM KUBERNETES_CLUSTER kc
-        WHERE
-          kc.status != "DELETED" AND
-          NOT EXISTS (
-            SELECT *
-            FROM NODEPOOL np
-            RIGHT JOIN APP a ON np.id = a.nodepoolId
-            WHERE
-              kc.id = np.clusterId AND np.isDefault = 0 AND
-              (
-                (a.status != "DELETED" AND a.status != "ERROR") OR
-                (a.status = "DELETED" AND a.destroyedDate > now() - INTERVAL 1 HOUR) OR
-                (a.status = "ERROR" AND a.createdDate > now() - INTERVAL 1 HOUR) OR
-                (a.id IS NULL)
-              )
-          );
+      SELECT kc.id, kc.googleProject
+      FROM KUBERNETES_CLUSTER kc
+      WHERE
+        kc.status != "DELETED" AND
+        NOT EXISTS (
+          SELECT *
+          FROM NODEPOOL np
+          RIGHT JOIN APP a ON np.id = a.nodepoolId
+          WHERE
+            kc.id = np.clusterId AND np.isDefault = 0 AND
+            (
+              (a.status != "DELETED" AND a.status != "ERROR") OR
+              (a.status = "DELETED" AND a.destroyedDate > now() - INTERVAL 1 HOUR) OR
+              (a.status = "ERROR" AND a.createdDate > now() - INTERVAL 1 HOUR) OR
+              (a.id IS NULL)
+            )
+        );
     """
     .query[KubernetesClusterToRemove]
 
@@ -60,7 +60,7 @@ object DbReader {
   */
   // TODO: Read the grace period (hardcoded to '1 HOUR' below) from config
   val applessNodepoolQuery =
-  sql"""
+    sql"""
         SELECT np.id, np.nodepoolName, kc.clusterName, kc.googleProject, kc.location
         FROM NODEPOOL AS np
         INNER JOIN KUBERNETES_CLUSTER AS kc
@@ -85,33 +85,32 @@ object DbReader {
     """
     .query[Nodepool]
 
+  /**
+   * When we delete runtimes, we keep their staging buckets for 10 days. Hence we're only deleting staging buckets whose
+   * runtimes have been deleted more than 15 days ago.
+   * Checker will blindly delete all buckets returned by this function. Since we've started running the cron job daily,
+   * we really only need to delete any new buckets; hence we're skipping buckets whose runtimes were deleted more than 20 days ago
+   */
+  val stagingBucketsToDeleteQuery =
+    sql"""
+        SELECT googleProject, stagingBucket
+        FROM CLUSTER
+        WHERE
+          status="Deleted" AND
+          destroyedDate < now() - interval 15 DAY AND
+          destroyedDate > now() - interval 20 DAY;
+        """
+      .query[BucketToRemove]
 
   def impl[F[_]: ContextShift](xa: Transactor[F])(implicit F: Async[F]): DbReader[F] = new DbReader[F] {
-
     override def getKubernetesClustersToDelete: Stream[F, KubernetesClusterToRemove] =
       kubernetesClustersToDeleteQuery.stream.transact(xa)
 
     override def getNodepoolsToDelete: Stream[F, Nodepool] =
       applessNodepoolQuery.stream.transact(xa)
 
-    /**
-     * When we delete runtimes, we keep their staging buckets for 10 days. Hence we're only deleting staging buckets whose
-     * runtimes have been deleted more than 15 days ago.
-     * Checker will blindly delete all buckets returned by this function. Since we've started running the cron job daily,
-     * we really only need to delete any new buckets; hence we're skipping buckets whose runtimes were deleted more than 20 days ago
-     */
     override def getStagingBucketsToDelete: Stream[F, BucketToRemove] =
-      sql"""
-            SELECT googleProject, stagingBucket
-            FROM CLUSTER
-            WHERE
-              status="Deleted" AND
-              destroyedDate < now() - interval 15 DAY AND
-              destroyedDate > now() - interval 20 DAY;
-        """
-        .query[BucketToRemove]
-        .stream
-        .transact(xa)
+      stagingBucketsToDeleteQuery.stream.transact(xa)
   }
 }
 

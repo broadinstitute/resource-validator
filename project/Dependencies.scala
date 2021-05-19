@@ -35,5 +35,5 @@ object Dependencies {
 
   val janitor = core
 
-  val cleanup = core
+  val nuker = core
 }

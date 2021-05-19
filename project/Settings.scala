@@ -51,14 +51,14 @@ object Settings {
     )
   )
 
-  private lazy val cleanupDockerSettings = List(
+  private lazy val nukerDockerSettings = List(
     dockerUpdateLatest := true,
-    Compile / mainClass := Some("com.broadinstitute.dsp.cleanup.Main"),
-    Docker / packageName := "broad-dsp-gcr-public/cleanup",
+    Compile / mainClass := Some("com.broadinstitute.dsp.nuker.Main"),
+    Docker / packageName := "broad-dsp-gcr-public/nuker",
     dockerAlias := DockerAlias(
       Some("us.gcr.io"),
       None,
-      "broad-dsp-gcr-public/cleanup",
+      "broad-dsp-gcr-public/nuker",
       None
     )
   )
@@ -156,9 +156,9 @@ object Settings {
     scriptClasspath := Seq((assembly / assemblyJarName).value)
   )
 
-  lazy val nukerSettings = commonSettings ++ cleanupDockerSettings ++ List(
+  lazy val nukerSettings = commonSettings ++ nukerDockerSettings ++ List(
     name := "nuker",
-    libraryDependencies ++= Dependencies.cleanup,
+    libraryDependencies ++= Dependencies.nuker,
     assembly / assemblyJarName := "nuker-assembly.jar",
     // removes all jar mappings in universal and appends the fat jar
     // This is needed to include `core` module in classpath

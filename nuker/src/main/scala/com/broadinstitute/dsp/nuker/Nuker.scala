@@ -43,19 +43,19 @@ object Nuker {
 
   private def initDependencies[F[_]: Concurrent: ContextShift: StructuredLogger: Parallel: Timer](
     appConfig: AppConfig
-  ): Resource[F, CleanupDeps[F]] =
+  ): Resource[F, NukerDeps[F]] =
     for {
       blocker <- Blocker[F]
       metrics <- OpenTelemetryMetrics.resource(appConfig.pathToCredential, "leonardo-cron-jobs", blocker)
       credential <- org.broadinstitute.dsde.workbench.google2.credentialResource[F](appConfig.pathToCredential.toString)
       topicAdminClient <- GoogleTopicAdmin.fromServiceAccountCrendential(credential)
-      subscriptionClient <- GoogleSubscriptionAdmin.fromServiceAccountCrendential(credential)
+      subscriptionClient <- GoogleSubscriptionAdmin.fromServiceAccountCredential(credential)
     } yield {
-      CleanupDeps(blocker, metrics, topicAdminClient, subscriptionClient)
+      NukerDeps(blocker, metrics, topicAdminClient, subscriptionClient)
     }
 }
 
-final case class CleanupDeps[F[_]](
+final case class NukerDeps[F[_]](
   blocker: Blocker,
   metrics: OpenTelemetryMetrics[F],
   topicAdminClient: GoogleTopicAdmin[F],
