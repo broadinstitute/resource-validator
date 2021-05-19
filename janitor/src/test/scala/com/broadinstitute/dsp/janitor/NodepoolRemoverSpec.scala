@@ -1,19 +1,18 @@
-package com.broadinstitute.dsp
-package resourceValidator
+package com.broadinstitute.dsp.janitor
 
 import cats.effect.IO
 import cats.mtl.Ask
 import com.broadinstitute.dsp.Generators._
+import com.broadinstitute.dsp.{CheckRunnerDeps, CronJobsTestSuite, LeoPublisherDeps, Nodepool}
 import fs2.Stream
 import io.circe.Encoder
 import org.broadinstitute.dsde.workbench.google2.GooglePublisher
 import org.broadinstitute.dsde.workbench.google2.mock.{FakeGooglePublisher, FakeGoogleStorageInterpreter}
 import org.broadinstitute.dsde.workbench.model.TraceId
-import org.scalatest.flatspec.AnyFlatSpec
 import org.broadinstitute.dsde.workbench.openTelemetry.FakeOpenTelemetryMetricsInterpreter
+import org.scalatest.flatspec.AnyFlatSpec
 
-class NodepoolRemoverSpec extends AnyFlatSpec with CronJobsTestSuite {
-
+final class NodepoolRemoverSpec extends AnyFlatSpec with CronJobsTestSuite {
   it should "send DeleteNodepoolMessage when nodepools are detected to be auto-deleted" in {
     forAll { (n: Nodepool, dryRun: Boolean) =>
       val dbReader = new FakeDbReader {

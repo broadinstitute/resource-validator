@@ -1,8 +1,7 @@
 package com.broadinstitute.dsp
-package resourceValidator
+package janitor
 
 import java.nio.file.Paths
-
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

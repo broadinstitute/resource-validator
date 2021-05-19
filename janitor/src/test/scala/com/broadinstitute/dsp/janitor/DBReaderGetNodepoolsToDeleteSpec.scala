@@ -1,23 +1,26 @@
 package com.broadinstitute.dsp
-package resourceValidator
+package janitor
 
-import java.time.Instant
-
-import com.broadinstitute.dsp.DBTestHelper._
+import com.broadinstitute.dsp.DBTestHelper.{insertApp, insertDisk, insertK8sCluster, insertNamespace, insertNodepool, transactorResource, yoloTransactor}
 import com.broadinstitute.dsp.Generators._
+import com.broadinstitute.dsp.RemovableNodepoolStatus.removableStatuses
+import com.broadinstitute.dsp.{CronJobsTestSuite, Disk, RemovableNodepoolStatus}
 import doobie.scalatest.IOChecker
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
 import org.scalatest.flatspec.AnyFlatSpec
 
+import java.time.Instant
+
 /**
  * Not running these tests in CI yet since we'll need to set up mysql container and Leonardo tables in CI. Punt for now
  * For running these tests locally, you can
  *   * Start leonardo mysql container locally
+ *   * Comment out https://github.com/DataBiosphere/leonardo/blob/develop/http/src/test/scala/org/broadinstitute/dsde/workbench/leonardo/db/TestComponent.scala#L82
  *   * Run a database unit test in leonardo
  *   * Run this spec
  */
-final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
+class DBReaderGetNodepoolsToDeleteSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val config = ConfigSpec.config.database
   val transactor = yoloTransactor
 
@@ -30,8 +33,8 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
   val destroyedDateBeyondGracePeriod = now.minusSeconds(gracePeriod + 200)
   val destroyedDateWithinGracePeriod = now.minusSeconds(gracePeriod - 150)
 
-  it should "detect for removal: Kubernetes cluster in RUNNING status with app in DELETED status BEYOND grace period" taggedAs DbTest in {
-    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+  it should s"detect for removal: Nodepool in status $removableStatuses status with app in DELETED status BEYOND grace period" taggedAs DbTest in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk, removableStatuses: RemovableNodepoolStatus) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
 
@@ -39,7 +42,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
           diskId <- insertDisk(disk)
           clusterId <- insertK8sCluster(cluster, "RUNNING")
           _ <- insertNodepool(clusterId, "default-np", true)
-          nodepoolId <- insertNodepool(clusterId, "np", false)
+          nodepoolId <- insertNodepool(clusterId, "np", false, removableStatuses.asString)
           namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
           _ <- insertApp(nodepoolId,
                          namespaceId,
@@ -49,15 +52,15 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
                          createdDateWithinGracePeriod,
                          destroyedDateBeyondGracePeriod)
 
-          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
-        } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
+          nodepoolsToRemove <- dbReader.getNodepoolsToDelete.compile.toList
+        } yield nodepoolsToRemove.map(_.nodepoolId) shouldBe List(nodepoolId)
       }
       res.unsafeRunSync()
     }
   }
 
-  it should "detect for removal: Kubernetes cluster in RUNNING status with app in ERROR status BEYOND grace period" taggedAs DbTest in {
-    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+  it should s"detect for removal: Nodepool in $removableStatuses status with app in ERROR status BEYOND grace period" taggedAs DbTest in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk, removableStatuses: RemovableNodepoolStatus) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
 
@@ -65,7 +68,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
           diskId <- insertDisk(disk)
           clusterId <- insertK8sCluster(cluster, "RUNNING")
           _ <- insertNodepool(clusterId, "default-np", true)
-          nodepoolId <- insertNodepool(clusterId, "np", false)
+          nodepoolId <- insertNodepool(clusterId, "np", false, removableStatuses.asString)
           namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
           _ <- insertApp(nodepoolId,
                          namespaceId,
@@ -74,14 +77,14 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
                          "ERROR",
                          createdDateBeyondGracePeriod,
                          destroyedDateWithinGracePeriod)
-          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
-        } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
+          nodepoolsToRemove <- dbReader.getNodepoolsToDelete.compile.toList
+        } yield nodepoolsToRemove.map(_.nodepoolId) shouldBe List(nodepoolId)
       }
       res.unsafeRunSync()
     }
   }
 
-  it should "detect for removal: Kubernetes cluster in RUNNING status with only a default nodepool and no apps" taggedAs DbTest in {
+  it should "not detect for removal: default nodepool" taggedAs DbTest in {
     forAll { (cluster: KubernetesClusterId) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
@@ -89,23 +92,23 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
         for {
           clusterId <- insertK8sCluster(cluster, "RUNNING")
           _ <- insertNodepool(clusterId, "default-np", true)
-          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
-        } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
+          nodepoolsToRemove <- dbReader.getNodepoolsToDelete.compile.toList
+        } yield nodepoolsToRemove.map(_.nodepoolId) shouldBe List.empty
       }
       res.unsafeRunSync()
     }
   }
 
-  it should "NOT detect for removal: Kubernetes cluster in DELETED status" taggedAs DbTest in {
+  it should "NOT detect for removal: Nodepool in DELETED status" taggedAs DbTest in {
     forAll { (cluster: KubernetesClusterId, disk: Disk) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
 
         for {
           diskId <- insertDisk(disk)
-          clusterId <- insertK8sCluster(cluster, "DELETED")
+          clusterId <- insertK8sCluster(cluster, "RUNNING")
           _ <- insertNodepool(clusterId, "default-np", true)
-          nodepoolId <- insertNodepool(clusterId, "np", false)
+          nodepoolId <- insertNodepool(clusterId, "np", false, "DELETED")
           namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
           _ <- insertApp(nodepoolId,
                          namespaceId,
@@ -114,15 +117,15 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
                          "ERROR",
                          createdDateBeyondGracePeriod,
                          destroyedDateBeyondGracePeriod)
-          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
-        } yield clustersToRemove shouldBe List.empty
+          nodepoolsToRemove <- dbReader.getNodepoolsToDelete.compile.toList
+        } yield nodepoolsToRemove shouldBe List.empty
       }
       res.unsafeRunSync()
     }
   }
 
-  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in RUNNING status" taggedAs DbTest in {
-    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+  it should s"NOT detect for removal: Nodepool in $removableStatuses status with app in RUNNING status" taggedAs DbTest in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk, removableStatus: RemovableNodepoolStatus) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
 
@@ -130,7 +133,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
           diskId <- insertDisk(disk)
           clusterId <- insertK8sCluster(cluster, "RUNNING")
           _ <- insertNodepool(clusterId, "default-np", true)
-          nodepoolId <- insertNodepool(clusterId, "np", false)
+          nodepoolId <- insertNodepool(clusterId, "np", false, removableStatus.asString)
           namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
           _ <- insertApp(nodepoolId,
                          namespaceId,
@@ -147,8 +150,8 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
     }
   }
 
-  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in DELETED status WITHIN grace period" taggedAs DbTest in {
-    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+  it should s"NOT detect for removal: Nodepool in $removableStatuses status with app in DELETED status WITHIN grace period" taggedAs DbTest in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk, removableStatus: RemovableNodepoolStatus) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
 
@@ -156,7 +159,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
           diskId <- insertDisk(disk)
           clusterId <- insertK8sCluster(cluster, "RUNNING")
           _ <- insertNodepool(clusterId, "default-np", true)
-          nodepoolId <- insertNodepool(clusterId, "np", false)
+          nodepoolId <- insertNodepool(clusterId, "np", false, removableStatus.asString)
           namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
           _ <- insertApp(nodepoolId,
                          namespaceId,
@@ -173,8 +176,8 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
     }
   }
 
-  it should "NOT detect for removal: Kubernetes cluster in RUNNING status with app in ERROR status WITHIN grace period" taggedAs DbTest in {
-    forAll { (cluster: KubernetesClusterId, disk: Disk) =>
+  it should s"NOT detect for removal: Nodepool in $removableStatuses status with app in ERROR status WITHIN grace period" taggedAs DbTest in {
+    forAll { (cluster: KubernetesClusterId, disk: Disk, removableStatus: RemovableNodepoolStatus) =>
       val res = transactorResource.use { implicit xa =>
         val dbReader = DbReader.impl(xa)
 
@@ -182,7 +185,7 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
           diskId <- insertDisk(disk)
           clusterId <- insertK8sCluster(cluster, "RUNNING")
           _ <- insertNodepool(clusterId, "default-np", true)
-          nodepoolId <- insertNodepool(clusterId, "np", false)
+          nodepoolId <- insertNodepool(clusterId, "np", false, removableStatus.asString)
           namespaceId <- insertNamespace(clusterId, NamespaceName("ns"))
           _ <- insertApp(nodepoolId,
                          namespaceId,
@@ -193,23 +196,6 @@ final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with C
                          destroyedDateBeyondGracePeriod)
           clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
         } yield clustersToRemove shouldBe List.empty
-      }
-      res.unsafeRunSync()
-    }
-  }
-
-  it should "detect for removal: Kubernetes cluster with nodepools but no apps" taggedAs DbTest in {
-    forAll { (cluster: KubernetesClusterId) =>
-      val res = transactorResource.use { implicit xa =>
-        val dbReader = DbReader.impl(xa)
-
-        for {
-          clusterId <- insertK8sCluster(cluster, "RUNNING")
-          _ <- insertNodepool(clusterId, "default-np", true)
-          _ <- insertNodepool(clusterId, "np", false)
-
-          clustersToRemove <- dbReader.getKubernetesClustersToDelete.compile.toList
-        } yield clustersToRemove.map(_.id) shouldBe List(clusterId)
       }
       res.unsafeRunSync()
     }
