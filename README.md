@@ -53,7 +53,7 @@ sbt <project>/run --help
 
 e.g. `sbt "resourceValidator/run --dryRun --all"`
 
-## Run units tests
+## Run unit tests
 * Run the unit tests that **don't** require access to Leonardo DB:
   * `sbt "testOnly -- -l cronJobs.dbTest"`
 
