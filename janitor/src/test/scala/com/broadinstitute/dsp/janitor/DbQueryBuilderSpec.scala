@@ -23,4 +23,8 @@ final class DbQueryBuilderSpec extends AnyFlatSpec with CronJobsTestSuite with I
   it should "build applessNodepoolQuery properly" taggedAs (DbTest) in {
     check(DbReader.applessNodepoolQuery)
   }
+
+  it should "build stagingBucketsToDeleteQuery properly" taggedAs (DbTest) in {
+    check(DbReader.stagingBucketsToDeleteQuery)
+  }
 }
