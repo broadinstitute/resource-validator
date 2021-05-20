@@ -54,14 +54,13 @@ sbt <project>/run --help
 e.g. `sbt "resourceValidator/run --dryRun --all"`
 
 ## Run unit tests
-* Run the unit tests that **don't** require access to Leonardo DB:
+* For the unit tests that **don't** require access to Leonardo DB:
   * `sbt "testOnly -- -l cronJobs.dbTest"`
 
-* Run the unit tests that **do** require access to Leonardo DB:
-  * Start Leonardo mysql container locally
-  * Comment out the Leonardo code line [dbFutureValue(testDbRef.dataAccess.truncateAll)](https://github.com/DataBiosphere/leonardo/blob/develop/http/src/test/scala/org/broadinstitute/dsde/workbench/leonardo/db/TestComponent.scala#L83)
-  * Run a Leonardo unit test that results in initializing a Leonardo DB (e.g. [ClusterComponentSpec](https://github.com/DataBiosphere/leonardo/blob/develop/http/src/test/scala/org/broadinstitute/dsde/workbench/leonardo/db/ClusterComponentSpec.scala))
-  * `sbt "testOnly -- -n cronJobs.dbTest"`
+* For the unit tests that **do** require access to Leonardo DB:
+  * Start Leonardo mysql container locally.
+  * Run a Leonardo unit test that results in initializing a Leonardo DB (e.g. [ClusterComponentSpec](https://github.com/DataBiosphere/leonardo/blob/develop/http/src/test/scala/org/broadinstitute/dsde/workbench/leonardo/db/ClusterComponentSpec.scala)).
+  * Run each unit test individually as running them concurrently causes some of them to fail.
 
 ## Contributing
 1. Run these unit tests locally before making a PR:
