@@ -72,8 +72,8 @@ object Janitor {
 }
 
 final case class JanitorDeps[F[_]](
-                                    runtimeCheckerDeps: RuntimeCheckerDeps[F],
-                                    leoPublisherDeps: LeoPublisherDeps[F],
-                                    dbReader: DbReader[F],
-                                    blocker: Blocker
-                                  )
+  runtimeCheckerDeps: RuntimeCheckerDeps[F],
+  leoPublisherDeps: LeoPublisherDeps[F],
+  dbReader: DbReader[F],
+  blocker: Blocker
+)

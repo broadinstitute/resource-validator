@@ -21,7 +21,8 @@ object Main
         val shouldCheckDeletedRuntimes = Opts.flag("checkDeletedRuntimes", "check all deleted runtimes").orFalse
         val shouldCheckErroredRuntimes = Opts.flag("checkErroredRuntimes", "check all errored runtimes").orFalse
         val shouldCheckStoppedRuntimes = Opts.flag("checkStoppedRuntimes", "check all stopped runtimes").orFalse
-        val shouldCheckDeletedKubernetesClusters = Opts.flag("checkDeletedKubernetesClusters", "check all deleted or errored kubernetes clusters").orFalse
+        val shouldCheckDeletedKubernetesClusters =
+          Opts.flag("checkDeletedKubernetesClusters", "check all deleted or errored kubernetes clusters").orFalse
         val shouldCheckDeletedNodepools =
           Opts.flag("checkDeletedNodepools", "check all deleted or errored nodepools").orFalse
         val shouldCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse

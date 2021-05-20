@@ -25,19 +25,27 @@ object Main
         val shouldCheckStagingBucketsToBeRemoved =
           Opts.flag("checkStagingBucketsToRemove", "check staging buckets that should be removed").orFalse
 
-        (enableDryRun, shouldCheckAll, shouldCheckKubernetesClustersToBeRemoved, shouldCheckNodepoolsToBeRemoved, shouldCheckStagingBucketsToBeRemoved).mapN {
-          (dryRun, checkAll, shouldCheckKubernetesClustersToBeRemoved, shouldCheckNodepoolsToBeRemoved, shouldCheckStagingBucketsToBeRemoved) =>
-          Janitor
-            .run[IO](
-              isDryRun = dryRun,
-              shouldCheckAll = checkAll,
-              shouldCheckKubernetesClustersToBeRemoved = shouldCheckKubernetesClustersToBeRemoved,
-              shouldCheckNodepoolsToBeRemoved = shouldCheckNodepoolsToBeRemoved,
-              shouldCheckStagingBucketsToBeRemoved = shouldCheckStagingBucketsToBeRemoved
-            )
-            .compile
-            .drain
-            .unsafeRunSync()
+        (enableDryRun,
+         shouldCheckAll,
+         shouldCheckKubernetesClustersToBeRemoved,
+         shouldCheckNodepoolsToBeRemoved,
+         shouldCheckStagingBucketsToBeRemoved).mapN {
+          (dryRun,
+           checkAll,
+           shouldCheckKubernetesClustersToBeRemoved,
+           shouldCheckNodepoolsToBeRemoved,
+           shouldCheckStagingBucketsToBeRemoved) =>
+            Janitor
+              .run[IO](
+                isDryRun = dryRun,
+                shouldCheckAll = checkAll,
+                shouldCheckKubernetesClustersToBeRemoved = shouldCheckKubernetesClustersToBeRemoved,
+                shouldCheckNodepoolsToBeRemoved = shouldCheckNodepoolsToBeRemoved,
+                shouldCheckStagingBucketsToBeRemoved = shouldCheckStagingBucketsToBeRemoved
+              )
+              .compile
+              .drain
+              .unsafeRunSync()
         }
       }
     )

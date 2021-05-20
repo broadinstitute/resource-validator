@@ -1,7 +1,15 @@
 package com.broadinstitute.dsp
 package janitor
 
-import com.broadinstitute.dsp.DBTestHelper.{insertApp, insertDisk, insertK8sCluster, insertNamespace, insertNodepool, transactorResource, yoloTransactor}
+import com.broadinstitute.dsp.DBTestHelper.{
+  insertApp,
+  insertDisk,
+  insertK8sCluster,
+  insertNamespace,
+  insertNodepool,
+  transactorResource,
+  yoloTransactor
+}
 import com.broadinstitute.dsp.Generators._
 import com.broadinstitute.dsp.RemovableNodepoolStatus.removableStatuses
 import doobie.scalatest.IOChecker

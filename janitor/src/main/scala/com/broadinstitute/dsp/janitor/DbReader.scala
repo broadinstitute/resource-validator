@@ -25,10 +25,9 @@ object DbReader {
    *    - destroyedDate for deleted apps
    *    - createdDate for error'ed apps
    */
-
   // TODO: Read the grace period (hardcoded to '1 HOUR' below) from config
   val kubernetesClustersToDeleteQuery =
-  sql"""
+    sql"""
       SELECT kc.id, kc.googleProject
       FROM KUBERNETES_CLUSTER kc
       WHERE
@@ -47,17 +46,17 @@ object DbReader {
             )
         );
     """
-    .query[KubernetesClusterToRemove]
+      .query[KubernetesClusterToRemove]
 
- /**
-  * We are calculating the grace period for nodepool deletion assuming that the following are valid proxies for an app's last activity:
-  *   - destroyedDate for deleted apps
-  *   - createdDate for error'ed apps
-  * We explicitly check nodepools with 5 out of 11 statuses that exist.
-  * The statuses we exclude are PROVISIONING, STOPPING, DELETED, PRECREATING, PREDELETING, and PREDELETING.
-  * We exclude all "...ing" statuses because they are transitional, and this checker is not intended to handle timeouts.
-  * We are excluding default nodepools, as these should remain for the lifetime of the cluster.
-  */
+  /**
+   * We are calculating the grace period for nodepool deletion assuming that the following are valid proxies for an app's last activity:
+   *   - destroyedDate for deleted apps
+   *   - createdDate for error'ed apps
+   * We explicitly check nodepools with 5 out of 11 statuses that exist.
+   * The statuses we exclude are PROVISIONING, STOPPING, DELETED, PRECREATING, PREDELETING, and PREDELETING.
+   * We exclude all "...ing" statuses because they are transitional, and this checker is not intended to handle timeouts.
+   * We are excluding default nodepools, as these should remain for the lifetime of the cluster.
+   */
   // TODO: Read the grace period (hardcoded to '1 HOUR' below) from config
   val applessNodepoolQuery =
     sql"""
@@ -83,7 +82,7 @@ object DbReader {
             )
         )
     """
-    .query[Nodepool]
+      .query[Nodepool]
 
   /**
    * When we delete runtimes, we keep their staging buckets for 10 days. Hence we're only deleting staging buckets whose

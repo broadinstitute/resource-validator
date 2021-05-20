@@ -31,9 +31,9 @@ object StagingBucketRemover {
         a.bucket
           .flatTraverse { b =>
             deps.storageService.deleteBucket(a.googleProject, b, isRecursive = true).compile.last.map {
-              case Some(true) => Some(a)
+              case Some(true)  => Some(a)
               case Some(false) => None
-              case None => None
+              case None        => None
             }
           }
     }
