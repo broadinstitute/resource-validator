@@ -31,6 +31,8 @@ object StagingBucketRemover {
         a.bucket
           .flatTraverse { b =>
             deps.storageService.deleteBucket(a.googleProject, b, isRecursive = true).compile.last.map {
+              // deleteBucket() will return `true` if the bucket is deleted; else return `false`
+              // We only need to report buckets that are actually being deleted.
               case Some(true)  => Some(a)
               case Some(false) => None
               case None        => None
