@@ -7,7 +7,7 @@ import cats.syntax.all._
 import org.broadinstitute.dsde.workbench.model.google.{GcsBucketName, GoogleProject}
 import pureconfig._
 import pureconfig.generic.auto._
-import com.broadinstitute.dsp.ConfigImplicits._
+import ConfigImplicits._
 
 object Config {
   val appConfig = ConfigSource.default
