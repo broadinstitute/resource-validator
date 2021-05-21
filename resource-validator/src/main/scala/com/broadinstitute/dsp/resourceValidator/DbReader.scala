@@ -29,10 +29,10 @@ object DbReader {
 
   val deletedDisksQuery =
     sql"""
-           select pd1.id, pd1.googleProject, pd1.name, pd1.zone
+           select pd1.id, pd1.googleProject, pd1.name, pd1.zone, pd1.formattedBy
            FROM PERSISTENT_DISK AS pd1
            WHERE pd1.status="Deleted" AND
-             pd1.destroyedDate > now() - INTERVAL 30 DAY AND
+           pd1.destroyedDate > now() - INTERVAL 30 DAY AND
              NOT EXISTS
              (
                SELECT *
@@ -178,8 +178,8 @@ object DbReader {
     sql"""SELECT DISTINCT c1.id, googleProject, clusterName, rt.cloudService, c1.status, rt.region, rt.numberOfWorkers, rt.numberOfPreemptibleWorkers
           FROM CLUSTER AS c1
           INNER JOIN RUNTIME_CONFIG AS rt ON c1.`runtimeConfigId`=rt.id
-          WHERE 
-            rt.cloudService="DATAPROC" AND 
+          WHERE
+            rt.cloudService="DATAPROC" AND
             NOT c1.status="DELETED" AND
             c1.id != 6220
          """
