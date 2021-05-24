@@ -44,7 +44,9 @@ docker run \
 ```
 
 ## Set up configuration file
-Copy `application.conf.example` under each project in dir `[project]/src/main/resources` as `application.conf`. Replace values properly.
+Copy `application.conf.example` under each project in dir `[project]/src/main/resources` as `application.conf`. Replace values appropriately.
+i.e. the `leonardo-pubsub.google-project`  will need to be one that the user you are configured as will have access to.
+
 
 ## Run a job
 ```
@@ -65,7 +67,7 @@ e.g. `sbt "resourceValidator/run --dryRun --all"`
 ## Contributing
 1. Run these unit tests locally before making a PR:
 - `com.broadinstitute.dsp.zombieMonitor.DbReaderSpec` 
-- `com.broadinstitute.dsp.resourceValidator.DbReaderSpec`
+- `com.broadinstitute.dsp.resourceValidator.DbQueryBuilderSpec`
 
    These are not run in CI, so you have to make sure you run them manually before merging any PRs. Instructions on running these can be found in the respective `DbReaderSpec` files.
 

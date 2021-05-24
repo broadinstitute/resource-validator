@@ -24,10 +24,10 @@ object DbReader {
 
   val deletedDisksQuery =
     sql"""
-           SELECT pd1.id, pd1.googleProject, pd1.name, pd1.zone
+           SELECT pd1.id, pd1.googleProject, pd1.name, pd1.zone, pd1.formattedBy
            FROM PERSISTENT_DISK AS pd1
            WHERE pd1.status="Deleted" AND
-             pd1.destroyedDate > now() - INTERVAL 30 DAY AND
+           pd1.destroyedDate > now() - INTERVAL 30 DAY AND
              NOT EXISTS
              (
                SELECT *
