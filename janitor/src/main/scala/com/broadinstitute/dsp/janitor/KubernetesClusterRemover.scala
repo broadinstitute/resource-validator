@@ -29,7 +29,7 @@ object KubernetesClusterRemover {
     ev: Ask[F, TraceId]): CheckRunner[F, KubernetesClusterToRemove] =
     new CheckRunner[F, KubernetesClusterToRemove] {
       override def appName: String = janitor.appName
-      override def configs = CheckRunnerConfigs(s"remove-kubernetes-clusters", shouldAlert = true)
+      override def configs = CheckRunnerConfigs(s"remove-kubernetes-clusters", shouldAlert = false)
       override def dependencies: CheckRunnerDeps[F] = deps.checkRunnerDeps
       override def resourceToScan: fs2.Stream[F, KubernetesClusterToRemove] = dbReader.getKubernetesClustersToDelete
 
