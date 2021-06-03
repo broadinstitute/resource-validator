@@ -12,6 +12,7 @@ jobs:
         project:
         - resourceValidator
         - zombieMonitor
+        - janitor
 
     steps:
       - uses: actions/checkout@v2
