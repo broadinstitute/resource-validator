@@ -1,6 +1,7 @@
 import com.typesafe.sbt.SbtNativePackager.Universal
 import com.typesafe.sbt.SbtNativePackager.autoImport._
 import com.typesafe.sbt.packager.Keys.scriptClasspath
+import com.typesafe.sbt.packager.docker.Cmd
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 import sbt.Keys._
 import sbt._
@@ -86,6 +87,10 @@ object Settings {
     maintainer := "workbench-interactive-analysis@broadinstitute.org",
     dockerBaseImage := "ghcr.io/graalvm/graalvm-ce:java11-21.1.0",
     dockerRepository := Some("us.gcr.io"),
+    // Resolve trivy errors related to glibc (CVE-2019-9169)
+    // TODO Hopefully this will be fixed in an upcoming version of graalvm-ce
+    // For releases see https://github.com/orgs/graalvm/packages/container/package/graalvm-ce
+    dockerCommands += Cmd("RUN", "microdnf install -y yum && yum upgrade -y glibc-devel --allowerasing"),
     scalacOptions ++= commonCompilerSettings,
     // assembly merge
     assembly / assemblyMergeStrategy := Merging.customMergeStrategy((assembly / assemblyMergeStrategy).value),
