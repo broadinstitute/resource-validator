@@ -10,6 +10,7 @@ lazy val core = (project in file("core"))
   .settings(
     Settings.coreSettings
   )
+  .enablePlugins(DockerPlugin)
 
 lazy val resourceValidator = (project in file("resource-validator"))
   .settings(Settings.resourceValidatorSettings)
