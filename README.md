@@ -3,19 +3,24 @@
 
 # Introduction
 
-This repo contains cron jobs running along side with [Leonardo](https://github.com/databiosphere/leonardo)
+This repo contains cron jobs running along side with [Leonardo](https://github.com/databiosphere/leonardo).
 
 # Cron Jobs
-[This doc](https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes) explains what processes belong in this repo vs what belongs in [Leonardo](https://github.com/databiosphere/leonardo)
+[This doc](https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes) explains what processes belong in this repo vs what belongs in [Leonardo](https://github.com/databiosphere/leonardo).
 
 ## resource-validator
 [Design Doc](https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/737542150/2020-08-25+Proposal+for+Resource+Validator+Cron+Job)
 
-This job updates Google resources to match Leonardo database status.
+This job detects and fixes anomalies by updating Google resources to match their status in Leonardo database.
 
 ## zombie-monitor
+This job detects and fixes anomalies by updating Leonardo database status of resources to match their status in Google.
 
-This job updates Leonardo database to match Google resource status.
+## janitor
+This job removes prod resources when they are deemed not utilized.
+
+## nuker
+This job cleans up cloud resources created by Leonardo in dev/qa projects.
 
 # Running Locally
 
@@ -37,9 +42,11 @@ docker run \
   gcr.io/cloudsql-docker/gce-proxy:1.16 /cloud_sql_proxy \
   -instances=<mysql instance you'd like to connect> -credential_file=/config
 ```
-.
+
 ## Set up configuration file
-Copy `application.conf.example` under each project in dir `[project]/src/main/resources` as `application.conf`. Replace values properly.
+Copy `application.conf.example` under each project in dir `[project]/src/main/resources` as `application.conf`. Replace values appropriately.
+i.e. the `leonardo-pubsub.google-project`  will need to be one that the user you are configured as will have access to.
+
 
 ## Run a job
 ```
@@ -48,17 +55,22 @@ sbt <project>/run --help
 
 e.g. `sbt "resourceValidator/run --dryRun --all"`
 
-Run unit tests (excluding unit tests require database access):
-`testOnly -- -l cronJobs.dbTest`
+## Run unit tests
+* For the unit tests that **don't** require access to Leonardo DB:
+  * `sbt "testOnly -- -l cronJobs.dbTest"`
 
-Run all unit tests require database access:
-`testOnly -- -n cronJobs.dbTest`
+* For the unit tests that **do** require access to Leonardo DB:
+  * Start Leonardo mysql container locally.
+  * Run a Leonardo unit test that results in initializing a Leonardo DB (e.g. [ClusterComponentSpec](https://github.com/DataBiosphere/leonardo/blob/develop/http/src/test/scala/org/broadinstitute/dsde/workbench/leonardo/db/ClusterComponentSpec.scala)).
+  * Run each unit test individually as running them concurrently causes some of them to fail.
 
 ## Contributing
-
 1. Run these unit tests locally before making a PR:
-- `com.broadinstitute.dsp.zombieMonitor.DbReaderSpec` 
-- `com.broadinstitute.dsp.resourceValidator.DbReaderSpec`
+- `com.broadinstitute.dsp.zombieMonitor.DbReaderSpec
+- `com.broadinstitute.dsp.resourceValidator.DbQueryBuilderSpec`
+- `com.broadinstitute.dsp.resourceValidator.DbReader*Spec`
+- `com.broadinstitute.dsp.janitor.DbQueryBuilderSpec`
+- `com.broadinstitute.dsp.janitor.DbReader*Spec`
 
    These are not run in CI, so you have to make sure you run them manually before merging any PRs. Instructions on running these can be found in the respective `DbReaderSpec` files.
 
@@ -74,4 +86,3 @@ in [terra-helmfile](https://github.com/broadinstitute/terra-helmfile). Note that
     
     This will sync leonardo's deployment to match [terra-helmfile](https://github.com/broadinstitute/terra-helmfile) repo.
     the chartVersion bump and sync for other environments will happen automatically when there is a Terra monolith release.
-

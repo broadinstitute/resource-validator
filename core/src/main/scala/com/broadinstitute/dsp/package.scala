@@ -2,15 +2,12 @@ package com.broadinstitute
 
 import cats.effect.{Resource, Sync, Timer}
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
-import org.broadinstitute.dsde.workbench.google2.{RegionName, ZoneName}
+import org.broadinstitute.dsde.workbench.google2.RegionName
 
 import java.nio.file.Path
 import scala.jdk.CollectionConverters._
 
 package object dsp {
-  // TODO: remove all references to this after https://broadworkbench.atlassian.net/browse/IA-2640
-  val defaultZoneNameForDiskOnly = ZoneName("us-central1-a")
-
   val supportedRegions = Set(
     "northamerica-northeast1",
     "southamerica-east1",
@@ -44,6 +41,6 @@ package object dsp {
   ): Resource[F, GoogleCredentials] =
     for {
       credentialFile <- org.broadinstitute.dsde.workbench.util2.readFile[F](pathToCredential.toString)
-      credential <- Resource.liftF(Sync[F].delay(ServiceAccountCredentials.fromStream(credentialFile)))
+      credential <- Resource.eval(Sync[F].delay(ServiceAccountCredentials.fromStream(credentialFile)))
     } yield credential.createScoped(Seq("https://www.googleapis.com/auth/cloud-platform").asJava)
 }

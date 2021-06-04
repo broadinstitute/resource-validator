@@ -60,7 +60,7 @@ trait CheckRunner[F[_], A] {
             .compile
             .drain
         else {
-          // There's log based alert set up in production for "Anomaly detected"
+          // There's a log-based alert set up in production for "Anomaly detected"
           if (configs.shouldAlert)
             logger.error(
               s"${configs.checkType} | Finished check. Anomaly detected. Check out gs://${dependencies.reportDestinationBucket.value}/${blobName.value} for more details"

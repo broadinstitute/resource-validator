@@ -56,9 +56,9 @@ object ZombieMonitor {
       processes = Stream(deleteDiskCheckerProcess,
                          deleteRuntimeCheckerProcess,
                          deletek8sClusterCheckerProcess,
-                         deleteOrErroredNodepoolCheckerProcess
-      ).covary[F]
-      _ <- processes.parJoin(4)
+                         deleteOrErroredNodepoolCheckerProcess).covary[F]
+
+      _ <- processes.parJoin(4) // Number of checkers in 'processes'
     } yield ExitCode.Success
   }.drain
 
@@ -67,7 +67,7 @@ object ZombieMonitor {
   ): Resource[F, ZombieMonitorDeps[F]] =
     for {
       blocker <- Blocker[F]
-      blockerBound <- Resource.liftF(Semaphore[F](250))
+      blockerBound <- Resource.eval(Semaphore[F](250))
       metrics <- OpenTelemetryMetrics.resource(appConfig.pathToCredential, "leonardo-cron-jobs", blocker)
       runtimeCheckerDeps <- RuntimeCheckerDeps.init(appConfig.runtimeCheckerConfig, blocker, metrics, blockerBound)
       diskService <- GoogleDiskService.resource(appConfig.pathToCredential.toString, blocker, blockerBound)

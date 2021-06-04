@@ -26,7 +26,7 @@ object DeletedDiskChecker {
 
       def checkResource(disk: Disk, isDryRun: Boolean)(implicit ev: Ask[F, TraceId]): F[Option[Disk]] =
         for {
-          diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, defaultZoneNameForDiskOnly, disk.diskName)
+          diskOpt <- deps.googleDiskService.getDisk(disk.googleProject, disk.zone, disk.diskName)
           _ <- if (isDryRun) F.unit
           else
             diskOpt match {

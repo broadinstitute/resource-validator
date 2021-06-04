@@ -2,7 +2,7 @@ package com.broadinstitute.dsp
 
 import ca.mrvisser.sealerate
 import io.circe.Encoder
-import org.broadinstitute.dsde.workbench.google2.{DiskName, Location}
+import org.broadinstitute.dsde.workbench.google2.{DiskName, Location, ZoneName}
 import org.broadinstitute.dsde.workbench.google2.GKEModels.{
   KubernetesClusterId,
   KubernetesClusterName,
@@ -24,8 +24,12 @@ object CloudService {
     override def asString: String = "DATAPROC"
   }
 }
-final case class Disk(id: Long, googleProject: GoogleProject, diskName: DiskName) {
-  override def toString: String = s"${id}/${googleProject.value},${diskName.value}"
+final case class Disk(id: Long,
+                      googleProject: GoogleProject,
+                      diskName: DiskName,
+                      zone: ZoneName,
+                      formattedBy: Option[String]) {
+  override def toString: String = s"${id}/${googleProject.value},${diskName.value},${zone.value}"
 }
 
 //init buckets are different than staging buckets because we store them with gs://[GcsBucketName]/

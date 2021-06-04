@@ -21,7 +21,7 @@ object Main
           Opts.flag("deletePubsubTopics", "delete all fiab pubsub topics").orFalse
 
         (enableDryRun, shouldRunAll, shouldDeletePubsubTopics).mapN { (dryRun, runAll, deletePubsubTopics) =>
-          Cleanup
+          Nuker
             .run[IO](dryRun, runAll, deletePubsubTopics)
             .compile
             .drain
