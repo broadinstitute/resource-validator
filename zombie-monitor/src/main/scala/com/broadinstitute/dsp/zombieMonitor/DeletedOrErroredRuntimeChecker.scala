@@ -66,26 +66,27 @@ object DeletedOrErroredRuntimeChecker {
                      // If billing is enabled, then cluster may indeed be in a `Error` mode that we can still ssh to
                      // master instance to move data if necessary.
                      // If billing is disabled, we update error info to billing disabled
-                     _ <- if (isBillingEnabled)
-                       dbReader.insertClusterError(
-                         runtime.id,
-                         Some(cluster.getStatus.getState.getNumber),
-                         s"""
-                            |Unrecoverable ERROR state for Spark Cloud Environment: ${cluster.getStatus.getDetail}
-                            |
-                            |Please Delete and Recreate your Cloud environment. If you have important data you’d like to retrieve
-                            |from your Cloud environment prior to deleting, try to access the machine via notebook or terminal.
-                            |If you can't connect to the cluster, please contact customer support and we can help you move your data.
-                            |""".stripMargin
-                       )
-                     else
-                       dbReader.insertClusterError(
-                         runtime.id,
-                         Some(cluster.getStatus.getState.getNumber),
-                         s"""
-                            |Billing is disabled for this project
-                            |""".stripMargin
-                       )
+                     _ <-
+                       if (isBillingEnabled)
+                         dbReader.insertClusterError(
+                           runtime.id,
+                           Some(cluster.getStatus.getState.getNumber),
+                           s"""
+                              |Unrecoverable ERROR state for Spark Cloud Environment: ${cluster.getStatus.getDetail}
+                              |
+                              |Please Delete and Recreate your Cloud environment. If you have important data you’d like to retrieve
+                              |from your Cloud environment prior to deleting, try to access the machine via notebook or terminal.
+                              |If you can't connect to the cluster, please contact customer support and we can help you move your data.
+                              |""".stripMargin
+                         )
+                       else
+                         dbReader.insertClusterError(
+                           runtime.id,
+                           Some(cluster.getStatus.getState.getNumber),
+                           s"""
+                              |Billing is disabled for this project
+                              |""".stripMargin
+                         )
                    } yield ()
                  }).as(Some(runtime))
               } else F.pure(none[Runtime])

@@ -92,7 +92,8 @@ object StoppedRuntimeChecker {
 
       private def containsRunningInstance(project: GoogleProject,
                                           region: RegionName,
-                                          cluster: DataprocClusterName): F[Boolean] =
+                                          cluster: DataprocClusterName
+      ): F[Boolean] =
         for {
           instances <- deps.dataprocService.getClusterInstances(project, region, cluster)
 

@@ -32,11 +32,13 @@ object RuntimeCheckerDeps {
       computeService <- GoogleComputeService.fromCredential(scopedCredential,
                                                             blocker,
                                                             blockerBound,
-                                                            RetryPredicates.standardRetryConfig)
+                                                            RetryPredicates.standardRetryConfig
+      )
       storageService <- GoogleStorageService.resource(config.pathToCredential.toString,
                                                       blocker,
                                                       Some(blockerBound),
-                                                      None)
+                                                      None
+      )
       dataprocService <- GoogleDataprocService.fromCredential(computeService,
                                                               scopedCredential,
                                                               blocker,
@@ -101,13 +103,15 @@ final case class RuntimeWithWorkers(r: Runtime.Dataproc, workerConfig: WorkerCon
 final case class RuntimeCheckerDeps[F[_]](computeService: GoogleComputeService[F],
                                           dataprocService: GoogleDataprocService[F],
                                           checkRunnerDeps: CheckRunnerDeps[F],
-                                          billingService: GoogleBillingService[F])
+                                          billingService: GoogleBillingService[F]
+)
 
 final case class KubernetesClusterCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], gkeService: GKEService[F])
 
 final case class NodepoolCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F],
                                            gkeService: GKEService[F],
-                                           publisher: GooglePublisher[F])
+                                           publisher: GooglePublisher[F]
+)
 
 final case class DiskCheckerDeps[F[_]](checkRunnerDeps: CheckRunnerDeps[F], googleDiskService: GoogleDiskService[F])
 

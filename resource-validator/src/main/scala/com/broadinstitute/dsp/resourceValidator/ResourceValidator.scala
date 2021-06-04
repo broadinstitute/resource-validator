@@ -25,8 +25,9 @@ object ResourceValidator {
                                             shouldCheckDeletedNodepool: Boolean,
                                             shouldCheckDeletedDisks: Boolean,
                                             shouldCheckInitBuckets: Boolean,
-                                            shouldCheckDataprocWorkers: Boolean)(
-    implicit T: Timer[F],
+                                            shouldCheckDataprocWorkers: Boolean
+  )(implicit
+    T: Timer[F],
     C: ContextShift[F]
   ): Stream[F, Nothing] = {
     implicit def getLogger[F[_]: Sync] = Slf4jLogger.getLogger[F]
@@ -113,7 +114,8 @@ object ResourceValidator {
                                   kubernetesClusterCheckerDeps,
                                   nodepoolCheckerDeps,
                                   dbReader,
-                                  blocker)
+                                  blocker
+      )
     }
 }
 

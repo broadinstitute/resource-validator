@@ -24,10 +24,11 @@ object NodepoolRemover {
       ): F[Option[Nodepool]] =
         for {
           ctx <- ev.ask
-          _ <- if (!isDryRun) {
-            val msg = DeleteNodepoolMeesage(n.nodepoolId, n.googleProject, Some(ctx))
-            deps.publisher.publishOne(msg)
-          } else F.unit
+          _ <-
+            if (!isDryRun) {
+              val msg = DeleteNodepoolMeesage(n.nodepoolId, n.googleProject, Some(ctx))
+              deps.publisher.publishOne(msg)
+            } else F.unit
         } yield Some(n)
     }
 }

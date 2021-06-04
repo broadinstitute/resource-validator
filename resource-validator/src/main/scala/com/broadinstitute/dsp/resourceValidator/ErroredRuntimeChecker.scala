@@ -37,12 +37,8 @@ object ErroredRuntimeChecker {
           r <- clusterOpt.flatTraverse[F, Runtime] { cluster =>
             for {
               isBillingEnabled <- deps.billingService.isBillingEnabled(runtime.googleProject)
-              r <- if (cluster.getStatus.getState.name.toUpperCase == "ERROR")
-                logger
-                  .warn(s"${runtime} still exists in Google in Error state. User might want to delete the runtime.")
-                  .as(none[Runtime])
-              else {
-                if (isDryRun)
+              r <-
+                if (cluster.getStatus.getState.name.toUpperCase == "ERROR")
                   logger
                     .warn(
                       s"${runtime} still exists in ${cluster.getStatus.getState.name} status. It needs to be deleted. isBillingEnabled: $isBillingEnabled. Project: ${runtime.googleProject}"

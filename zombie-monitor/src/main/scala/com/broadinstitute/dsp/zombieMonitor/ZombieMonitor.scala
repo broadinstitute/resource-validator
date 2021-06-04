@@ -20,8 +20,9 @@ object ZombieMonitor {
                                             shouldCheckDeletedRuntimes: Boolean,
                                             shouldCheckDeletedDisks: Boolean,
                                             shouldCheckDeletedK8sClusters: Boolean,
-                                            shouldCheckDeletedOrErroredNodepool: Boolean)(
-    implicit T: Timer[F],
+                                            shouldCheckDeletedOrErroredNodepool: Boolean
+  )(implicit
+    T: Timer[F],
     C: ContextShift[F]
   ): Stream[F, Nothing] = {
     implicit def getLogger[F[_]: Sync] = Slf4jLogger.getLogger[F]
@@ -31,22 +32,26 @@ object ZombieMonitor {
       config <- Stream.fromEither(Config.appConfig)
       deps <- Stream.resource(initDependencies(config))
 
-      deleteDiskCheckerProcess = if (shouldRunAll || shouldCheckDeletedDisks)
-        Stream.eval(DeletedDiskChecker.impl(deps.dbReader, deps.diskCheckerDeps).run(isDryRun))
-      else Stream.empty
-      deleteRuntimeCheckerProcess = if (shouldRunAll || shouldCheckDeletedRuntimes)
-        Stream.eval(DeletedOrErroredRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
-      else Stream.empty
-      deletek8sClusterCheckerProcess = if (shouldRunAll || shouldCheckDeletedK8sClusters)
-        Stream.eval(
-          DeletedKubernetesClusterChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
-        )
-      else Stream.empty
-      deleteOrErroredNodepoolCheckerProcess = if (shouldRunAll || shouldCheckDeletedOrErroredNodepool)
-        Stream.eval(
-          DeletedOrErroredNodepoolChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
-        )
-      else Stream.empty
+      deleteDiskCheckerProcess =
+        if (shouldRunAll || shouldCheckDeletedDisks)
+          Stream.eval(DeletedDiskChecker.impl(deps.dbReader, deps.diskCheckerDeps).run(isDryRun))
+        else Stream.empty
+      deleteRuntimeCheckerProcess =
+        if (shouldRunAll || shouldCheckDeletedRuntimes)
+          Stream.eval(DeletedOrErroredRuntimeChecker.impl(deps.dbReader, deps.runtimeCheckerDeps).run(isDryRun))
+        else Stream.empty
+      deletek8sClusterCheckerProcess =
+        if (shouldRunAll || shouldCheckDeletedK8sClusters)
+          Stream.eval(
+            DeletedKubernetesClusterChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
+          )
+        else Stream.empty
+      deleteOrErroredNodepoolCheckerProcess =
+        if (shouldRunAll || shouldCheckDeletedOrErroredNodepool)
+          Stream.eval(
+            DeletedOrErroredNodepoolChecker.impl(deps.dbReader, deps.kubernetesClusterCheckerDeps).run(isDryRun)
+          )
+        else Stream.empty
 
       processes = Stream(deleteDiskCheckerProcess,
                          deleteRuntimeCheckerProcess,
@@ -76,7 +81,8 @@ object ZombieMonitor {
                         runtimeCheckerDeps,
                         k8sCheckerDeps,
                         dbReader,
-                        blocker)
+                        blocker
+      )
     }
 }
 

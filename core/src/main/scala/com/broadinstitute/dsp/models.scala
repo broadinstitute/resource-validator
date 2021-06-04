@@ -54,7 +54,8 @@ final case class KubernetesClusterToRemove(id: Long, googleProject: GoogleProjec
 
 final case class KubernetesCluster(clusterName: KubernetesClusterName,
                                    googleProject: GoogleProject,
-                                   location: Location) {
+                                   location: Location
+) {
   override def toString: String = s"${googleProject}/${clusterName}"
 }
 
@@ -62,7 +63,8 @@ final case class Nodepool(nodepoolId: Long,
                           nodepoolName: NodepoolName,
                           clusterName: KubernetesClusterName,
                           googleProject: GoogleProject,
-                          location: Location) {
+                          location: Location
+) {
   override def toString: String = s"$googleProject/${nodepoolName.value}"
 }
 
