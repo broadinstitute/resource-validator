@@ -66,8 +66,11 @@ e.g. `sbt "resourceValidator/run --dryRun --all"`
 
 ## Contributing
 1. Run these unit tests locally before making a PR:
-- `com.broadinstitute.dsp.zombieMonitor.DbReaderSpec` 
+- `com.broadinstitute.dsp.zombieMonitor.DbReaderSpec
 - `com.broadinstitute.dsp.resourceValidator.DbQueryBuilderSpec`
+- `com.broadinstitute.dsp.resourceValidator.DbReader*Spec`
+- `com.broadinstitute.dsp.janitor.DbQueryBuilderSpec`
+- `com.broadinstitute.dsp.janitor.DbReader*Spec`
 
    These are not run in CI, so you have to make sure you run them manually before merging any PRs. Instructions on running these can be found in the respective `DbReaderSpec` files.
 
