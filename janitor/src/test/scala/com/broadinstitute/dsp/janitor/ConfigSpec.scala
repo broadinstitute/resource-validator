@@ -1,5 +1,5 @@
 package com.broadinstitute.dsp
-package resourceValidator
+package janitor
 
 import java.nio.file.Paths
 

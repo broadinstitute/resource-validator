@@ -1,21 +1,22 @@
 package com.broadinstitute.dsp
-package resourceValidator
-
-import java.time.Instant
+package janitor
 
 import com.broadinstitute.dsp.DBTestHelper._
 import com.broadinstitute.dsp.Generators._
+import com.broadinstitute.dsp.{CronJobsTestSuite, Disk}
 import doobie.scalatest.IOChecker
 import org.broadinstitute.dsde.workbench.google2.GKEModels.KubernetesClusterId
 import org.broadinstitute.dsde.workbench.google2.KubernetesSerializableName.NamespaceName
 import org.scalatest.flatspec.AnyFlatSpec
 
+import java.time.Instant
+
 /**
  * Not running these tests in CI yet since we'll need to set up mysql container and Leonardo tables in CI. Punt for now
  * For running these tests locally, you can
- *   * Start leonardo mysql container locally
- *   * Run a database unit test in leonardo
- *   * Run this spec
+ *   - Start leonardo mysql container locally
+ *   - Run a Leonardo database unit test (e.g. ClusterComponentSpec)
+ *   - Run this spec
  */
 final class DbReaderGetKubernetesClustersToDeleteSpec extends AnyFlatSpec with CronJobsTestSuite with IOChecker {
   implicit val config = ConfigSpec.config.database

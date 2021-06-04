@@ -28,7 +28,6 @@ object Main
         val shouldCheckDeletedDisks = Opts.flag("checkDeletedDisks", "check all deleted disks").orFalse
         val shouldCheckInitBuckets =
           Opts.flag("checkInitBuckets", "checks that init buckets for deleted runtimes are deleted").orFalse
-
         val shouldCheckDataprocWorkers =
           Opts.flag("checkDataprocWorkers", "check dataproc workers").orFalse
 

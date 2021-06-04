@@ -52,7 +52,8 @@ object ZombieMonitor {
                          deleteRuntimeCheckerProcess,
                          deletek8sClusterCheckerProcess,
                          deleteOrErroredNodepoolCheckerProcess).covary[F]
-      _ <- processes.parJoin(4)
+
+      _ <- processes.parJoin(4) // Number of checkers in 'processes'
     } yield ExitCode.Success
   }.drain
 

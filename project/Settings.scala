@@ -1,6 +1,7 @@
 import com.typesafe.sbt.SbtNativePackager.Universal
 import com.typesafe.sbt.SbtNativePackager.autoImport._
-import com.typesafe.sbt.packager.Keys.scriptClasspath
+import com.typesafe.sbt.packager.Keys.{daemonUser, daemonUserUid, scriptClasspath}
+import com.typesafe.sbt.packager.docker.{Cmd, DockerChmodType}
 import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport._
 import sbt.Keys._
 import sbt._
@@ -39,14 +40,26 @@ object Settings {
     )
   )
 
-  private lazy val cleanupDockerSettings = List(
+  private lazy val janitorDockerSettings = List(
     dockerUpdateLatest := true,
-    Compile / mainClass := Some("com.broadinstitute.dsp.cleanup.Main"),
-    Docker / packageName := "broad-dsp-gcr-public/cleanup",
+    Compile / mainClass := Some("com.broadinstitute.dsp.janitor.Main"),
+    Docker / packageName := "broad-dsp-gcr-public/janitor",
     dockerAlias := DockerAlias(
       Some("us.gcr.io"),
       None,
-      "broad-dsp-gcr-public/cleanup",
+      "broad-dsp-gcr-public/janitor",
+      None
+    )
+  )
+
+  private lazy val nukerDockerSettings = List(
+    dockerUpdateLatest := true,
+    Compile / mainClass := Some("com.broadinstitute.dsp.nuker.Main"),
+    Docker / packageName := "broad-dsp-gcr-public/nuker",
+    dockerAlias := DockerAlias(
+      Some("us.gcr.io"),
+      None,
+      "broad-dsp-gcr-public/nuker",
       None
     )
   )
@@ -72,8 +85,15 @@ object Settings {
     addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1"),
     // Docker settings
     maintainer := "workbench-interactive-analysis@broadinstitute.org",
-    dockerBaseImage := "ghcr.io/graalvm/graalvm-ce:java11-21.0.0.2",
+    dockerBaseImage := "ghcr.io/graalvm/graalvm-ce:java11-21.1.0",
     dockerRepository := Some("us.gcr.io"),
+    // Resolve trivy errors related to glibc (CVE-2019-9169)
+    // TODO Hopefully this will be fixed in an upcoming version of graalvm-ce
+    // For releases see https://github.com/orgs/graalvm/packages/container/package/graalvm-ce
+    // Running yum as root or it fails
+    Docker / daemonUserUid := None,
+    Docker / daemonUser := "root",
+    dockerCommands += Cmd("RUN", "microdnf install -y yum && yum upgrade -y glibc-devel --allowerasing"),
     scalacOptions ++= commonCompilerSettings,
     // assembly merge
     assembly / assemblyMergeStrategy := Merging.customMergeStrategy((assembly / assemblyMergeStrategy).value),
@@ -124,9 +144,29 @@ object Settings {
     scriptClasspath := Seq((assembly / assemblyJarName).value)
   )
 
-  lazy val nukerSettings = commonSettings ++ cleanupDockerSettings ++ List(
+  lazy val janitorSettings = commonSettings ++ janitorDockerSettings ++ List(
+    name := "janitor",
+    libraryDependencies ++= Dependencies.janitor,
+    assembly / assemblyJarName := "janitor-assembly.jar",
+    // removes all jar mappings in universal and appends the fat jar
+    // This is needed to include `core` module in classpath
+    Universal / mappings := {
+      // universalMappings: Seq[(File,String)]
+      val universalMappings = (Universal / mappings).value
+      val fatJar = (Compile / assembly).value
+      // removing means filtering
+      val filtered = universalMappings filter {
+        case (_, name) => !name.endsWith(".jar")
+      }
+      // add the fat jar
+      filtered :+ (fatJar -> ("lib/" + fatJar.getName))
+    },
+    scriptClasspath := Seq((assembly / assemblyJarName).value)
+  )
+
+  lazy val nukerSettings = commonSettings ++ nukerDockerSettings ++ List(
     name := "nuker",
-    libraryDependencies ++= Dependencies.cleanup,
+    libraryDependencies ++= Dependencies.nuker,
     assembly / assemblyJarName := "nuker-assembly.jar",
     // removes all jar mappings in universal and appends the fat jar
     // This is needed to include `core` module in classpath

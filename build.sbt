@@ -4,12 +4,13 @@ lazy val root = project
     name := "leonardo-cron-jobs",
     publish / skip := true
   )
-  .aggregate(core, resourceValidator, zombieMonitor)
+  .aggregate(core, resourceValidator, zombieMonitor, janitor, nuker)
 
 lazy val core = (project in file("core"))
   .settings(
     Settings.coreSettings
   )
+  .enablePlugins(DockerPlugin)
 
 lazy val resourceValidator = (project in file("resource-validator"))
   .settings(Settings.resourceValidatorSettings)
@@ -21,7 +22,12 @@ lazy val zombieMonitor = (project in file("zombie-monitor"))
   .enablePlugins(JavaAppPackaging)
   .dependsOn(core % "test->test;compile->compile")
 
-lazy val cleanup = (project in file("nuker"))
+lazy val janitor = (project in file("janitor"))
+  .settings(Settings.janitorSettings)
+  .enablePlugins(JavaAppPackaging)
+  .dependsOn(core % "test->test;compile->compile")
+
+lazy val nuker = (project in file("nuker"))
   .settings(Settings.nukerSettings)
   .enablePlugins(JavaAppPackaging)
   .dependsOn(core % "test->test;compile->compile")

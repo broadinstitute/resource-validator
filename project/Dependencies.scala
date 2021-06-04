@@ -33,5 +33,7 @@ object Dependencies {
 
   val zombieMonitor = core
 
-  val cleanup = core
+  val janitor = core
+
+  val nuker = core
 }

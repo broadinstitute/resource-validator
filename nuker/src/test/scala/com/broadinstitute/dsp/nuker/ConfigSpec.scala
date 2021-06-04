@@ -1,5 +1,5 @@
 package com.broadinstitute.dsp
-package cleanup
+package nuker
 
 import java.nio.file.Paths
 

@@ -26,6 +26,11 @@ jobs:
           fetch-depth: 10
           paths: resource-validator core
       - uses: marceloprado/has-changed-path@v1
+        id: janitor
+        with:
+          fetch-depth: 10
+          paths: janitor core
+      - uses: marceloprado/has-changed-path@v1
         id: zombie-monitor
         with:
           fetch-depth: 10
@@ -40,6 +45,12 @@ jobs:
         with:
           command: |
             yq --tag '!!str' w -i charts/leonardo/values.yaml cronjob.imageTag "${{ steps.setHash.outputs.git_short_sha }}"
+      - name: update janitor hash
+        uses: databiosphere/github-actions/actions/yq@master
+        if: steps.janitor.outputs.changed == 'true'
+        with:
+          command: |
+            yq --tag '!!str' w -i charts/leonardo/values.yaml janitorCron.imageTag "${{ steps.setHash.outputs.git_short_sha }}"
       - name: update zombie-monitor hash
         uses: databiosphere/github-actions/actions/yq@master
         if: steps.zombie-monitor.outputs.changed == 'true'
@@ -54,7 +65,7 @@ jobs:
           commit-message: Update report
           committer: broadbot <broadbot@broadinstitute.org>
           author: broadbot <broadbot@broadinstitute.org>
-          branch: resource-validator-version-bump
+          branch: leonardo-cron-jobs-version-bump
           delete-branch: true
           title: 'Bump leonardo cron jobs version'
           body: |

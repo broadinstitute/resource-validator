@@ -1,17 +1,15 @@
 package com.broadinstitute.dsp
-package resourceValidator
+package janitor
 
 import cats.effect.{Concurrent, Timer}
-import cats.syntax.all._
 import cats.mtl.Ask
-import org.typelevel.log4cats.Logger
+import cats.syntax.all._
 import org.broadinstitute.dsde.workbench.google2.GoogleStorageService
 import org.broadinstitute.dsde.workbench.model.TraceId
 import org.broadinstitute.dsde.workbench.model.google.GcsBucketName
+import org.typelevel.log4cats.Logger
 
-// This file will likely be moved out of resource-validator later
-// See https://broadworkbench.atlassian.net/wiki/spaces/IA/pages/807436289/2020-09-17+Leonardo+Async+Processes?focusedCommentId=807632911#comment-807632911
-object BucketRemover {
+object StagingBucketRemover {
   def impl[F[_]: Timer](
     dbReader: DbReader[F],
     deps: CheckRunnerDeps[F]
@@ -20,8 +18,8 @@ object BucketRemover {
     logger: Logger[F],
     ev: Ask[F, TraceId]): CheckRunner[F, BucketToRemove] =
     new CheckRunner[F, BucketToRemove] {
-      override def appName: String = resourceValidator.appName
-      override def configs = CheckRunnerConfigs("remove-staging-buckets", false)
+      override def appName: String = janitor.appName
+      override def configs = CheckRunnerConfigs("remove-staging-buckets", shouldAlert = false)
       override def dependencies: CheckRunnerDeps[F] = deps
       override def resourceToScan: fs2.Stream[F, BucketToRemove] = dbReader.getStagingBucketsToDelete
 
@@ -32,19 +30,16 @@ object BucketRemover {
       ): F[Option[BucketToRemove]] =
         a.bucket
           .flatTraverse { b =>
-            deps.storageService.deleteBucket(a.googleProject, b, true).compile.last.map { resultOpt =>
-              // deleteBucket will return `true` if the bucket is deleted; else return `false`
-              // We only need to report buckets that're actually being deleted
-              resultOpt match {
-                case Some(true)  => Some(a)
-                case Some(false) => None
-                case None        => None
-              }
+            deps.storageService.deleteBucket(a.googleProject, b, isRecursive = true).compile.last.map {
+              // deleteBucket() will return `true` if the bucket is deleted; else return `false`
+              // We only need to report buckets that are actually being deleted.
+              case Some(true)  => Some(a)
+              case Some(false) => None
+              case None        => None
             }
           }
     }
-
 }
 
-final case class BucketRemoverDeps[F[_]](reportDestinationBucket: GcsBucketName,
-                                         storageService: GoogleStorageService[F])
+final case class StagingBucketRemoverDeps[F[_]](reportDestinationBucket: GcsBucketName,
+                                                storageService: GoogleStorageService[F])
